@@ -312,10 +312,19 @@ paymentResult,
     }
   }
 
-  // Redirect if cart is empty
-  if (cart.length === 0) {
-    navigate('/cart')
-    return null
+// Redirect if cart is empty
+  if (!cart || cart.length === 0) {
+    return (
+      <div className="min-h-screen bg-background py-8">
+        <div className="container mx-auto px-4">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">Your cart is empty</h1>
+            <p className="text-gray-600 mb-6">Add some products to your cart before checkout</p>
+            <Button onClick={() => navigate('/')}>Continue Shopping</Button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -458,55 +467,80 @@ paymentResult,
 {/* Payment Method */}
               <div className="card p-6">
                 <h2 className="text-xl font-semibold mb-4">Payment Method</h2>
-                <div className="space-y-3">
-                  {availablePaymentMethods.map((method) => (
-                    <div
-                      key={method.id}
-                      className={`p-4 border-2 rounded-lg cursor-pointer transition-colors ${
-                        paymentMethod === method.id
-                          ? 'border-primary bg-primary/5'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                      onClick={() => setPaymentMethod(method.id)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h3 className="font-medium text-gray-900">{method.name}</h3>
-                              <p className="text-sm text-gray-600">{method.description}</p>
-                              {method.fee > 0 && (
-                                <p className="text-xs text-orange-600 mt-1">
-                                  Fee: {typeof method.fee === 'number' ? `${(method.fee * 100).toFixed(1)}%` : `PKR ${method.fee}`}
-                                  {method.minimumFee && ` (min PKR ${method.minimumFee})`}
-                                </p>
-                              )}
+                {availablePaymentMethods.length === 0 ? (
+                  <div className="text-center py-8">
+                    <ApperIcon name="CreditCard" size={48} className="mx-auto text-gray-400 mb-4" />
+                    <p className="text-gray-600">Loading payment methods...</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {availablePaymentMethods.map((method) => (
+                      <div
+                        key={method.id}
+                        className={`p-4 border-2 rounded-lg cursor-pointer transition-colors ${
+                          paymentMethod === method.id
+                            ? 'border-primary bg-primary/5'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                        onClick={() => setPaymentMethod(method.id)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <h3 className="font-medium text-gray-900">{method.name}</h3>
+                                <p className="text-sm text-gray-600">{method.description}</p>
+                                {method.fee > 0 && (
+                                  <p className="text-xs text-orange-600 mt-1">
+                                    Fee: {typeof method.fee === 'number' ? `${(method.fee * 100).toFixed(1)}%` : `PKR ${method.fee}`}
+                                    {method.minimumFee && ` (min PKR ${method.minimumFee})`}
+                                  </p>
+                                )}
+                              </div>
+                              <div className={`w-4 h-4 rounded-full border-2 ${
+                                paymentMethod === method.id
+                                  ? 'border-primary bg-primary'
+                                  : 'border-gray-300'
+                              }`}>
+                                {paymentMethod === method.id && (
+                                  <div className="w-full h-full rounded-full bg-white scale-50"></div>
+                                )}
+                              </div>
                             </div>
-                            <div className={`w-4 h-4 rounded-full border-2 ${
-                              paymentMethod === method.id
-                                ? 'border-primary bg-primary'
-                                : 'border-gray-300'
-                            }`}>
-                              {paymentMethod === method.id && (
-                                <div className="w-full h-full rounded-full bg-white scale-50"></div>
-                              )}
-                            </div>
-                          </div>
 
-                          {/* Account Details for Admin-Configured Gateways */}
-                          {paymentMethod === method.id && method.accountNumber && (
-                            <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                              <div className="space-y-2">
-                                {method.accountName && (
+                            {/* Account Details for Admin-Configured Gateways */}
+                            {paymentMethod === method.id && method.accountNumber && (
+                              <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                                <div className="space-y-2">
+                                  {method.accountName && (
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-sm text-blue-700 font-medium">Account Name:</span>
+                                      <div className="flex items-center space-x-2">
+                                        <span className="text-sm font-mono text-blue-900">{method.accountName}</span>
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            navigator.clipboard.writeText(method.accountName);
+                                            toast.success('Account name copied!');
+                                          }}
+                                          className="text-blue-600 hover:text-blue-800 transition-colors"
+                                        >
+                                          <ApperIcon name="Copy" size={14} />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
                                   <div className="flex items-center justify-between">
-                                    <span className="text-sm text-blue-700 font-medium">Account Name:</span>
+                                    <span className="text-sm text-blue-700 font-medium">Account Number:</span>
                                     <div className="flex items-center space-x-2">
-                                      <span className="text-sm font-mono text-blue-900">{method.accountName}</span>
+                                      <span className="text-sm font-mono text-blue-900">{method.accountNumber}</span>
                                       <button
                                         type="button"
-                                        onClick={() => {
-                                          navigator.clipboard.writeText(method.accountName);
-                                          toast.success('Account name copied!');
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          navigator.clipboard.writeText(method.accountNumber);
+                                          toast.success('Account number copied!');
                                         }}
                                         className="text-blue-600 hover:text-blue-800 transition-colors"
                                       >
@@ -514,36 +548,20 @@ paymentResult,
                                       </button>
                                     </div>
                                   </div>
-                                )}
-                                <div className="flex items-center justify-between">
-                                  <span className="text-sm text-blue-700 font-medium">Account Number:</span>
-                                  <div className="flex items-center space-x-2">
-                                    <span className="text-sm font-mono text-blue-900">{method.accountNumber}</span>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        navigator.clipboard.writeText(method.accountNumber);
-                                        toast.success('Account number copied!');
-                                      }}
-                                      className="text-blue-600 hover:text-blue-800 transition-colors"
-                                    >
-                                      <ApperIcon name="Copy" size={14} />
-                                    </button>
-                                  </div>
+                                  {method.instructions && (
+                                    <div className="pt-2 border-t border-blue-200">
+                                      <p className="text-xs text-blue-700">{method.instructions}</p>
+                                    </div>
+                                  )}
                                 </div>
-                                {method.instructions && (
-                                  <div className="pt-2 border-t border-blue-200">
-                                    <p className="text-xs text-blue-700">{method.instructions}</p>
-                                  </div>
-                                )}
                               </div>
-                            </div>
-                          )}
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
 {/* Payment Details for Non-Cash Methods */}
                 {paymentMethod !== 'cash' && (
                   <div className="mt-4 space-y-4">

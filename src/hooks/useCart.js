@@ -17,20 +17,20 @@ export const useCart = () => {
     localStorage.setItem('freshmart_cart', JSON.stringify(cart));
   }, [cart]);
 
-  const addToCart = (product) => {
+const addToCart = (product) => {
     setIsLoading(true);
     
     // Simulate API delay
-// Simulate API delay
     setTimeout(() => {
       setCart(prevCart => {
         const existingItem = prevCart.find(item => item.id === product.id);
         
         if (existingItem) {
-          // If item exists, increase quantity
+          // If item exists, increase quantity but respect stock limits
+          const newQuantity = Math.min(existingItem.quantity + 1, product.stock);
           return prevCart.map(item =>
             item.id === product.id
-              ? { ...item, quantity: item.quantity + 1 }
+              ? { ...item, quantity: newQuantity }
               : item
           );
         } else {
@@ -39,11 +39,17 @@ export const useCart = () => {
             ...product,
             quantity: 1,
             // Ensure image field is properly mapped
-            image: product.image || product.imageUrl || '/placeholder-image.jpg'
+            image: product.image || product.imageUrl || '/placeholder-image.jpg',
+            // Ensure all required fields are present
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            stock: product.stock,
+            unit: product.unit || 'piece'
           };
           return [...prevCart, cartItem];
         }
-});
+      });
       setIsLoading(false);
     }, 200);
   };

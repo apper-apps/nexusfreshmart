@@ -7,14 +7,14 @@ import { useCart } from '@/hooks/useCart';
 const CartItem = ({ item }) => {
   const { updateQuantity, removeFromCart } = useCart();
 
-  const handleQuantityChange = (newQuantity) => {
+const handleQuantityChange = (newQuantity) => {
     if (newQuantity === 0) {
       removeFromCart(item.id);
       toast.success(`${item.name} removed from cart`);
     } else if (newQuantity > item.stock) {
-      toast.warning(`Only ${item.stock} ${item.unit} available in stock`);
+      toast.warning(`Only ${item.stock} ${item.unit || 'pieces'} available in stock`);
       return;
-    } else {
+    } else if (newQuantity > 0) {
       updateQuantity(item.id, newQuantity);
       toast.info(`${item.name} quantity updated to ${newQuantity}`);
     }
@@ -47,7 +47,7 @@ return (
       </div>
       
       <div className="flex items-center space-x-2">
-        <Button
+<Button
           variant="ghost"
           size="small"
           icon="Minus"
