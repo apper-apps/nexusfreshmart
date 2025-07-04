@@ -25,34 +25,48 @@ class ApperSDK {
       }
 
       // Create script element
+// Create script element
       const script = document.createElement('script');
       script.src = import.meta.env.VITE_APPER_SDK_CDN_URL || 'https://cdn.apper.io/v1/apper-sdk.v1.js';
       script.async = true;
-      script.defer = true;
-
+      
       script.onload = () => {
-        this.isLoaded = true;
-        console.log('Apper SDK loaded successfully');
-        resolve();
+        console.log('Apper SDK script loaded, checking availability...');
+        
+        // Poll for SDK availability
+        const checkSDKAvailability = () => {
+          if (window.Apper && typeof window.Apper === 'object') {
+            this.isLoaded = true;
+            console.log('Apper SDK is available and ready');
+            resolve();
+          } else {
+            console.log('Apper SDK still initializing...');
+            setTimeout(checkSDKAvailability, 100);
+          }
+        };
+        
+        checkSDKAvailability();
       };
 
       script.onerror = (error) => {
-        console.error('Failed to load Apper SDK:', error);
-        reject(new Error('Failed to load Apper SDK'));
+        console.error('Failed to load Apper SDK script:', error);
+        reject(new Error(`Failed to load Apper SDK script: ${error.message || 'Unknown error'}`));
       };
 
       // Add to document head
       document.head.appendChild(script);
 
-      // Timeout fallback
+      // Timeout fallback with better error message
       setTimeout(() => {
         if (!this.isLoaded) {
-          reject(new Error('Apper SDK loading timeout'));
+          const errorMsg = window.Apper 
+            ? 'Apper SDK script loaded but SDK not properly initialized'
+            : 'Apper SDK script loading timeout - check network connection and SDK URL';
+          console.error(errorMsg);
+          reject(new Error(errorMsg));
         }
-      }, 10000);
-    });
-
-    return this.loadPromise;
+      }, 15000); // Increased timeout for better reliability
+});
   }
 
   async initialize() {
@@ -169,9 +183,9 @@ class ErrorBoundary extends React.Component {
               Refresh Page
             </button>
           </div>
-        </div>
+</div>
       );
-}
+    }
 
     return this.props.children;
   }

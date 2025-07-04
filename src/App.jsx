@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
+import { Route, Router, Routes } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import Layout from "@/components/organisms/Layout";
 import AdminDashboard from "@/components/pages/AdminDashboard";
@@ -22,22 +22,24 @@ function App() {
   const [sdkReady, setSdkReady] = useState(false);
   const [sdkError, setSdkError] = useState(null);
 
-  useEffect(() => {
-    // Monitor SDK readiness
-    const checkSDKStatus = () => {
-      if (window.apperSDK && window.apperSDK.isInitialized) {
-        setSdkReady(true);
-      } else if (window.apperSDK && window.apperSDK.loadPromise) {
-        window.apperSDK.loadPromise
-          .then(() => setSdkReady(true))
-          .catch((error) => {
-            console.error('SDK initialization failed:', error);
-            setSdkError(error);
-            setSdkReady(false);
-          });
-      }
-    };
+const checkSDKStatus = () => {
+    if (window.ApperSDK && window.ApperSDK.isLoaded && window.Apper) {
+      console.log('SDK status check: Ready');
+      setSdkReady(true);
+      if (interval) clearInterval(interval);
+    } else if (window.ApperSDK && window.ApperSDK.error) {
+      console.error('SDK status check: Error', window.ApperSDK.error);
+      setSdkError(window.ApperSDK.error);
+      if (interval) clearInterval(interval);
+    } else {
+      console.log('SDK status check: Not ready yet');
+    }
+  };
 
+useEffect(() => {
+    // Initialize SDK status check
+    setSdkReady(false);
+    
     // Check immediately and set up interval
     checkSDKStatus();
     const interval = setInterval(checkSDKStatus, 1000);
