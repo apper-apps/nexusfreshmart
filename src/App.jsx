@@ -1,21 +1,23 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { ToastContainer } from 'react-toastify';
-import { useEffect, useState } from 'react';
-import Layout from '@/components/organisms/Layout';
-import Home from '@/components/pages/Home';
-import Category from '@/components/pages/Category';
-import ProductDetail from '@/components/pages/ProductDetail';
-import Cart from '@/components/pages/Cart';
-import Checkout from '@/components/pages/Checkout';
-import Orders from '@/components/pages/Orders';
-import OrderTracking from '@/components/pages/OrderTracking';
-import AdminDashboard from '@/components/pages/AdminDashboard';
-import ProductManagement from '@/components/pages/ProductManagement';
-import POS from '@/components/pages/POS';
-import DeliveryTracking from '@/components/pages/DeliveryTracking';
-import Analytics from '@/components/pages/Analytics';
-import Account from '@/components/pages/Account';
-import PaymentManagement from '@/components/pages/PaymentManagement';
+import React, { useEffect, useState } from "react";
+import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
+import { ToastContainer } from "react-toastify";
+import Layout from "@/components/organisms/Layout";
+import AdminDashboard from "@/components/pages/AdminDashboard";
+import ProductDetail from "@/components/pages/ProductDetail";
+import Cart from "@/components/pages/Cart";
+import ProductManagement from "@/components/pages/ProductManagement";
+import Analytics from "@/components/pages/Analytics";
+import Orders from "@/components/pages/Orders";
+import PaymentManagement from "@/components/pages/PaymentManagement";
+import Category from "@/components/pages/Category";
+import OrderTracking from "@/components/pages/OrderTracking";
+import Account from "@/components/pages/Account";
+import DeliveryTracking from "@/components/pages/DeliveryTracking";
+import POS from "@/components/pages/POS";
+import Checkout from "@/components/pages/Checkout";
+import Home from "@/components/pages/Home";
+
+// Pages
 function App() {
   const [sdkReady, setSdkReady] = useState(false);
   const [sdkError, setSdkError] = useState(null);
@@ -65,13 +67,13 @@ function App() {
     return () => window.removeEventListener('error', handleCanvasError);
   }, []);
 
-  // Provide SDK utilities to components
+// Provide SDK utilities to components
   const sdkUtils = {
     isReady: sdkReady,
     hasError: !!sdkError,
     error: sdkError,
-    safeRender: (canvasElement, options) => {
-      if (window.apperSDK && window.apperSDK.safeRender) {
+    safeRender: (canvasElement, options = {}) => {
+      if (sdkReady && window.apperSDK && window.apperSDK.safeRender) {
         return window.apperSDK.safeRender(canvasElement, options);
       }
       return Promise.resolve();
@@ -114,8 +116,7 @@ function App() {
             <Route path="admin/payments" element={<PaymentManagement />} />
           </Route>
         </Routes>
-
-        <ToastContainer
+<ToastContainer
           position="top-right"
           autoClose={3000}
           hideProgressBar={false}
