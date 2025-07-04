@@ -2,12 +2,12 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useCart } from "@/hooks/useCart";
-import { orderService } from "@/services/api/orderService";
 import ApperIcon from "@/components/ApperIcon";
 import Button from "@/components/atoms/Button";
 import Input from "@/components/atoms/Input";
 import Error from "@/components/ui/Error";
 import PaymentMethod from "@/components/molecules/PaymentMethod";
+import { orderService } from "@/services/api/orderService";
 import { paymentService } from "@/services/api/paymentService";
 
 function Checkout() {
@@ -121,9 +121,30 @@ function Checkout() {
       throw error
     }
   }
+// Convert file to base64 for safe serialization
+  async function convertFileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result)
+      reader.onerror = reject
+      reader.readAsDataURL(file)
+    })
+  }
 
   async function completeOrder(paymentResult) {
     try {
+      let paymentProofData = null
+      
+      // Safely convert file to base64 if payment proof exists
+      if (paymentProof) {
+        try {
+          paymentProofData = await convertFileToBase64(paymentProof)
+        } catch (fileError) {
+          console.warn('Failed to convert payment proof to base64:', fileError)
+          toast.warn('Payment proof could not be processed, but order will continue')
+        }
+      }
+
       const orderData = {
         items: cart.map(item => ({
           id: item.id,
@@ -137,7 +158,8 @@ function Checkout() {
         paymentMethod,
         paymentResult,
         paymentStatus: paymentMethod === 'cash' ? 'pending' : 'completed',
-        paymentProof: paymentProof ? URL.createObjectURL(paymentProof) : null,
+        paymentProof: paymentProofData,
+        paymentProofFileName: paymentProof?.name || null,
         deliveryAddress: {
           name: formData.name,
           phone: formData.phone,
@@ -160,7 +182,6 @@ function Checkout() {
       throw error
     }
   }
-
   async function handleSubmit(e, isRetry = false) {
     e.preventDefault()
     
@@ -396,10 +417,9 @@ function Checkout() {
             </form>
           </div>
         </div>
-      </div>
+</div>
     </div>
   )
-)
 }
 
 export default Checkout
