@@ -67,8 +67,8 @@ setTimeout(() => {
           console.error(errorMsg);
           reject(new Error(errorMsg));
         }
-      }, 15000); // Increased timeout for better reliability
-});
+}, 15000); // Increased timeout for better reliability
+    });
   }
 
   async initialize() {
@@ -79,15 +79,8 @@ setTimeout(() => {
     try {
       await this.loadSDK();
       
-      if (!window.Apper) {
-        throw new Error('Apper SDK not available after loading');
-      }
-
-      // Initialize with proper configuration
+      // Initialize the SDK with proper configuration
       const config = {
-        projectId: import.meta.env.VITE_APPER_PROJECT_ID,
-        publicKey: import.meta.env.VITE_APPER_PUBLIC_KEY,
-        // Canvas-specific configurations to prevent rendering errors
         canvas: {
           minWidth: 1,
           minHeight: 1,
@@ -112,7 +105,8 @@ setTimeout(() => {
     }
   }
 
-  // Method to safely render canvas with dimension validation
+// Method to safely render canvas with dimension validation
+
   async safeRender(canvasElement, options = {}) {
     if (!this.isInitialized || !window.Apper) {
       console.warn('Apper SDK not initialized, skipping render');
