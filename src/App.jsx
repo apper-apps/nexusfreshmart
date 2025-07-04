@@ -4,6 +4,10 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import Layout from "@/components/organisms/Layout";
 import Error from "@/components/ui/Error";
+import AdminDashboard from "@/components/pages/AdminDashboard";
+import ProductDetail from "@/components/pages/ProductDetail";
+import Cart from "@/components/pages/Cart";
+import ProductManagement from "@/components/pages/ProductManagement";
 import Analytics from "@/components/pages/Analytics";
 import Orders from "@/components/pages/Orders";
 import PaymentManagement from "@/components/pages/PaymentManagement";
@@ -14,90 +18,127 @@ import DeliveryTracking from "@/components/pages/DeliveryTracking";
 import POS from "@/components/pages/POS";
 import Checkout from "@/components/pages/Checkout";
 import Home from "@/components/pages/Home";
-import AdminDashboard from "@/components/pages/AdminDashboard";
-import ProductDetail from "@/components/pages/ProductDetail";
-import Cart from "@/components/pages/Cart";
-import ProductManagement from "@/components/pages/ProductManagement";
 
 // Import components
 
-// Pages
 function App() {
   const [sdkReady, setSdkReady] = useState(false);
   const [sdkError, setSdkError] = useState(null);
-
-  const checkSDKStatus = () => {
-    // Check multiple SDK availability patterns to match main.jsx
-    if (window.ApperSDK && window.ApperSDK.isLoaded && (window.Apper || window.ApperSDK || window.apper)) {
-      console.log('SDK status check: Ready');
-      setSdkReady(true);
-      return true;
-    } else if (window.ApperSDK && window.ApperSDK.error) {
-      console.error('SDK status check: Error', window.ApperSDK.error);
-      setSdkError(window.ApperSDK.error);
-      return true;
-    } else {
-      console.log('SDK status check: Not ready yet');
-      return false;
-    }
-  };
+  
+  // Enhanced SDK status checking with better error handling
+  function checkSDKStatus() {
+    const status = {
+      available: typeof window.Apper !== 'undefined',
+      initialized: typeof window.Apper?.init === 'function',
+      ready: typeof window.Apper !== 'undefined' && typeof window.Apper.init === 'function'
+    };
+    
+    // Log status for debugging
+    console.log('SDK Status Check:', status);
+    
+    return status;
+  }
 
   useEffect(() => {
-    // Initialize SDK status check
-    setSdkReady(false);
-    setSdkError(null);
+    let interval;
+    let timeout;
     
-    // Check immediately and set up interval
-    if (checkSDKStatus()) {
-      return; // Already ready or error, no need for interval
-    }
-    
-    const interval = setInterval(() => {
-      if (checkSDKStatus()) {
-        clearInterval(interval);
+    // Check SDK status periodically with improved error handling
+    const checkStatus = () => {
+      try {
+        const status = checkSDKStatus();
+        setSdkReady(status.ready);
+        
+        if (status.ready) {
+          setSdkError(null);
+          if (interval) clearInterval(interval);
+          if (timeout) clearTimeout(timeout);
+        } else if (status.available && !status.initialized) {
+          // SDK loaded but not initialized properly
+          setSdkError(new Error('Apper SDK loaded but initialization failed'));
+        }
+      } catch (error) {
+        console.error('Error checking SDK status:', error);
+        setSdkError(error);
       }
-    }, 1000);
+    };
 
-    // Cleanup with timeout protection
-    const timeout = setTimeout(() => {
-      clearInterval(interval);
-      if (!sdkReady && !sdkError) {
-        setSdkError(new Error('SDK initialization timeout after 30 seconds'));
+    // Initial check
+    checkStatus();
+    
+    // Set up periodic checking with exponential backoff
+    let checkCount = 0;
+    const startChecking = () => {
+      interval = setInterval(() => {
+        checkStatus();
+        checkCount++;
+        
+        // Reduce frequency after initial attempts
+        if (checkCount > 10) {
+          clearInterval(interval);
+          interval = setInterval(checkStatus, 5000); // Check every 5 seconds
+        }
+      }, 1000);
+    };
+    
+    startChecking();
+    
+    // Set timeout for SDK loading with better error handling
+    timeout = setTimeout(() => {
+      if (!sdkReady) {
+        const status = checkSDKStatus();
+        const errorMsg = status.available 
+          ? 'Apper SDK loaded but failed to initialize within timeout'
+          : 'Apper SDK failed to load within timeout';
+        setSdkError(new Error(errorMsg));
       }
     }, 30000);
-
+    
     return () => {
-      clearInterval(interval);
-      clearTimeout(timeout);
+      if (interval) clearInterval(interval);
+      if (timeout) clearTimeout(timeout);
     };
-  }, []);
+  }, [sdkReady]);
 
-  // Handle canvas-related errors globally
+  // Handle canvas-specific errors with better error categorization
+  const handleCanvasError = (event) => {
+    console.error('Canvas error:', event);
+    
+    // Categorize error for better handling
+    const errorMsg = event.error?.message || event.message || 'Unknown canvas error';
+    if (errorMsg.includes('Apper') || errorMsg.includes('SDK')) {
+      setSdkError(new Error(`SDK Canvas Error: ${errorMsg}`));
+    } else {
+      setSdkError(new Error(`Canvas rendering error: ${errorMsg}`));
+    }
+  };
+  
   useEffect(() => {
-    const handleCanvasError = (event) => {
-      if (event.error && event.error.message && 
-          (event.error.message.includes('drawImage') || 
-           event.error.message.includes('canvas'))) {
-        console.error('Canvas error intercepted:', event.error);
-        event.preventDefault();
-        
-        // Try to recover by reinitializing SDK
-        if (window.apperSDK) {
-          window.apperSDK.isInitialized = false;
-          window.apperSDK.initialize().catch(console.error);
-        }
-      }
-    };
-
     window.addEventListener('error', handleCanvasError);
-    return () => window.removeEventListener('error', handleCanvasError);
+    window.addEventListener('unhandledrejection', (event) => {
+      if (event.reason?.message?.includes('Apper')) {
+        console.error('Unhandled promise rejection in SDK:', event.reason);
+        setSdkError(new Error(`SDK Promise Error: ${event.reason.message}`));
+      }
+    });
+    
+    return () => {
+      window.removeEventListener('error', handleCanvasError);
+      window.removeEventListener('unhandledrejection', handleCanvasError);
+    };
   }, []);
-
-  // Provide SDK utilities to components
+  
+  // Create SDK utilities object with enhanced functionality
   const sdkUtils = {
     ready: sdkReady,
     error: sdkError,
-    checkStatus: checkSDKStatus
+    checkStatus: checkSDKStatus,
+    reinitialize: () => {
+      if (typeof window.apperSDK !== 'undefined') {
+        window.apperSDK.isInitialized = false;
+        window.apperSDK.initialize().catch(console.error);
+      }
+    }
   };
 
   return (
