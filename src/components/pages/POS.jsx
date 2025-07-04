@@ -1,15 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { toast } from 'react-toastify';
-import ApperIcon from '@/components/ApperIcon';
-import Button from '@/components/atoms/Button';
-import Input from '@/components/atoms/Input';
-import SearchBar from '@/components/molecules/SearchBar';
-import BarcodeScanner from '@/components/molecules/BarcodeScanner';
-import Loading from '@/components/ui/Loading';
-import Error from '@/components/ui/Error';
-import { productService } from '@/services/api/productService';
-import { posService } from '@/services/api/posService';
-import { paymentService } from '@/services/api/paymentService';
+import React, { useEffect, useState } from "react";
+import { toast } from "react-toastify";
+import ApperIcon from "@/components/ApperIcon";
+import Button from "@/components/atoms/Button";
+import Input from "@/components/atoms/Input";
+import Error from "@/components/ui/Error";
+import Loading from "@/components/ui/Loading";
+import Cart from "@/components/pages/Cart";
+import Analytics from "@/components/pages/Analytics";
+import Category from "@/components/pages/Category";
+import SearchBar from "@/components/molecules/SearchBar";
+import BarcodeScanner from "@/components/molecules/BarcodeScanner";
+import { posService } from "@/services/api/posService";
+import { productService } from "@/services/api/productService";
+import { paymentService } from "@/services/api/paymentService";
 const POS = () => {
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
@@ -22,7 +25,7 @@ const POS = () => {
   const [processingPayment, setProcessingPayment] = useState(false);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   
-  // Receipt configuration state
+// Receipt configuration state
   const [receiptConfig, setReceiptConfig] = useState({
     storeName: 'FreshMart',
     storeAddress: '123 Main Street, City, State 12345',
@@ -40,13 +43,41 @@ const POS = () => {
   const [previewTransaction, setPreviewTransaction] = useState(null);
   const [lastTransaction, setLastTransaction] = useState(null);
   const [printStatus, setPrintStatus] = useState('');
-  useEffect(() => {
+  
+  // Shopkeeper Management States
+  const [activeTab, setActiveTab] = useState('pos');
+  const [dailySales, setDailySales] = useState([]);
+  const [salesSummary, setSalesSummary] = useState({});
+  const [paymentBreakdown, setPaymentBreakdown] = useState({});
+  const [customers, setCustomers] = useState([]);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
+  const [showInventoryModal, setShowInventoryModal] = useState(false);
+  const [lowStockItems, setLowStockItems] = useState([]);
+  const [stockAlerts, setStockAlerts] = useState([]);
+  const [newCustomer, setNewCustomer] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    address: ''
+  });
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [inventoryFilter, setInventoryFilter] = useState('all');
+  const [bulkAction, setBulkAction] = useState('');
+  const [selectedProducts, setSelectedProducts] = useState([]);
+useEffect(() => {
     loadProducts();
+    loadDashboardData();
   }, []);
 
   useEffect(() => {
     filterProducts();
   }, [products, searchTerm]);
+
+  useEffect(() => {
+    checkStockAlerts();
+  }, [products]);
 
   const loadProducts = async () => {
     try {
@@ -59,6 +90,111 @@ const POS = () => {
     } finally {
       setLoading(false);
     }
+};
+
+  const loadDashboardData = async () => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const salesData = await posService.getDailySales(today);
+      const breakdown = await posService.getDailyPaymentBreakdown(today);
+      
+      setDailySales(salesData.transactions || []);
+      setSalesSummary({
+        totalSales: salesData.totalSales || 0,
+        totalTransactions: salesData.totalTransactions || 0,
+        averageTransaction: salesData.totalTransactions > 0 ? salesData.totalSales / salesData.totalTransactions : 0
+      });
+      setPaymentBreakdown(breakdown);
+      
+      // Load customers (mock data for now)
+      const mockCustomers = [
+        { Id: 1, name: 'Ahmed Khan', phone: '03001234567', email: 'ahmed@email.com', totalPurchases: 15000, lastVisit: '2024-01-15' },
+        { Id: 2, name: 'Fatima Ali', phone: '03007654321', email: 'fatima@email.com', totalPurchases: 25000, lastVisit: '2024-01-14' },
+        { Id: 3, name: 'Mohammad Hassan', phone: '03009876543', email: 'hassan@email.com', totalPurchases: 8000, lastVisit: '2024-01-13' }
+      ];
+      setCustomers(mockCustomers);
+      
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+    }
+  };
+
+  const checkStockAlerts = () => {
+    const lowStock = products.filter(p => p.stock <= 5 && p.stock > 0);
+    const outOfStock = products.filter(p => p.stock === 0);
+    
+    setLowStockItems(lowStock);
+    setStockAlerts([
+      ...lowStock.map(p => ({ type: 'low', product: p, message: `${p.name} is running low (${p.stock} remaining)` })),
+      ...outOfStock.map(p => ({ type: 'out', product: p, message: `${p.name} is out of stock` }))
+    ]);
+  };
+
+  const addCustomer = async () => {
+    if (!newCustomer.name || !newCustomer.phone) {
+      toast.error('Name and phone are required');
+      return;
+    }
+    
+    const customer = {
+      Id: customers.length + 1,
+      ...newCustomer,
+      totalPurchases: 0,
+      lastVisit: new Date().toISOString().split('T')[0]
+    };
+    
+    setCustomers([...customers, customer]);
+    setNewCustomer({ name: '', phone: '', email: '', address: '' });
+    toast.success('Customer added successfully');
+  };
+
+  const selectCustomer = (customer) => {
+    setSelectedCustomer(customer);
+    setShowCustomerModal(false);
+    toast.success(`Customer ${customer.name} selected`);
+  };
+
+  const bulkUpdateStock = async () => {
+    if (selectedProducts.length === 0 || !bulkAction) {
+      toast.error('Please select products and action');
+      return;
+    }
+    
+    try {
+      for (const productId of selectedProducts) {
+        const product = products.find(p => p.id === productId);
+        if (product) {
+          let newStock = product.stock;
+          
+          if (bulkAction === 'add10') newStock += 10;
+          else if (bulkAction === 'subtract10') newStock = Math.max(0, newStock - 10);
+          else if (bulkAction === 'setZero') newStock = 0;
+          
+          await productService.update(productId, { ...product, stock: newStock });
+        }
+      }
+      
+      await loadProducts();
+      setSelectedProducts([]);
+      setBulkAction('');
+      toast.success(`Bulk action applied to ${selectedProducts.length} products`);
+    } catch (error) {
+      toast.error('Error updating stock');
+    }
+  };
+
+  const getFilteredProducts = () => {
+    let filtered = products;
+    
+    if (inventoryFilter === 'low') {
+      filtered = products.filter(p => p.stock <= 5 && p.stock > 0);
+    } else if (inventoryFilter === 'out') {
+      filtered = products.filter(p => p.stock === 0);
+    } else if (inventoryFilter === 'active') {
+      filtered = products.filter(p => p.isActive);
+    }
+    
+    return filtered;
   };
 
 const filterProducts = () => {
@@ -184,7 +320,7 @@ const processPayment = async () => {
         }
       }
 
-      const transactionData = {
+const transactionData = {
         items: cart.map(item => ({
           productId: item.id,
           name: item.name,
@@ -196,9 +332,10 @@ const processPayment = async () => {
         cashierId: 'admin', // In real app, this would be the logged-in user
         customerPaid: paymentType === 'cash' ? paid : total,
         change: paymentType === 'cash' ? getChange() : 0,
-        paymentResult: paymentResult || null
+        paymentResult: paymentResult || null,
+        customerId: selectedCustomer ? selectedCustomer.Id : null,
+        customerName: selectedCustomer ? selectedCustomer.name : null
       };
-
       await posService.createTransaction(transactionData);
 
       // Update product stock
@@ -210,10 +347,22 @@ const processPayment = async () => {
         });
       }
 
+// Update customer purchase history
+      if (selectedCustomer) {
+        const updatedCustomer = {
+          ...selectedCustomer,
+          totalPurchases: selectedCustomer.totalPurchases + total,
+          lastVisit: new Date().toISOString().split('T')[0]
+        };
+        setCustomers(customers.map(c => c.Id === selectedCustomer.Id ? updatedCustomer : c));
+        setSelectedCustomer(updatedCustomer);
+      }
+
       // Reset
       setCart([]);
       setCustomerPaid('');
       await loadProducts();
+      await loadDashboardData(); // Refresh dashboard data
       
       if (paymentType === 'cash') {
         toast.success('Payment processed successfully!');
@@ -227,7 +376,6 @@ const processPayment = async () => {
       } else {
         showReceiptPreviewModal(transactionData);
       }
-
     } catch (err) {
       toast.error('Payment processing failed');
     } finally {
@@ -459,13 +607,82 @@ const generateReceiptHTML = (transaction) => {
     );
   }
 
-  return (
+return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">POS Terminal</h1>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">Shopkeeper Management</h1>
+        <div className="flex space-x-2">
+          <Button
+            variant={activeTab === 'pos' ? 'primary' : 'outline'}
+            onClick={() => setActiveTab('pos')}
+            icon="ShoppingCart"
+            size="small"
+          >
+            POS
+          </Button>
+          <Button
+            variant={activeTab === 'inventory' ? 'primary' : 'outline'}
+            onClick={() => setActiveTab('inventory')}
+            icon="Package"
+            size="small"
+          >
+            Inventory
+          </Button>
+          <Button
+            variant={activeTab === 'customers' ? 'primary' : 'outline'}
+            onClick={() => setActiveTab('customers')}
+            icon="Users"
+            size="small"
+          >
+            Customers
+          </Button>
+          <Button
+            variant={activeTab === 'analytics' ? 'primary' : 'outline'}
+            onClick={() => setActiveTab('analytics')}
+            icon="BarChart3"
+            size="small"
+          >
+            Analytics
+          </Button>
+        </div>
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Products Section */}
-<div className="lg:col-span-2">
+      {/* Stock Alerts */}
+      {stockAlerts.length > 0 && (
+        <div className="bg-warning bg-opacity-10 border border-warning rounded-lg p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <ApperIcon name="AlertTriangle" size={20} className="text-warning" />
+              <span className="font-semibold text-warning">Stock Alerts ({stockAlerts.length})</span>
+            </div>
+            <Button
+              variant="ghost"
+              size="small"
+              onClick={() => setShowInventoryModal(true)}
+              icon="Eye"
+            >
+              View Details
+            </Button>
+          </div>
+          <div className="mt-2 text-sm text-gray-700">
+            {stockAlerts.slice(0, 3).map((alert, index) => (
+              <div key={index} className="flex items-center space-x-2 mt-1">
+                <div className={`w-2 h-2 rounded-full ${alert.type === 'out' ? 'bg-error' : 'bg-warning'}`}></div>
+                <span>{alert.message}</span>
+              </div>
+            ))}
+            {stockAlerts.length > 3 && (
+              <div className="text-gray-500 mt-1">+{stockAlerts.length - 3} more alerts</div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* POS Tab */}
+      {activeTab === 'pos' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Products Section */}
+          <div className="lg:col-span-2">
           <div className="card p-6">
             <div className="mb-6">
               <div className="flex space-x-2 mb-4">
@@ -604,7 +821,40 @@ const generateReceiptHTML = (transaction) => {
                         )}
                       </div>
                     )}
-<div className="grid grid-cols-2 gap-2 mb-4">
+{/* Customer Selection */}
+                    <div className="mb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Customer
+                        </label>
+                        <Button
+                          variant="ghost"
+                          size="small"
+                          icon="Plus"
+                          onClick={() => setShowCustomerModal(true)}
+                        >
+                          Select
+                        </Button>
+                      </div>
+                      {selectedCustomer ? (
+                        <div className="flex items-center justify-between p-2 bg-green-50 rounded-lg">
+                          <div>
+                            <p className="font-medium text-sm">{selectedCustomer.name}</p>
+                            <p className="text-xs text-gray-600">{selectedCustomer.phone}</p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="small"
+                            icon="X"
+                            onClick={() => setSelectedCustomer(null)}
+                          />
+                        </div>
+                      ) : (
+                        <div className="text-sm text-gray-500 italic">No customer selected</div>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 mb-4">
                       <Button
                         variant="outline"
                         size="small"
@@ -642,11 +892,216 @@ const generateReceiptHTML = (transaction) => {
                     )}
                   </div>
                 </div>
+</div>
               </>
             )}
           </div>
         </div>
       </div>
+      )}
+      {/* Inventory Tab */}
+      {activeTab === 'inventory' && (
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold">Inventory Management</h2>
+            <div className="flex space-x-2">
+              <select
+                value={inventoryFilter}
+                onChange={(e) => setInventoryFilter(e.target.value)}
+                className="input-field"
+              >
+                <option value="all">All Products</option>
+                <option value="active">Active Only</option>
+                <option value="low">Low Stock</option>
+                <option value="out">Out of Stock</option>
+              </select>
+              <Button
+                variant="primary"
+                icon="Package"
+                onClick={bulkUpdateStock}
+                disabled={selectedProducts.length === 0 || !bulkAction}
+              >
+                Apply Bulk Action
+              </Button>
+            </div>
+          </div>
+
+          {selectedProducts.length > 0 && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">
+                  {selectedProducts.length} products selected
+                </span>
+                <div className="flex space-x-2">
+                  <select
+                    value={bulkAction}
+                    onChange={(e) => setBulkAction(e.target.value)}
+                    className="input-field text-sm"
+                  >
+                    <option value="">Select Action</option>
+                    <option value="add10">Add 10 to Stock</option>
+                    <option value="subtract10">Subtract 10 from Stock</option>
+                    <option value="setZero">Set Stock to 0</option>
+                  </select>
+                  <Button
+                    variant="ghost"
+                    size="small"
+                    onClick={() => setSelectedProducts([])}
+                  >
+                    Clear Selection
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {getFilteredProducts().map((product) => (
+              <div key={product.id} className="card p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedProducts.includes(product.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedProducts([...selectedProducts, product.id]);
+                      } else {
+                        setSelectedProducts(selectedProducts.filter(id => id !== product.id));
+                      }
+                    }}
+                    className="rounded border-gray-300"
+                  />
+                  <div className={`px-2 py-1 rounded text-xs font-medium ${
+                    product.stock === 0 ? 'bg-red-100 text-red-800' :
+                    product.stock <= 5 ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-green-100 text-green-800'
+                  }`}>
+                    Stock: {product.stock}
+                  </div>
+                </div>
+                <img
+                  src={product.imageUrl}
+                  alt={product.name}
+                  className="w-full h-32 object-cover rounded-lg mb-2"
+                />
+                <h3 className="font-medium text-sm mb-1">{product.name}</h3>
+                <p className="text-primary font-bold">Rs. {product.price.toLocaleString()}</p>
+                <p className="text-xs text-gray-500">Category: {product.category}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Customers Tab */}
+      {activeTab === 'customers' && (
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold">Customer Management</h2>
+            <Button
+              variant="primary"
+              icon="UserPlus"
+              onClick={() => setShowCustomerModal(true)}
+            >
+              Add Customer
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {customers.map((customer) => (
+              <div key={customer.Id} className="card p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center space-x-2">
+                    <ApperIcon name="User" size={16} className="text-gray-400" />
+                    <span className="font-medium">{customer.name}</span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="small"
+                    icon="Eye"
+                    onClick={() => {
+                      setSelectedCustomer(customer);
+                      setShowCustomerModal(true);
+                    }}
+                  />
+                </div>
+                <p className="text-sm text-gray-600 mb-1">{customer.phone}</p>
+                <p className="text-sm text-gray-600 mb-2">{customer.email}</p>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-primary">
+                    Rs. {customer.totalPurchases.toLocaleString()}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    Last: {customer.lastVisit}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Analytics Tab */}
+      {activeTab === 'analytics' && (
+        <div className="space-y-6">
+          <h2 className="text-xl font-semibold">Sales Analytics</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="card p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Today's Sales</p>
+                  <p className="text-2xl font-bold text-primary">
+                    Rs. {salesSummary.totalSales?.toLocaleString() || 0}
+                  </p>
+                </div>
+                <ApperIcon name="TrendingUp" size={32} className="text-success" />
+              </div>
+            </div>
+            
+            <div className="card p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Transactions</p>
+                  <p className="text-2xl font-bold text-primary">
+                    {salesSummary.totalTransactions || 0}
+                  </p>
+                </div>
+                <ApperIcon name="Receipt" size={32} className="text-info" />
+              </div>
+            </div>
+            
+            <div className="card p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Average Sale</p>
+                  <p className="text-2xl font-bold text-primary">
+                    Rs. {Math.round(salesSummary.averageTransaction || 0).toLocaleString()}
+                  </p>
+                </div>
+                <ApperIcon name="Calculator" size={32} className="text-accent" />
+              </div>
+            </div>
+          </div>
+
+          <div className="card p-6">
+            <h3 className="text-lg font-semibold mb-4">Payment Method Breakdown</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {Object.entries(paymentBreakdown).map(([method, data]) => (
+                <div key={method} className="text-center">
+                  <div className="text-2xl font-bold text-primary">
+                    Rs. {data.total?.toLocaleString() || 0}
+                  </div>
+                  <div className="text-sm text-gray-600 capitalize">{method}</div>
+                  <div className="text-xs text-gray-500">
+                    {data.count || 0} transactions
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 <BarcodeScanner
         isActive={showBarcodeScanner}
         onScan={handleBarcodeScan}
@@ -828,11 +1283,197 @@ const generateReceiptHTML = (transaction) => {
                 Save Configuration
               </Button>
             </div>
+</div>
+        </div>
+      )}
+      {/* Customer Modal */}
+      {showCustomerModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">
+                {selectedCustomer ? 'Customer Details' : 'Select Customer'}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowCustomerModal(false);
+                  setSelectedCustomer(null);
+                  setNewCustomer({ name: '', phone: '', email: '', address: '' });
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <ApperIcon name="X" size={24} />
+              </button>
+            </div>
+
+            {!selectedCustomer ? (
+              <div className="space-y-4">
+                <div>
+                  <Input
+                    label="Search Customers"
+                    value={customerSearch}
+                    onChange={(e) => setCustomerSearch(e.target.value)}
+                    placeholder="Search by name or phone..."
+                    icon="Search"
+                  />
+                </div>
+
+                <div className="max-h-48 overflow-y-auto space-y-2">
+                  {customers
+                    .filter(c => 
+                      c.name.toLowerCase().includes(customerSearch.toLowerCase()) ||
+                      c.phone.includes(customerSearch)
+                    )
+                    .map(customer => (
+                      <div
+                        key={customer.Id}
+                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                        onClick={() => selectCustomer(customer)}
+                      >
+                        <div>
+                          <p className="font-medium">{customer.name}</p>
+                          <p className="text-sm text-gray-600">{customer.phone}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-medium text-primary">
+                            Rs. {customer.totalPurchases.toLocaleString()}
+                          </p>
+                          <p className="text-xs text-gray-500">{customer.lastVisit}</p>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+
+                <div className="border-t pt-4">
+                  <h4 className="font-medium mb-3">Add New Customer</h4>
+                  <div className="space-y-3">
+                    <Input
+                      label="Name"
+                      value={newCustomer.name}
+                      onChange={(e) => setNewCustomer({...newCustomer, name: e.target.value})}
+                      placeholder="Customer name"
+                    />
+                    <Input
+                      label="Phone"
+                      value={newCustomer.phone}
+                      onChange={(e) => setNewCustomer({...newCustomer, phone: e.target.value})}
+                      placeholder="03001234567"
+                    />
+                    <Input
+                      label="Email"
+                      value={newCustomer.email}
+                      onChange={(e) => setNewCustomer({...newCustomer, email: e.target.value})}
+                      placeholder="customer@email.com"
+                    />
+                    <Input
+                      label="Address"
+                      value={newCustomer.address}
+                      onChange={(e) => setNewCustomer({...newCustomer, address: e.target.value})}
+                      placeholder="Customer address"
+                    />
+                    <Button
+                      variant="primary"
+                      onClick={addCustomer}
+                      icon="UserPlus"
+                      className="w-full"
+                    >
+                      Add Customer
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="text-center">
+                  <ApperIcon name="User" size={48} className="text-gray-400 mx-auto mb-2" />
+                  <h4 className="text-lg font-semibold">{selectedCustomer.name}</h4>
+                  <p className="text-gray-600">{selectedCustomer.phone}</p>
+                  <p className="text-gray-600">{selectedCustomer.email}</p>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-primary">
+                      Rs. {selectedCustomer.totalPurchases.toLocaleString()}
+                    </p>
+                    <p className="text-sm text-gray-600">Total Purchases</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-lg font-semibold">{selectedCustomer.lastVisit}</p>
+                    <p className="text-sm text-gray-600">Last Visit</p>
+                  </div>
+                </div>
+
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setSelectedCustomer(null)}
+                    className="flex-1"
+                  >
+                    Back to List
+                  </Button>
+                  <Button
+                    variant="primary"
+                    onClick={() => selectCustomer(selectedCustomer)}
+                    className="flex-1"
+                  >
+                    Select Customer
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Inventory Alerts Modal */}
+      {showInventoryModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Inventory Alerts</h3>
+              <button
+                onClick={() => setShowInventoryModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <ApperIcon name="X" size={24} />
+              </button>
+            </div>
+            
+            <div className="space-y-3">
+              {stockAlerts.map((alert, index) => (
+                <div key={index} className={`p-3 rounded-lg border ${
+                  alert.type === 'out' ? 'bg-red-50 border-red-200' : 'bg-yellow-50 border-yellow-200'
+                }`}>
+                  <div className="flex items-center space-x-2">
+                    <ApperIcon 
+                      name={alert.type === 'out' ? 'AlertCircle' : 'AlertTriangle'} 
+                      size={16} 
+                      className={alert.type === 'out' ? 'text-red-500' : 'text-yellow-500'} 
+                    />
+                    <span className="text-sm">{alert.message}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <div className="mt-6">
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setShowInventoryModal(false);
+                  setActiveTab('inventory');
+                }}
+                className="w-full"
+                icon="Package"
+              >
+                Manage Inventory
+              </Button>
+            </div>
           </div>
         </div>
       )}
     </div>
-  );
 };
 
 export default POS;
