@@ -115,8 +115,7 @@ this.orders.splice(index, 1);
 return this.orders.filter(order => order.deliveryStatus === deliveryStatus);
   }
 
-  // Payment Integration Methods
-  async updatePaymentStatus(orderId, paymentStatus, paymentResult = null) {
+// Payment Integration Methods
   async updatePaymentStatus(orderId, paymentStatus, paymentResult = null) {
     await this.delay();
     const order = await this.getById(orderId);
@@ -205,8 +204,7 @@ const order = await this.getById(orderId);
 return await this.update(orderId, updatedOrder);
   }
 
-  async getMonthlyRevenue() {
-    await this.delay();
+async getMonthlyRevenue() {
     await this.delay();
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
