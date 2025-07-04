@@ -24,8 +24,9 @@ const { cart, clearCart } = useCart()
     city: '',
     postalCode: '',
     instructions: ''
-  })
+})
   const [paymentProof, setPaymentProof] = useState(null)
+  const [transactionId, setTransactionId] = useState('')
   const [errors, setErrors] = useState({})
 
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
@@ -127,10 +128,14 @@ function handleFileUpload(e) {
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email address'
     }
-
-    // Validate payment proof for bank transfer
-    if (paymentMethod === 'bank' && !paymentProof) {
-      newErrors.paymentProof = 'Payment proof is required for bank transfer'
+// Validate payment proof and transaction ID for non-cash payments
+    if (paymentMethod !== 'cash') {
+      if (!transactionId.trim()) {
+        newErrors.transactionId = 'Transaction ID is required';
+      }
+      if (!paymentProof) {
+        newErrors.paymentProof = 'Payment proof is required';
+      }
     }
 
     setErrors(newErrors)
@@ -200,10 +205,11 @@ function handleFileUpload(e) {
         total,
         deliveryCharge,
         paymentMethod,
-        paymentResult,
-        paymentStatus: paymentMethod === 'cash' ? 'pending' : 'completed',
+paymentResult,
+        paymentStatus: paymentMethod === 'cash' ? 'pending' : 'pending_verification',
         paymentProof: paymentProofData,
         paymentProofFileName: paymentProof?.name || null,
+        transactionId: transactionId || null,
         deliveryAddress: {
           name: formData.name,
           phone: formData.phone,
@@ -455,32 +461,95 @@ function handleFileUpload(e) {
                       onClick={() => setPaymentMethod(method.id)}
                     >
                       <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="font-medium text-gray-900">{method.name}</h3>
-                          <p className="text-sm text-gray-600">{method.description}</p>
-                          {method.fee > 0 && (
-                            <p className="text-xs text-orange-600 mt-1">
-                              Fee: {typeof method.fee === 'number' ? `${(method.fee * 100).toFixed(1)}%` : `PKR ${method.fee}`}
-                              {method.minimumFee && ` (min PKR ${method.minimumFee})`}
-                            </p>
-                          )}
-                        </div>
-                        <div className={`w-4 h-4 rounded-full border-2 ${
-                          paymentMethod === method.id
-                            ? 'border-primary bg-primary'
-                            : 'border-gray-300'
-                        }`}>
-                          {paymentMethod === method.id && (
-                            <div className="w-full h-full rounded-full bg-white scale-50"></div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="font-medium text-gray-900">{method.name}</h3>
+                              <p className="text-sm text-gray-600">{method.description}</p>
+                              {method.fee > 0 && (
+                                <p className="text-xs text-orange-600 mt-1">
+                                  Fee: {typeof method.fee === 'number' ? `${(method.fee * 100).toFixed(1)}%` : `PKR ${method.fee}`}
+                                  {method.minimumFee && ` (min PKR ${method.minimumFee})`}
+                                </p>
+                              )}
+                            </div>
+                            <div className={`w-4 h-4 rounded-full border-2 ${
+                              paymentMethod === method.id
+                                ? 'border-primary bg-primary'
+                                : 'border-gray-300'
+                            }`}>
+                              {paymentMethod === method.id && (
+                                <div className="w-full h-full rounded-full bg-white scale-50"></div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Account Details for Admin-Configured Gateways */}
+                          {paymentMethod === method.id && method.accountNumber && (
+                            <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                              <div className="space-y-2">
+                                {method.accountName && (
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-sm text-blue-700 font-medium">Account Name:</span>
+                                    <div className="flex items-center space-x-2">
+                                      <span className="text-sm font-mono text-blue-900">{method.accountName}</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          navigator.clipboard.writeText(method.accountName);
+                                          toast.success('Account name copied!');
+                                        }}
+                                        className="text-blue-600 hover:text-blue-800 transition-colors"
+                                      >
+                                        <ApperIcon name="Copy" size={14} />
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm text-blue-700 font-medium">Account Number:</span>
+                                  <div className="flex items-center space-x-2">
+                                    <span className="text-sm font-mono text-blue-900">{method.accountNumber}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(method.accountNumber);
+                                        toast.success('Account number copied!');
+                                      }}
+                                      className="text-blue-600 hover:text-blue-800 transition-colors"
+                                    >
+                                      <ApperIcon name="Copy" size={14} />
+                                    </button>
+                                  </div>
+                                </div>
+                                {method.instructions && (
+                                  <div className="pt-2 border-t border-blue-200">
+                                    <p className="text-xs text-blue-700">{method.instructions}</p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           )}
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
-                
-{paymentMethod === 'bank' && (
+{/* Payment Details for Non-Cash Methods */}
+                {paymentMethod !== 'cash' && (
                   <div className="mt-4 space-y-4">
+                    {/* Transaction ID Input */}
+                    <div>
+                      <Input
+                        label="Transaction ID"
+                        value={transactionId}
+                        onChange={(e) => setTransactionId(e.target.value)}
+                        placeholder="Enter your transaction ID"
+                        error={errors.transactionId}
+                      />
+                    </div>
+
+                    {/* Payment Proof Upload for Bank Transfers */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Upload Payment Proof *
@@ -550,12 +619,13 @@ function handleFileUpload(e) {
                       <div className="flex items-start space-x-3">
                         <ApperIcon name="Info" size={20} className="text-blue-600 flex-shrink-0 mt-0.5" />
                         <div className="text-sm text-blue-800">
-                          <p className="font-medium mb-1">Bank Transfer Instructions:</p>
+                          <p className="font-medium mb-1">Payment Instructions:</p>
                           <ul className="space-y-1 text-xs">
-                            <li>• Transfer the exact amount to our bank account</li>
-                            <li>• Take a clear screenshot of the transaction receipt</li>
-                            <li>• Upload the receipt image above</li>
-                            <li>• Your order will be processed after verification</li>
+                            <li>• Transfer the exact amount using the account details above</li>
+                            <li>• Copy the transaction ID and enter it in the field above</li>
+                            <li>• Take a clear screenshot of the payment confirmation</li>
+                            <li>• Upload the screenshot for verification</li>
+                            <li>• Your order will be processed after payment verification</li>
                           </ul>
                         </div>
                       </div>

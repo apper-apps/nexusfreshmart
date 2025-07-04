@@ -10,6 +10,329 @@ import Error from '@/components/ui/Error';
 import { paymentService } from '@/services/api/paymentService';
 import { orderService } from '@/services/api/orderService';
 
+// Payment Gateway Management Component
+const PaymentGatewayManagement = ({ paymentMethods, onGatewayUpdate }) => {
+  const [isAddingGateway, setIsAddingGateway] = useState(false);
+  const [editingGateway, setEditingGateway] = useState(null);
+  const [gatewayForm, setGatewayForm] = useState({
+    name: '',
+    accountName: '',
+    accountNumber: '',
+    instructions: '',
+    fee: 0,
+    enabled: true
+  });
+  const [processing, setProcessing] = useState(false);
+
+  const resetForm = () => {
+    setGatewayForm({
+      name: '',
+      accountName: '',
+      accountNumber: '',
+      instructions: '',
+      fee: 0,
+      enabled: true
+    });
+    setIsAddingGateway(false);
+    setEditingGateway(null);
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setGatewayForm(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!gatewayForm.name || !gatewayForm.accountName || !gatewayForm.accountNumber) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      if (editingGateway) {
+        await paymentService.updateGateway(editingGateway.Id, gatewayForm);
+        toast.success('Payment gateway updated successfully');
+      } else {
+        await paymentService.createGateway(gatewayForm);
+        toast.success('Payment gateway added successfully');
+      }
+      resetForm();
+      onGatewayUpdate();
+    } catch (error) {
+      toast.error(error.message || 'Failed to save payment gateway');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleEdit = (gateway) => {
+    setGatewayForm({
+      name: gateway.name,
+      accountName: gateway.accountName || '',
+      accountNumber: gateway.accountNumber || '',
+      instructions: gateway.instructions || '',
+      fee: gateway.fee || 0,
+      enabled: gateway.enabled
+    });
+    setEditingGateway(gateway);
+    setIsAddingGateway(true);
+  };
+
+  const handleDelete = async (gatewayId) => {
+    if (!confirm('Are you sure you want to delete this payment gateway?')) {
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      await paymentService.deleteGateway(gatewayId);
+      toast.success('Payment gateway deleted successfully');
+      onGatewayUpdate();
+    } catch (error) {
+      toast.error(error.message || 'Failed to delete payment gateway');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleToggleEnabled = async (gatewayId, currentEnabled) => {
+    setProcessing(true);
+    try {
+      if (currentEnabled) {
+        await paymentService.disableGateway(gatewayId);
+        toast.success('Payment gateway disabled');
+      } else {
+        await paymentService.enableGateway(gatewayId);
+        toast.success('Payment gateway enabled');
+      }
+      onGatewayUpdate();
+    } catch (error) {
+      toast.error(error.message || 'Failed to update gateway status');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  return (
+    <div className="card p-6">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-lg font-semibold text-gray-900">Payment Gateway Management</h3>
+        <Button
+          onClick={() => setIsAddingGateway(true)}
+          className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+        >
+          <ApperIcon name="Plus" size={16} className="mr-2" />
+          Add Gateway
+        </Button>
+      </div>
+
+      {/* Add/Edit Gateway Form */}
+      {isAddingGateway && (
+        <div className="bg-gray-50 rounded-lg p-6 mb-6">
+          <h4 className="text-lg font-medium text-gray-900 mb-4">
+            {editingGateway ? 'Edit Payment Gateway' : 'Add New Payment Gateway'}
+          </h4>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Input
+                  label="Gateway Name *"
+                  name="name"
+                  value={gatewayForm.name}
+                  onChange={handleInputChange}
+                  placeholder="e.g., JazzCash, EasyPaisa, Bank Transfer"
+                  required
+                />
+              </div>
+              <div>
+                <Input
+                  label="Account Name *"
+                  name="accountName"
+                  value={gatewayForm.accountName}
+                  onChange={handleInputChange}
+                  placeholder="Account holder name"
+                  required
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Input
+                  label="Account Number *"
+                  name="accountNumber"
+                  value={gatewayForm.accountNumber}
+                  onChange={handleInputChange}
+                  placeholder="Account number or wallet ID"
+                  required
+                />
+              </div>
+              <div>
+                <Input
+                  label="Transaction Fee (%)"
+                  name="fee"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  value={gatewayForm.fee}
+                  onChange={handleInputChange}
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Payment Instructions
+              </label>
+              <textarea
+                name="instructions"
+                value={gatewayForm.instructions}
+                onChange={handleInputChange}
+                rows="3"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                placeholder="Instructions for customers on how to make payment..."
+              />
+            </div>
+
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="enabled"
+                name="enabled"
+                checked={gatewayForm.enabled}
+                onChange={handleInputChange}
+                className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+              />
+              <label htmlFor="enabled" className="ml-2 text-sm text-gray-700">
+                Enable this gateway for customers
+              </label>
+            </div>
+
+            <div className="flex space-x-3 pt-4">
+              <Button
+                type="submit"
+                disabled={processing}
+                className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+              >
+                {processing ? (
+                  <>
+                    <ApperIcon name="Loader" size={16} className="mr-2 animate-spin" />
+                    {editingGateway ? 'Updating...' : 'Adding...'}
+                  </>
+                ) : (
+                  <>
+                    <ApperIcon name="Save" size={16} className="mr-2" />
+                    {editingGateway ? 'Update Gateway' : 'Add Gateway'}
+                  </>
+                )}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={resetForm}
+                disabled={processing}
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Payment Gateways List */}
+      <div className="space-y-4">
+        {paymentMethods.map((gateway) => (
+          <div key={gateway.Id} className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center space-x-3 mb-2">
+                  <h4 className="font-medium text-gray-900">{gateway.name}</h4>
+                  <button
+                    onClick={() => handleToggleEnabled(gateway.Id, gateway.enabled)}
+                    disabled={processing}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+                      gateway.enabled ? 'bg-primary' : 'bg-gray-200'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        gateway.enabled ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    gateway.enabled ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                  }`}>
+                    {gateway.enabled ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-500">Account Name:</span>
+                    <p className="font-medium">{gateway.accountName || 'Not set'}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Account Number:</span>
+                    <p className="font-medium font-mono">{gateway.accountNumber || 'Not set'}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Fee:</span>
+                    <p className="font-medium">
+                      {gateway.fee > 0 ? `${(gateway.fee * 100).toFixed(1)}%` : 'Free'}
+                    </p>
+                  </div>
+                </div>
+
+                {gateway.instructions && (
+                  <div className="mt-3">
+                    <span className="text-gray-500 text-sm">Instructions:</span>
+                    <p className="text-sm text-gray-700 mt-1">{gateway.instructions}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex space-x-2 ml-4">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => handleEdit(gateway)}
+                  disabled={processing}
+                >
+                  <ApperIcon name="Edit" size={14} />
+                </Button>
+                <Button
+                  size="sm"
+                  className="bg-red-500 hover:bg-red-600"
+                  onClick={() => handleDelete(gateway.Id)}
+                  disabled={processing}
+                >
+                  <ApperIcon name="Trash2" size={14} />
+                </Button>
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {paymentMethods.length === 0 && (
+          <div className="text-center py-12 text-gray-500">
+            <ApperIcon name="CreditCard" size={48} className="mx-auto mb-4 text-gray-300" />
+            <p className="text-lg font-medium mb-2">No Payment Gateways</p>
+            <p className="text-sm">Add your first payment gateway to start accepting payments</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 const PaymentManagement = () => {
   const [transactions, setTransactions] = useState([]);
   const [walletTransactions, setWalletTransactions] = useState([]);
@@ -472,49 +795,12 @@ const tabs = [
           </div>
         )}
 
-        {activeTab === 'methods' && (
-          <div className="card p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Payment Methods Configuration</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {paymentMethods.map((method) => (
-                <div key={method.id} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-medium text-gray-900">{method.name}</h4>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      method.enabled ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {method.enabled ? 'Enabled' : 'Disabled'}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-600 mb-3">{method.description}</p>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-500">
-                      Fee: {method.fee ? `${(method.fee * 100).toFixed(1)}%` : 'Free'}
-                    </span>
-<Button
-                      size="sm"
-                      variant={method.enabled ? 'secondary' : 'primary'}
-                      onClick={async () => {
-                        try {
-                          if (method.enabled) {
-                            await paymentService.disableGateway(method.id);
-                            toast.success(`${method.name} disabled`);
-                          } else {
-                            await paymentService.enableGateway(method.id);
-                            toast.success(`${method.name} enabled`);
-                          }
-                          loadPaymentData();
-                        } catch (error) {
-                          toast.error(`Failed to ${method.enabled ? 'disable' : 'enable'} ${method.name}`);
-                        }
-                      }}
-                    >
-                      {method.enabled ? 'Disable' : 'Enable'}
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
+{activeTab === 'methods' && (
+          <div className="space-y-6">
+            <PaymentGatewayManagement 
+              paymentMethods={paymentMethods}
+              onGatewayUpdate={loadPaymentData}
+            />
           </div>
         )}
 

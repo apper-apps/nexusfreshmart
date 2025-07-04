@@ -1,5 +1,5 @@
 class PaymentService {
-  constructor() {
+constructor() {
     this.transactions = [];
     this.walletBalance = 25000; // Initial wallet balance
     this.walletTransactions = [];
@@ -15,6 +15,45 @@ class PaymentService {
       '3': 'amex',
       '6': 'discover'
     };
+    
+    // Initialize payment gateways storage
+    this.paymentGateways = [
+      {
+        Id: 1,
+        id: 'cash',
+        name: 'Cash on Delivery',
+        enabled: true,
+        fee: 0,
+        description: 'Pay when you receive your order',
+        accountName: '',
+        accountNumber: '',
+        instructions: ''
+      },
+      {
+        Id: 2,
+        id: 'jazzcash',
+        name: 'JazzCash',
+        enabled: true,
+        fee: 0.01,
+        minimumFee: 5,
+        description: 'Mobile wallet payment',
+        accountName: 'FreshMart Store',
+        accountNumber: '03001234567',
+        instructions: 'Send money to the above JazzCash number and upload payment screenshot.'
+      },
+      {
+        Id: 3,
+        id: 'easypaisa',
+        name: 'EasyPaisa',
+        enabled: true,
+        fee: 0.01,
+        minimumFee: 5,
+        description: 'Mobile wallet payment',
+        accountName: 'FreshMart Store',
+        accountNumber: '03009876543',
+        instructions: 'Send money to the above EasyPaisa number and upload payment screenshot.'
+      }
+    ];
   }
 
   // Card Payment Processing
@@ -200,53 +239,9 @@ transaction.verificationData = verificationData;
     
     return transaction;
   }
-  getAvailablePaymentMethods() {
-    return [
-      {
-        id: 'cash',
-        name: 'Cash on Delivery',
-        enabled: true,
-        fee: 0,
-        description: 'Pay when you receive your order'
-      },
-      {
-        id: 'card',
-        name: 'Credit/Debit Card',
-        enabled: true,
-        fee: 0,
-        description: 'Visa, Mastercard, American Express'
-      },
-      {
-        id: 'jazzcash',
-        name: 'JazzCash',
-        enabled: true,
-        fee: 0.01, // 1%
-        minimumFee: 5,
-        description: 'Mobile wallet payment'
-      },
-      {
-        id: 'easypaisa',
-        name: 'EasyPaisa',
-        enabled: true,
-        fee: 0.01, // 1%
-        minimumFee: 5,
-        description: 'Mobile wallet payment'
-      },
-      {
-        id: 'bank',
-        name: 'Bank Transfer',
-        enabled: true,
-        fee: 20,
-        description: 'Direct bank transfer'
-      },
-      {
-        id: 'sadapay',
-        name: 'SadaPay',
-        enabled: true,
-        fee: 0,
-        description: 'Digital wallet'
-      }
-    ];
+async getAvailablePaymentMethods() {
+    await this.delay(200);
+    return [...this.paymentGateways];
   }
 
   // Transaction History
@@ -507,33 +502,100 @@ transaction.verificationData = verificationData;
     return { success: true, gatewayId, config };
   }
 
-  async getGatewayStatus(gatewayId) {
+async getGatewayStatus(gatewayId) {
     await this.delay(200);
-    const methods = this.getAvailablePaymentMethods();
-    const method = methods.find(m => m.id === gatewayId);
-    return method ? { enabled: method.enabled, status: 'active' } : { enabled: false, status: 'inactive' };
+    const gateway = this.paymentGateways.find(g => g.Id === gatewayId);
+    return gateway ? { enabled: gateway.enabled, status: 'active' } : { enabled: false, status: 'inactive' };
   }
 
   async enableGateway(gatewayId) {
     await this.delay(300);
-    // Update the payment method status
-    const methods = this.getAvailablePaymentMethods();
-    const methodIndex = methods.findIndex(m => m.id === gatewayId);
-    if (methodIndex !== -1) {
-      methods[methodIndex].enabled = true;
+    const gateway = this.paymentGateways.find(g => g.Id === gatewayId);
+    if (!gateway) {
+      throw new Error('Payment gateway not found');
     }
+    gateway.enabled = true;
     return { success: true, gatewayId, enabled: true };
   }
 
   async disableGateway(gatewayId) {
     await this.delay(300);
-    // Update the payment method status
-    const methods = this.getAvailablePaymentMethods();
-    const methodIndex = methods.findIndex(m => m.id === gatewayId);
-    if (methodIndex !== -1) {
-      methods[methodIndex].enabled = false;
+    const gateway = this.paymentGateways.find(g => g.Id === gatewayId);
+    if (!gateway) {
+      throw new Error('Payment gateway not found');
     }
+    gateway.enabled = false;
     return { success: true, gatewayId, enabled: false };
+  }
+
+  // Gateway CRUD Operations
+  async createGateway(gatewayData) {
+    await this.delay(500);
+    
+    if (!gatewayData.name || !gatewayData.accountName || !gatewayData.accountNumber) {
+      throw new Error('Name, account name, and account number are required');
+    }
+
+    const gateway = {
+      Id: this.getNextGatewayId(),
+      id: gatewayData.name.toLowerCase().replace(/\s+/g, '_'),
+      name: gatewayData.name,
+      accountName: gatewayData.accountName,
+      accountNumber: gatewayData.accountNumber,
+      instructions: gatewayData.instructions || '',
+      fee: parseFloat(gatewayData.fee) / 100 || 0, // Convert percentage to decimal
+      enabled: gatewayData.enabled !== false,
+      description: `${gatewayData.name} payment gateway`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    this.paymentGateways.push(gateway);
+    return { ...gateway };
+  }
+
+  async updateGateway(gatewayId, gatewayData) {
+    await this.delay(400);
+    
+    const gateway = this.paymentGateways.find(g => g.Id === gatewayId);
+    if (!gateway) {
+      throw new Error('Payment gateway not found');
+    }
+
+    Object.assign(gateway, {
+      name: gatewayData.name || gateway.name,
+      accountName: gatewayData.accountName || gateway.accountName,
+      accountNumber: gatewayData.accountNumber || gateway.accountNumber,
+      instructions: gatewayData.instructions || gateway.instructions,
+      fee: gatewayData.fee !== undefined ? parseFloat(gatewayData.fee) / 100 : gateway.fee,
+      enabled: gatewayData.enabled !== undefined ? gatewayData.enabled : gateway.enabled,
+      updatedAt: new Date().toISOString()
+    });
+
+    return { ...gateway };
+  }
+
+  async deleteGateway(gatewayId) {
+    await this.delay(300);
+    
+    const index = this.paymentGateways.findIndex(g => g.Id === gatewayId);
+    if (index === -1) {
+      throw new Error('Payment gateway not found');
+    }
+
+    // Prevent deletion of cash on delivery
+    if (this.paymentGateways[index].id === 'cash') {
+      throw new Error('Cannot delete cash on delivery gateway');
+    }
+
+    this.paymentGateways.splice(index, 1);
+    return { success: true };
+  }
+
+  getNextGatewayId() {
+    const maxId = this.paymentGateways.reduce((max, gateway) => 
+      gateway.Id > max ? gateway.Id : max, 0);
+    return maxId + 1;
   }
 
 delay(ms = 300) {
