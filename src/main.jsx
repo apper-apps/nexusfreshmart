@@ -2,8 +2,7 @@ import './index.css';
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "@/App";
-import Error from "@/components/ui/Error";
-
+import ErrorComponent from "@/components/ui/Error";
 // Apper SDK integration
 class ApperSDK {
   constructor() {
@@ -192,13 +191,13 @@ async function initializeApp() {
           <App />
         </ErrorBoundary>
       </React.StrictMode>
-    );
+);
     
     // Dispatch ready event after successful initialization
-    window.dispatchEvent(new CustomEvent('reactReady'));
+    const readyEvent = new window.CustomEvent('reactReady');
+    window.dispatchEvent(readyEvent);
   } catch (error) {
     console.error('Failed to initialize app:', error);
-    
     // Render app without SDK if initialization fails
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(
