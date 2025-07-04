@@ -87,6 +87,51 @@ async assignDeliveryPersonnel(orderId, deliveryPersonId) {
     return this.orders.filter(order => order.deliveryStatus === deliveryStatus);
   }
 
+// Payment Integration Methods
+  async updatePaymentStatus(orderId, paymentStatus, paymentResult = null) {
+    await this.delay();
+    const order = await this.getById(orderId);
+    const updatedOrder = {
+      ...order,
+      paymentStatus,
+      paymentResult,
+      ...(paymentStatus === 'paid' && { paidAt: new Date().toISOString() })
+    };
+    return await this.update(orderId, updatedOrder);
+  }
+
+  async getOrdersByPaymentStatus(paymentStatus) {
+    await this.delay();
+    return this.orders.filter(order => order.paymentStatus === paymentStatus);
+  }
+
+  async getOrdersByPaymentMethod(paymentMethod) {
+    await this.delay();
+    return this.orders.filter(order => order.paymentMethod === paymentMethod);
+  }
+
+  async processRefund(orderId, refundAmount, reason) {
+    await this.delay();
+    const order = await this.getById(orderId);
+    const refund = {
+      id: this.getNextId(),
+      orderId,
+      amount: refundAmount,
+      reason,
+      status: 'pending',
+      requestedAt: new Date().toISOString()
+    };
+    
+    const updatedOrder = {
+      ...order,
+      refundRequested: true,
+      refund,
+      status: 'refund_requested'
+    };
+    
+    return await this.update(orderId, updatedOrder);
+  }
+
   delay() {
     return new Promise(resolve => setTimeout(resolve, 400));
   }

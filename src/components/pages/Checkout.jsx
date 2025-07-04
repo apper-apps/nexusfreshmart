@@ -7,13 +7,16 @@ import Input from '@/components/atoms/Input';
 import PaymentMethod from '@/components/molecules/PaymentMethod';
 import { useCart } from '@/hooks/useCart';
 import { orderService } from '@/services/api/orderService';
+import { paymentService } from '@/services/api/paymentService';
 
 const Checkout = () => {
   const navigate = useNavigate();
   const { cart, getCartTotal, clearCart } = useCart();
-  const [loading, setLoading] = useState(false);
+const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('');
   const [paymentProof, setPaymentProof] = useState(null);
+  const [cardData, setCardData] = useState({});
+  const [processingPayment, setProcessingPayment] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -65,7 +68,7 @@ const Checkout = () => {
     return true;
   };
 
-  const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!validateForm()) return;
@@ -77,6 +80,31 @@ const Checkout = () => {
 
     try {
       setLoading(true);
+      setProcessingPayment(true);
+      
+      let paymentResult = null;
+      
+      // Process payment if not cash on delivery
+      if (paymentMethod !== 'cash') {
+        try {
+          if (paymentMethod === 'card') {
+            if (!cardData.cardNumber || !cardData.expiryDate || !cardData.cvv || !cardData.cardholderName) {
+              toast.error('Please fill in all card details');
+              return;
+            }
+            paymentResult = await paymentService.processCardPayment(cardData, total, `ORDER-${Date.now()}`);
+          } else if (['jazzcash', 'easypaisa', 'sadapay'].includes(paymentMethod)) {
+            paymentResult = await paymentService.processDigitalWalletPayment(paymentMethod, total, `ORDER-${Date.now()}`, formData.phone);
+          } else if (paymentMethod === 'bank') {
+            paymentResult = await paymentService.processBankTransfer(total, `ORDER-${Date.now()}`, {});
+          }
+          
+          toast.success('Payment processed successfully!');
+        } catch (paymentError) {
+          toast.error(paymentError.message);
+          return;
+        }
+      }
       
       const orderData = {
         items: cart.map(item => ({
@@ -89,6 +117,7 @@ const Checkout = () => {
         total: total,
         deliveryCharge: deliveryCharge,
         paymentMethod: paymentMethod,
+        paymentResult: paymentResult,
         paymentProof: paymentProof ? {
           fileName: paymentProof.name,
           fileSize: paymentProof.size,
@@ -103,7 +132,7 @@ const Checkout = () => {
           postalCode: formData.postalCode,
           instructions: formData.instructions
         },
-        status: 'pending'
+        status: paymentMethod === 'cash' ? 'pending' : 'confirmed'
       };
 
       const order = await orderService.create(orderData);
@@ -118,6 +147,7 @@ const Checkout = () => {
       toast.error('Failed to place order. Please try again.');
     } finally {
       setLoading(false);
+      setProcessingPayment(false);
     }
   };
 
@@ -208,12 +238,13 @@ const Checkout = () => {
           </div>
 
           {/* Payment Method */}
-          <div className="card p-6">
+<div className="card p-6">
             <PaymentMethod
               selectedMethod={paymentMethod}
               onMethodChange={setPaymentMethod}
+              showCardForm={paymentMethod === 'card'}
+              onCardDataChange={setCardData}
             />
-            
             {/* Payment Proof Upload */}
             {['jazzcash', 'easypaisa', 'bank'].includes(paymentMethod) && (
               <div className="mt-6 p-4 bg-yellow-50 rounded-lg">
@@ -284,15 +315,15 @@ const Checkout = () => {
           </div>
 
           {/* Place Order Button */}
-          <Button
+<Button
             variant="primary"
             size="large"
             icon="CreditCard"
             onClick={handleSubmit}
-            loading={loading}
+            loading={loading || processingPayment}
             className="w-full"
           >
-            Place Order
+            {processingPayment ? 'Processing Payment...' : 'Place Order'}
           </Button>
           
           <p className="text-xs text-gray-500 mt-3 text-center">

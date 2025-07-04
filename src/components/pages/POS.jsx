@@ -9,6 +9,7 @@ import Loading from '@/components/ui/Loading';
 import Error from '@/components/ui/Error';
 import { productService } from '@/services/api/productService';
 import { posService } from '@/services/api/posService';
+import { paymentService } from '@/services/api/paymentService';
 const POS = () => {
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
@@ -157,6 +158,32 @@ const processPayment = async () => {
     try {
       setProcessingPayment(true);
 
+      // Process payment based on payment type
+      let paymentResult = null;
+      
+      if (paymentType !== 'cash') {
+        try {
+          if (paymentType === 'card') {
+            // For POS, we'll simulate card payment without form
+            const mockCardData = {
+              cardNumber: '4*** **** **** ****',
+              expiryDate: '12/25',
+              cvv: '***',
+              cardholderName: 'Customer'
+            };
+            paymentResult = await paymentService.processCardPayment(mockCardData, total, `POS-${Date.now()}`);
+          } else if (['jazzcash', 'easypaisa', 'sadapay'].includes(paymentType)) {
+            paymentResult = await paymentService.processDigitalWalletPayment(paymentType, total, `POS-${Date.now()}`, '03001234567');
+          } else if (paymentType === 'bank') {
+            paymentResult = await paymentService.processBankTransfer(total, `POS-${Date.now()}`, {});
+          }
+        } catch (paymentError) {
+          toast.error(paymentError.message);
+          setProcessingPayment(false);
+          return;
+        }
+      }
+
       const transactionData = {
         items: cart.map(item => ({
           productId: item.id,
@@ -168,7 +195,8 @@ const processPayment = async () => {
         paymentType,
         cashierId: 'admin', // In real app, this would be the logged-in user
         customerPaid: paymentType === 'cash' ? paid : total,
-        change: paymentType === 'cash' ? getChange() : 0
+        change: paymentType === 'cash' ? getChange() : 0,
+        paymentResult: paymentResult || null
       };
 
       await posService.createTransaction(transactionData);
@@ -187,7 +215,11 @@ const processPayment = async () => {
       setCustomerPaid('');
       await loadProducts();
       
-      toast.success('Payment processed successfully!');
+      if (paymentType === 'cash') {
+        toast.success('Payment processed successfully!');
+      } else {
+        toast.success(`${paymentType.toUpperCase()} payment processed successfully!`);
+      }
       
       // Handle receipt printing based on configuration
       if (receiptConfig.autoPrint) {
@@ -537,14 +569,17 @@ const generateReceiptHTML = (transaction) => {
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Payment Method
                       </label>
-                      <select
+<select
                         value={paymentType}
                         onChange={(e) => setPaymentType(e.target.value)}
                         className="input-field"
                       >
                         <option value="cash">Cash</option>
-                        <option value="card">Card</option>
-                        <option value="digital">Digital Payment</option>
+                        <option value="card">Credit/Debit Card</option>
+                        <option value="jazzcash">JazzCash</option>
+                        <option value="easypaisa">EasyPaisa</option>
+                        <option value="sadapay">SadaPay</option>
+                        <option value="bank">Bank Transfer</option>
                       </select>
                     </div>
 
