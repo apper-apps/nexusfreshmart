@@ -14,21 +14,26 @@ const ProductManagement = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [editingProduct, setEditingProduct] = useState(null);
+const [editingProduct, setEditingProduct] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
+    description: '',
+    brand: '',
+    sku: '',
     category: 'Groceries',
     price: '',
     previousPrice: '',
     unit: 'kg',
     stock: '',
+    minStock: '',
     imageUrl: '',
+    barcode: '',
     isActive: true
   });
 
-  const categories = ['Groceries', 'Meat', 'Fruits', 'Vegetables'];
-  const units = ['kg', 'g', 'piece', 'pack', 'liter', 'ml'];
+  const categories = ['Groceries', 'Meat', 'Fruits', 'Vegetables', 'Dairy', 'Beverages', 'Snacks'];
+  const units = ['kg', 'g', 'piece', 'pack', 'liter', 'ml', 'dozen', 'box'];
 
   useEffect(() => {
     loadProducts();
@@ -55,11 +60,32 @@ const ProductManagement = () => {
     }));
   };
 
-  const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // Enhanced validation
     if (!formData.name || !formData.price || !formData.stock) {
-      toast.error('Please fill in all required fields');
+      toast.error('Please fill in all required fields (Name, Price, Stock)');
+      return;
+    }
+
+    if (parseFloat(formData.price) <= 0) {
+      toast.error('Price must be greater than 0');
+      return;
+    }
+
+    if (parseInt(formData.stock) < 0) {
+      toast.error('Stock cannot be negative');
+      return;
+    }
+
+    if (formData.previousPrice && parseFloat(formData.previousPrice) <= 0) {
+      toast.error('Previous price must be greater than 0');
+      return;
+    }
+
+    if (formData.minStock && parseInt(formData.minStock) < 0) {
+      toast.error('Minimum stock cannot be negative');
       return;
     }
 
@@ -69,7 +95,9 @@ const ProductManagement = () => {
         price: parseFloat(formData.price),
         previousPrice: formData.previousPrice ? parseFloat(formData.previousPrice) : null,
         stock: parseInt(formData.stock),
-        imageUrl: formData.imageUrl || 'https://via.placeholder.com/300x200?text=Product+Image'
+        minStock: formData.minStock ? parseInt(formData.minStock) : 10,
+        imageUrl: formData.imageUrl || 'https://via.placeholder.com/300x200?text=Product+Image',
+        barcode: formData.barcode || `BC${Date.now()}${Math.random().toString(36).substr(2, 9)}`
       };
 
       if (editingProduct) {
@@ -83,20 +111,25 @@ const ProductManagement = () => {
       await loadProducts();
       resetForm();
     } catch (err) {
-      toast.error(err.message);
+      toast.error(err.message || 'Failed to save product');
     }
   };
 
-  const handleEdit = (product) => {
+const handleEdit = (product) => {
     setEditingProduct(product);
     setFormData({
       name: product.name,
+      description: product.description || '',
+      brand: product.brand || '',
+      sku: product.sku || '',
       category: product.category,
       price: product.price.toString(),
       previousPrice: product.previousPrice?.toString() || '',
       unit: product.unit,
       stock: product.stock.toString(),
+      minStock: product.minStock?.toString() || '',
       imageUrl: product.imageUrl,
+      barcode: product.barcode || '',
       isActive: product.isActive
     });
     setShowAddForm(true);
@@ -110,19 +143,24 @@ const ProductManagement = () => {
       await loadProducts();
       toast.success('Product deleted successfully!');
     } catch (err) {
-      toast.error(err.message);
+      toast.error(err.message || 'Failed to delete product');
     }
   };
 
   const resetForm = () => {
     setFormData({
       name: '',
+      description: '',
+      brand: '',
+      sku: '',
       category: 'Groceries',
       price: '',
       previousPrice: '',
       unit: 'kg',
       stock: '',
+      minStock: '',
       imageUrl: '',
+      barcode: '',
       isActive: true
     });
     setEditingProduct(null);
@@ -209,100 +247,178 @@ const [showBulkPriceModal, setShowBulkPriceModal] = useState(false);
             {editingProduct ? 'Edit Product' : 'Add New Product'}
           </h2>
           
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <Input
-                label="Product Name"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                required
-                icon="Package"
-              />
-              
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Category <span className="text-red-500">*</span>
-                </label>
-                <select
-                  name="category"
-                  value={formData.category}
+<form onSubmit={handleSubmit} className="space-y-6">
+            {/* Basic Information */}
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Basic Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <Input
+                  label="Product Name"
+                  name="name"
+                  value={formData.name}
                   onChange={handleInputChange}
-                  className="input-field"
-                >
-                  {categories.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
-              </div>
-              
-              <Input
-                label="Price (Rs.)"
-                name="price"
-                type="number"
-                step="0.01"
-                value={formData.price}
-                onChange={handleInputChange}
-                required
-                icon="DollarSign"
-              />
-              
-              <Input
-                label="Previous Price (Rs.)"
-                name="previousPrice"
-                type="number"
-                step="0.01"
-                value={formData.previousPrice}
-                onChange={handleInputChange}
-                icon="TrendingDown"
-              />
-              
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Unit <span className="text-red-500">*</span>
-                </label>
-                <select
-                  name="unit"
-                  value={formData.unit}
-                  onChange={handleInputChange}
-                  className="input-field"
-                >
-                  {units.map(unit => (
-                    <option key={unit} value={unit}>{unit}</option>
-                  ))}
-                </select>
-              </div>
-              
-              <Input
-                label="Stock Quantity"
-                name="stock"
-                type="number"
-                value={formData.stock}
-                onChange={handleInputChange}
-                required
-                icon="Archive"
-              />
-              
-              <Input
-                label="Image URL"
-                name="imageUrl"
-                value={formData.imageUrl}
-                onChange={handleInputChange}
-                icon="Image"
-                className="md:col-span-2"
-              />
-              
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  name="isActive"
-                  checked={formData.isActive}
-                  onChange={handleInputChange}
-                  className="rounded border-gray-300 text-primary focus:ring-primary"
+                  required
+                  icon="Package"
+                  placeholder="Enter product name"
                 />
-                <label className="text-sm font-medium text-gray-700">
-                  Active Product
-                </label>
+                
+                <Input
+                  label="Description"
+                  name="description"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  icon="FileText"
+                  placeholder="Brief product description"
+                />
+                
+                <Input
+                  label="Brand"
+                  name="brand"
+                  value={formData.brand}
+                  onChange={handleInputChange}
+                  icon="Award"
+                  placeholder="Product brand"
+                />
+                
+                <Input
+                  label="SKU"
+                  name="sku"
+                  value={formData.sku}
+                  onChange={handleInputChange}
+                  icon="Hash"
+                  placeholder="Stock Keeping Unit"
+                />
+                
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Category <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="category"
+                    value={formData.category}
+                    onChange={handleInputChange}
+                    className="input-field"
+                    required
+                  >
+                    {categories.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Unit <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="unit"
+                    value={formData.unit}
+                    onChange={handleInputChange}
+                    className="input-field"
+                    required
+                  >
+                    {units.map(unit => (
+                      <option key={unit} value={unit}>{unit}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Pricing Information */}
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Pricing Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="Current Price (Rs.)"
+                  name="price"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.price}
+                  onChange={handleInputChange}
+                  required
+                  icon="DollarSign"
+                  placeholder="0.00"
+                />
+                
+                <Input
+                  label="Previous Price (Rs.)"
+                  name="previousPrice"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.previousPrice}
+                  onChange={handleInputChange}
+                  icon="TrendingDown"
+                  placeholder="0.00 (optional)"
+                />
+              </div>
+            </div>
+
+            {/* Inventory Information */}
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Inventory Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Input
+                  label="Stock Quantity"
+                  name="stock"
+                  type="number"
+                  min="0"
+                  value={formData.stock}
+                  onChange={handleInputChange}
+                  required
+                  icon="Archive"
+                  placeholder="0"
+                />
+                
+                <Input
+                  label="Minimum Stock Alert"
+                  name="minStock"
+                  type="number"
+                  min="0"
+                  value={formData.minStock}
+                  onChange={handleInputChange}
+                  icon="AlertTriangle"
+                  placeholder="10"
+                />
+                
+                <Input
+                  label="Barcode"
+                  name="barcode"
+                  value={formData.barcode}
+                  onChange={handleInputChange}
+                  icon="Scan"
+                  placeholder="Auto-generated if empty"
+                />
+              </div>
+            </div>
+
+            {/* Media & Settings */}
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Media & Settings</h3>
+              <div className="grid grid-cols-1 gap-4">
+                <Input
+                  label="Image URL"
+                  name="imageUrl"
+                  value={formData.imageUrl}
+                  onChange={handleInputChange}
+                  icon="Image"
+                  placeholder="https://example.com/image.jpg"
+                />
+                
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    name="isActive"
+                    checked={formData.isActive}
+                    onChange={handleInputChange}
+                    className="rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                  <label className="text-sm font-medium text-gray-700">
+                    Active Product (visible to customers)
+                  </label>
+                </div>
               </div>
             </div>
             

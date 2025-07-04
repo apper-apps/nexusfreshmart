@@ -19,35 +19,75 @@ class ProductService {
     return { ...product };
   }
 
-  async create(productData) {
+async create(productData) {
     await this.delay();
+    
+    // Validate required fields
+    if (!productData.name || !productData.price || productData.stock === undefined) {
+      throw new Error('Name, price, and stock are required fields');
+    }
+
+    // Validate data types and constraints
+    if (productData.price <= 0) {
+      throw new Error('Price must be greater than 0');
+    }
+
+    if (productData.stock < 0) {
+      throw new Error('Stock cannot be negative');
+    }
+
     const newProduct = {
       id: this.getNextId(),
-      ...productData
+      ...productData,
+      price: parseFloat(productData.price),
+      stock: parseInt(productData.stock),
+      minStock: productData.minStock ? parseInt(productData.minStock) : 10,
+      isActive: productData.isActive !== undefined ? productData.isActive : true
     };
+    
     this.products.push(newProduct);
     return { ...newProduct };
   }
 
   async update(id, productData) {
     await this.delay();
-    const index = this.products.findIndex(p => p.id === id);
+    
+    const index = this.products.findIndex(p => p.id === parseInt(id));
     if (index === -1) {
       throw new Error('Product not found');
     }
-    this.products[index] = { ...this.products[index], ...productData };
-    return { ...this.products[index] };
+
+    // Validate if provided
+    if (productData.price !== undefined && productData.price <= 0) {
+      throw new Error('Price must be greater than 0');
+    }
+
+    if (productData.stock !== undefined && productData.stock < 0) {
+      throw new Error('Stock cannot be negative');
+    }
+
+    // Preserve existing ID
+    const updatedProduct = { 
+      ...this.products[index], 
+      ...productData, 
+      id: this.products[index].id 
+    };
+    
+    this.products[index] = updatedProduct;
+    return { ...updatedProduct };
   }
 
   async delete(id) {
     await this.delay();
-    const index = this.products.findIndex(p => p.id === id);
+    
+    const index = this.products.findIndex(p => p.id === parseInt(id));
     if (index === -1) {
       throw new Error('Product not found');
     }
+    
     this.products.splice(index, 1);
     return true;
-}
+  }
 
   async getByBarcode(barcode) {
     await this.delay();

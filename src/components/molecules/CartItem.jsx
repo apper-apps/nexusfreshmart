@@ -1,4 +1,5 @@
 import React from 'react';
+import { toast } from 'react-toastify';
 import ApperIcon from '@/components/ApperIcon';
 import Button from '@/components/atoms/Button';
 import { useCart } from '@/hooks/useCart';
@@ -9,9 +10,19 @@ const CartItem = ({ item }) => {
   const handleQuantityChange = (newQuantity) => {
     if (newQuantity === 0) {
       removeFromCart(item.id);
+      toast.success(`${item.name} removed from cart`);
+    } else if (newQuantity > item.stock) {
+      toast.warning(`Only ${item.stock} ${item.unit} available in stock`);
+      return;
     } else {
       updateQuantity(item.id, newQuantity);
+      toast.info(`${item.name} quantity updated to ${newQuantity}`);
     }
+  };
+
+  const handleRemove = () => {
+    removeFromCart(item.id);
+    toast.success(`${item.name} removed from cart`);
   };
 
   return (
@@ -25,6 +36,12 @@ const CartItem = ({ item }) => {
       <div className="flex-1">
         <h4 className="font-medium text-gray-900">{item.name}</h4>
         <p className="text-sm text-gray-500">Rs. {item.price.toLocaleString()}/{item.unit}</p>
+        {item.stock <= 10 && (
+          <p className="text-xs text-orange-600 flex items-center mt-1">
+            <ApperIcon name="AlertTriangle" size={12} className="mr-1" />
+            Only {item.stock} left in stock
+          </p>
+        )}
       </div>
       
       <div className="flex items-center space-x-2">
@@ -34,6 +51,7 @@ const CartItem = ({ item }) => {
           icon="Minus"
           onClick={() => handleQuantityChange(item.quantity - 1)}
           disabled={item.quantity <= 1}
+          className="hover:bg-red-50 hover:text-red-600"
         />
         
         <span className="w-8 text-center font-medium">{item.quantity}</span>
@@ -44,6 +62,7 @@ const CartItem = ({ item }) => {
           icon="Plus"
           onClick={() => handleQuantityChange(item.quantity + 1)}
           disabled={item.quantity >= item.stock}
+          className="hover:bg-green-50 hover:text-green-600"
         />
       </div>
       
@@ -56,8 +75,8 @@ const CartItem = ({ item }) => {
           variant="ghost"
           size="small"
           icon="Trash2"
-          onClick={() => removeFromCart(item.id)}
-          className="text-red-500 hover:bg-red-50"
+          onClick={handleRemove}
+          className="text-red-500 hover:bg-red-50 mt-1"
         />
       </div>
     </div>
