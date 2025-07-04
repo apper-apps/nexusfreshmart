@@ -11,8 +11,9 @@ import OrderTracking from '@/components/pages/OrderTracking';
 import AdminDashboard from '@/components/pages/AdminDashboard';
 import ProductManagement from '@/components/pages/ProductManagement';
 import POS from '@/components/pages/POS';
+import DeliveryTracking from '@/components/pages/DeliveryTracking';
+import Analytics from '@/components/pages/Analytics';
 import Account from '@/components/pages/Account';
-
 function App() {
   return (
     <Router>
@@ -27,9 +28,11 @@ function App() {
             <Route path="orders" element={<Orders />} />
             <Route path="orders/:orderId" element={<OrderTracking />} />
             <Route path="account" element={<Account />} />
-            <Route path="admin" element={<AdminDashboard />} />
+<Route path="admin" element={<AdminDashboard />} />
             <Route path="admin/products" element={<ProductManagement />} />
             <Route path="admin/pos" element={<POS />} />
+            <Route path="admin/delivery-dashboard" element={<DeliveryTracking />} />
+            <Route path="admin/analytics" element={<Analytics />} />
           </Route>
         </Routes>
         <ToastContainer
