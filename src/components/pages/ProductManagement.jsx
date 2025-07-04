@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { toast } from 'react-toastify';
-import ApperIcon from '@/components/ApperIcon';
-import Button from '@/components/atoms/Button';
-import Input from '@/components/atoms/Input';
-import Badge from '@/components/atoms/Badge';
-import Loading from '@/components/ui/Loading';
-import Error from '@/components/ui/Error';
-import Empty from '@/components/ui/Empty';
-import { productService } from '@/services/api/productService';
+import React, { useEffect, useState } from "react";
+import { toast } from "react-toastify";
+import ApperIcon from "@/components/ApperIcon";
+import Badge from "@/components/atoms/Badge";
+import Button from "@/components/atoms/Button";
+import Input from "@/components/atoms/Input";
+import Empty from "@/components/ui/Empty";
+import Error from "@/components/ui/Error";
+import Loading from "@/components/ui/Loading";
+import Category from "@/components/pages/Category";
+import { productService } from "@/services/api/productService";
 
 const ProductManagement = () => {
   const [products, setProducts] = useState([]);
@@ -128,23 +129,38 @@ const ProductManagement = () => {
     setShowAddForm(false);
   };
 
-  const updatePrices = async () => {
+const [showBulkPriceModal, setShowBulkPriceModal] = useState(false);
+  const [bulkPriceData, setBulkPriceData] = useState({
+    strategy: 'percentage', // 'percentage', 'fixed', 'range'
+    value: '',
+    minPrice: '',
+    maxPrice: '',
+    category: 'all',
+    applyToLowStock: false,
+    stockThreshold: 10
+  });
+
+  const handleBulkPriceUpdate = async (updateData) => {
     try {
-      const updatedProducts = products.map(product => ({
-        ...product,
-        previousPrice: product.price,
-        price: product.price + (Math.random() - 0.5) * 20 // Random price change
-      }));
-
-      for (const product of updatedProducts) {
-        await productService.update(product.id, product);
-      }
-
+      const result = await productService.bulkUpdatePrices(updateData);
       await loadProducts();
-      toast.success('Prices updated successfully!');
+      toast.success(`Successfully updated ${result.updatedCount} products!`);
+      setShowBulkPriceModal(false);
     } catch (err) {
-      toast.error('Failed to update prices');
+      toast.error(err.message || 'Failed to update prices');
     }
+  };
+
+  const resetBulkPriceData = () => {
+    setBulkPriceData({
+      strategy: 'percentage',
+      value: '',
+      minPrice: '',
+      maxPrice: '',
+      category: 'all',
+      applyToLowStock: false,
+      stockThreshold: 10
+    });
   };
 
   if (loading) {
@@ -167,14 +183,14 @@ const ProductManagement = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Product Management</h1>
-        <div className="flex space-x-4">
+<div className="flex space-x-4">
           <Button
             variant="secondary"
-            icon="RefreshCw"
-            onClick={updatePrices}
+            icon="DollarSign"
+            onClick={() => setShowBulkPriceModal(true)}
             disabled={products.length === 0}
           >
-            Update Prices
+            Bulk Price Tools
           </Button>
           <Button
             variant="primary"
@@ -411,12 +427,377 @@ const ProductManagement = () => {
                   </tr>
                 ))}
               </tbody>
-            </table>
+</table>
           </div>
         </div>
       )}
+      {/* Bulk Price Update Modal */}
+      {showBulkPriceModal && (
+        <BulkPriceModal
+          products={products}
+          categories={categories}
+          onUpdate={handleBulkPriceUpdate}
+          onClose={() => {
+            setShowBulkPriceModal(false);
+            resetBulkPriceData();
+          }}
+        />
+      )}
+    </div>
+);
+};
+
+// Bulk Price Update Modal Component
+const BulkPriceModal = ({ products, categories, onUpdate, onClose }) => {
+  const [updateData, setUpdateData] = useState({
+    strategy: 'percentage',
+    value: '',
+    minPrice: '',
+    maxPrice: '',
+    category: 'all',
+    applyToLowStock: false,
+    stockThreshold: 10
+  });
+  const [preview, setPreview] = useState([]);
+  const [showPreview, setShowPreview] = useState(false);
+
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setUpdateData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+    setShowPreview(false);
+  };
+
+  const generatePreview = () => {
+    let filteredProducts = products;
+    
+    // Filter by category
+    if (updateData.category !== 'all') {
+      filteredProducts = filteredProducts.filter(p => p.category === updateData.category);
+    }
+    
+    // Filter by stock if enabled
+    if (updateData.applyToLowStock) {
+      filteredProducts = filteredProducts.filter(p => p.stock <= updateData.stockThreshold);
+    }
+
+    const previews = filteredProducts.map(product => {
+      let newPrice = product.price;
+      
+      switch (updateData.strategy) {
+        case 'percentage':
+          const percentage = parseFloat(updateData.value) || 0;
+          newPrice = product.price * (1 + percentage / 100);
+          break;
+        case 'fixed':
+          const fixedAmount = parseFloat(updateData.value) || 0;
+          newPrice = product.price + fixedAmount;
+          break;
+        case 'range':
+          // For range strategy, we'll set a proportional price within the range
+          const minPrice = parseFloat(updateData.minPrice) || 0;
+          const maxPrice = parseFloat(updateData.maxPrice) || product.price;
+          newPrice = Math.min(Math.max(product.price, minPrice), maxPrice);
+          break;
+      }
+
+      // Apply min/max constraints if specified
+      if (updateData.minPrice && newPrice < parseFloat(updateData.minPrice)) {
+        newPrice = parseFloat(updateData.minPrice);
+      }
+      if (updateData.maxPrice && newPrice > parseFloat(updateData.maxPrice)) {
+        newPrice = parseFloat(updateData.maxPrice);
+      }
+
+      return {
+        ...product,
+        newPrice: Math.round(newPrice * 100) / 100,
+        priceChange: Math.round((newPrice - product.price) * 100) / 100
+      };
+    });
+
+    setPreview(previews);
+    setShowPreview(true);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    
+    if (!updateData.value && updateData.strategy !== 'range') {
+      toast.error('Please enter a value for the price update');
+      return;
+    }
+
+    if (updateData.strategy === 'range' && (!updateData.minPrice || !updateData.maxPrice)) {
+      toast.error('Please enter both minimum and maximum prices');
+      return;
+    }
+
+    const confirmMessage = `Are you sure you want to update prices for ${preview.length} products?`;
+    if (confirm(confirmMessage)) {
+      onUpdate(updateData);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-semibold text-gray-900">Bulk Price Update Tools</h2>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <ApperIcon name="X" size={24} />
+            </button>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Update Strategy */}
+          <div className="space-y-3">
+            <label className="block text-sm font-medium text-gray-700">
+              Update Strategy
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="radio"
+                  name="strategy"
+                  value="percentage"
+                  checked={updateData.strategy === 'percentage'}
+                  onChange={handleInputChange}
+                  className="text-primary focus:ring-primary"
+                />
+                <label className="text-sm text-gray-700">Percentage Change</label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="radio"
+                  name="strategy"
+                  value="fixed"
+                  checked={updateData.strategy === 'fixed'}
+                  onChange={handleInputChange}
+                  className="text-primary focus:ring-primary"
+                />
+                <label className="text-sm text-gray-700">Fixed Amount</label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="radio"
+                  name="strategy"
+                  value="range"
+                  checked={updateData.strategy === 'range'}
+                  onChange={handleInputChange}
+                  className="text-primary focus:ring-primary"
+                />
+                <label className="text-sm text-gray-700">Price Range</label>
+              </div>
+            </div>
+          </div>
+
+          {/* Strategy-specific inputs */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {updateData.strategy === 'percentage' && (
+              <Input
+                label="Percentage Change (%)"
+                name="value"
+                type="number"
+                step="0.1"
+                value={updateData.value}
+                onChange={handleInputChange}
+                placeholder="e.g., 10 for 10% increase, -5 for 5% decrease"
+                icon="Percent"
+              />
+            )}
+            
+            {updateData.strategy === 'fixed' && (
+              <Input
+                label="Fixed Amount (Rs.)"
+                name="value"
+                type="number"
+                step="0.01"
+                value={updateData.value}
+                onChange={handleInputChange}
+                placeholder="e.g., 50 to add Rs. 50, -25 to subtract Rs. 25"
+                icon="DollarSign"
+              />
+            )}
+
+            {updateData.strategy === 'range' && (
+              <>
+                <Input
+                  label="Minimum Price (Rs.)"
+                  name="minPrice"
+                  type="number"
+                  step="0.01"
+                  value={updateData.minPrice}
+                  onChange={handleInputChange}
+                  icon="TrendingDown"
+                />
+                <Input
+                  label="Maximum Price (Rs.)"
+                  name="maxPrice"
+                  type="number"
+                  step="0.01"
+                  value={updateData.maxPrice}
+                  onChange={handleInputChange}
+                  icon="TrendingUp"
+                />
+              </>
+            )}
+          </div>
+
+          {/* Price constraints */}
+          {updateData.strategy !== 'range' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="Minimum Price Limit (Rs.)"
+                name="minPrice"
+                type="number"
+                step="0.01"
+                value={updateData.minPrice}
+                onChange={handleInputChange}
+                placeholder="Optional: Set minimum price"
+                icon="TrendingDown"
+              />
+              <Input
+                label="Maximum Price Limit (Rs.)"
+                name="maxPrice"
+                type="number"
+                step="0.01"
+                value={updateData.maxPrice}
+                onChange={handleInputChange}
+                placeholder="Optional: Set maximum price"
+                icon="TrendingUp"
+              />
+            </div>
+          )}
+
+          {/* Filters */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Category Filter
+              </label>
+              <select
+                name="category"
+                value={updateData.category}
+                onChange={handleInputChange}
+                className="input-field"
+              >
+                <option value="all">All Categories</option>
+                {categories.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  name="applyToLowStock"
+                  checked={updateData.applyToLowStock}
+                  onChange={handleInputChange}
+                  className="rounded border-gray-300 text-primary focus:ring-primary"
+                />
+                <label className="text-sm font-medium text-gray-700">
+                  Apply only to low stock items
+                </label>
+              </div>
+              {updateData.applyToLowStock && (
+                <Input
+                  label="Stock Threshold"
+                  name="stockThreshold"
+                  type="number"
+                  value={updateData.stockThreshold}
+                  onChange={handleInputChange}
+                  icon="Archive"
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Preview Button */}
+          <div className="flex justify-center">
+            <Button
+              type="button"
+              variant="secondary"
+              icon="Eye"
+              onClick={generatePreview}
+              disabled={!updateData.value && updateData.strategy !== 'range'}
+            >
+              Preview Changes
+            </Button>
+          </div>
+
+          {/* Preview Results */}
+          {showPreview && preview.length > 0 && (
+            <div className="border rounded-lg p-4 bg-gray-50">
+              <h3 className="font-medium text-gray-900 mb-3">
+                Preview: {preview.length} products will be updated
+              </h3>
+              <div className="max-h-64 overflow-y-auto">
+                <div className="space-y-2">
+                  {preview.slice(0, 10).map((product) => (
+                    <div key={product.id} className="flex items-center justify-between p-2 bg-white rounded border">
+                      <div className="flex items-center space-x-3">
+                        <img
+                          src={product.imageUrl}
+                          alt={product.name}
+                          className="w-8 h-8 rounded object-cover"
+                        />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{product.name}</p>
+                          <p className="text-xs text-gray-500">{product.category}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm text-gray-600">Rs. {product.price}</span>
+                          <ApperIcon name="ArrowRight" size={12} className="text-gray-400" />
+                          <span className="text-sm font-medium text-gray-900">Rs. {product.newPrice}</span>
+                        </div>
+                        <p className={`text-xs ${product.priceChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {product.priceChange >= 0 ? '+' : ''}Rs. {product.priceChange}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                  {preview.length > 10 && (
+                    <p className="text-sm text-gray-500 text-center">
+                      ... and {preview.length - 10} more products
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Submit Buttons */}
+          <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={onClose}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              icon="Save"
+              disabled={!showPreview || preview.length === 0}
+            >
+              Update {preview.length} Products
+            </Button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };
-
-export default ProductManagement;

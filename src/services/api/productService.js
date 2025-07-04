@@ -64,8 +64,107 @@ class ProductService {
     return maxId + 1;
   }
 
-  delay() {
-    return new Promise(resolve => setTimeout(resolve, 300));
+async bulkUpdatePrices(updateData) {
+    await this.delay(500); // Longer delay for bulk operations
+    
+    const validation = this.validateBulkPriceUpdate(updateData);
+    if (!validation.isValid) {
+      throw new Error(validation.error);
+    }
+
+    let filteredProducts = [...this.products];
+    
+    // Filter by category
+    if (updateData.category !== 'all') {
+      filteredProducts = filteredProducts.filter(p => p.category === updateData.category);
+    }
+    
+    // Filter by stock if enabled
+    if (updateData.applyToLowStock) {
+      filteredProducts = filteredProducts.filter(p => p.stock <= updateData.stockThreshold);
+    }
+
+    let updatedCount = 0;
+    
+    // Apply price updates
+    filteredProducts.forEach(product => {
+      const originalPrice = product.price;
+      let newPrice = originalPrice;
+      
+      switch (updateData.strategy) {
+        case 'percentage':
+          const percentage = parseFloat(updateData.value) || 0;
+          newPrice = originalPrice * (1 + percentage / 100);
+          break;
+        case 'fixed':
+          const fixedAmount = parseFloat(updateData.value) || 0;
+          newPrice = originalPrice + fixedAmount;
+          break;
+        case 'range':
+          const minPrice = parseFloat(updateData.minPrice) || 0;
+          const maxPrice = parseFloat(updateData.maxPrice) || originalPrice;
+          newPrice = Math.min(Math.max(originalPrice, minPrice), maxPrice);
+          break;
+      }
+
+      // Apply min/max constraints if specified
+      if (updateData.minPrice && newPrice < parseFloat(updateData.minPrice)) {
+        newPrice = parseFloat(updateData.minPrice);
+      }
+      if (updateData.maxPrice && newPrice > parseFloat(updateData.maxPrice)) {
+        newPrice = parseFloat(updateData.maxPrice);
+      }
+
+      // Round to 2 decimal places
+      newPrice = Math.round(newPrice * 100) / 100;
+      
+      // Only update if price actually changed
+      if (Math.abs(newPrice - originalPrice) > 0.01) {
+        const productIndex = this.products.findIndex(p => p.id === product.id);
+        if (productIndex !== -1) {
+          this.products[productIndex] = {
+            ...this.products[productIndex],
+            previousPrice: originalPrice,
+            price: newPrice
+          };
+          updatedCount++;
+        }
+      }
+    });
+
+    return {
+      updatedCount,
+      totalFiltered: filteredProducts.length,
+      strategy: updateData.strategy
+    };
+  }
+
+  validateBulkPriceUpdate(updateData) {
+    if (!updateData.strategy) {
+      return { isValid: false, error: 'Update strategy is required' };
+    }
+
+    if (updateData.strategy === 'range') {
+      if (!updateData.minPrice || !updateData.maxPrice) {
+        return { isValid: false, error: 'Both minimum and maximum prices are required for range strategy' };
+      }
+      if (parseFloat(updateData.minPrice) >= parseFloat(updateData.maxPrice)) {
+        return { isValid: false, error: 'Minimum price must be less than maximum price' };
+      }
+    } else {
+      if (!updateData.value) {
+        return { isValid: false, error: 'Update value is required' };
+      }
+      if (isNaN(parseFloat(updateData.value))) {
+        return { isValid: false, error: 'Update value must be a valid number' };
+      }
+    }
+
+    return { isValid: true };
+  }
+
+  delay(ms = 300) {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 }
 
