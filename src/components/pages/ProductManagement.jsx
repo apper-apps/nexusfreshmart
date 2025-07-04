@@ -447,6 +447,8 @@ const [showBulkPriceModal, setShowBulkPriceModal] = useState(false);
 );
 };
 
+export default ProductManagement;
+
 // Bulk Price Update Modal Component
 const BulkPriceModal = ({ products, categories, onUpdate, onClose }) => {
   const [updateData, setUpdateData] = useState({
