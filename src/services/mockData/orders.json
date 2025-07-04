@@ -1,0 +1,193 @@
+[
+  {
+    "id": 1,
+    "customerId": "user123",
+    "items": [
+      {
+        "productId": 1,
+        "name": "Basmati Rice Premium",
+        "price": 180,
+        "quantity": 2,
+        "unit": "kg"
+      },
+      {
+        "productId": 3,
+        "name": "Red Apples",
+        "price": 280,
+        "quantity": 1,
+        "unit": "kg"
+      }
+    ],
+    "total": 640,
+    "deliveryCharge": 150,
+    "paymentMethod": "jazzcash",
+    "paymentProof": {
+      "fileName": "payment_proof.jpg",
+      "fileSize": 2048,
+      "uploadedAt": "2024-01-15T10:30:00Z"
+    },
+    "status": "delivered",
+    "deliveryAddress": {
+      "name": "Ahmad Hassan",
+      "phone": "+92 300 1234567",
+      "email": "ahmad@example.com",
+      "address": "123 Main Street, Block A",
+      "city": "Lahore",
+      "postalCode": "54000",
+      "instructions": "Call before delivery"
+    },
+    "createdAt": "2024-01-15T09:00:00Z"
+  },
+  {
+    "id": 2,
+    "customerId": "user456",
+    "items": [
+      {
+        "productId": 2,
+        "name": "Fresh Mutton",
+        "price": 1200,
+        "quantity": 1,
+        "unit": "kg"
+      },
+      {
+        "productId": 4,
+        "name": "Fresh Tomatoes",
+        "price": 60,
+        "quantity": 2,
+        "unit": "kg"
+      }
+    ],
+    "total": 1470,
+    "deliveryCharge": 150,
+    "paymentMethod": "easypaisa",
+    "paymentProof": {
+      "fileName": "easypaisa_receipt.jpg",
+      "fileSize": 1524,
+      "uploadedAt": "2024-01-16T14:15:00Z"
+    },
+    "status": "shipped",
+    "deliveryAddress": {
+      "name": "Fatima Khan",
+      "phone": "+92 301 9876543",
+      "email": "fatima@example.com",
+      "address": "456 Garden Town, Street 5",
+      "city": "Karachi",
+      "postalCode": "75000",
+      "instructions": ""
+    },
+    "createdAt": "2024-01-16T13:30:00Z"
+  },
+  {
+    "id": 3,
+    "customerId": "user789",
+    "items": [
+      {
+        "productId": 5,
+        "name": "Chicken Breast",
+        "price": 450,
+        "quantity": 2,
+        "unit": "kg"
+      },
+      {
+        "productId": 6,
+        "name": "Bananas",
+        "price": 120,
+        "quantity": 3,
+        "unit": "dozen"
+      }
+    ],
+    "total": 1410,
+    "deliveryCharge": 150,
+    "paymentMethod": "cash",
+    "paymentProof": null,
+    "status": "packed",
+    "deliveryAddress": {
+      "name": "Mohammed Ali",
+      "phone": "+92 302 5555666",
+      "email": "ali@example.com",
+      "address": "789 Defence Housing, Phase 2",
+      "city": "Islamabad",
+      "postalCode": "44000",
+      "instructions": "Ring doorbell twice"
+    },
+    "createdAt": "2024-01-17T16:45:00Z"
+  },
+  {
+    "id": 4,
+    "customerId": "user101",
+    "items": [
+      {
+        "productId": 7,
+        "name": "Wheat Flour",
+        "price": 85,
+        "quantity": 5,
+        "unit": "kg"
+      },
+      {
+        "productId": 11,
+        "name": "Cooking Oil",
+        "price": 320,
+        "quantity": 2,
+        "unit": "liter"
+      }
+    ],
+    "total": 1215,
+    "deliveryCharge": 150,
+    "paymentMethod": "bank",
+    "paymentProof": {
+      "fileName": "bank_transfer.pdf",
+      "fileSize": 3072,
+      "uploadedAt": "2024-01-18T11:20:00Z"
+    },
+    "status": "confirmed",
+    "deliveryAddress": {
+      "name": "Sara Ahmed",
+      "phone": "+92 303 7777888",
+      "email": "sara@example.com",
+      "address": "321 Clifton Block 5, Apartment 4B",
+      "city": "Karachi",
+      "postalCode": "75600",
+      "instructions": "Leave at reception"
+    },
+    "createdAt": "2024-01-18T10:00:00Z"
+  },
+  {
+    "id": 5,
+    "customerId": "user202",
+    "items": [
+      {
+        "productId": 9,
+        "name": "Mangoes",
+        "price": 200,
+        "quantity": 3,
+        "unit": "kg"
+      },
+      {
+        "productId": 13,
+        "name": "Oranges",
+        "price": 150,
+        "quantity": 2,
+        "unit": "kg"
+      }
+    ],
+    "total": 1050,
+    "deliveryCharge": 150,
+    "paymentMethod": "jazzcash",
+    "paymentProof": {
+      "fileName": "jazzcash_payment.jpg",
+      "fileSize": 1800,
+      "uploadedAt": "2024-01-19T15:30:00Z"
+    },
+    "status": "pending",
+    "deliveryAddress": {
+      "name": "Usman Malik",
+      "phone": "+92 304 1111222",
+      "email": "usman@example.com",
+      "address": "654 Model Town, Block C",
+      "city": "Lahore",
+      "postalCode": "54700",
+      "instructions": "Call 30 minutes before delivery"
+    },
+    "createdAt": "2024-01-19T14:15:00Z"
+  }
+]
