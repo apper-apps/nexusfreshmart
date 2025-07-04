@@ -9,12 +9,13 @@ import Error from "@/components/ui/Error";
 import PaymentMethod from "@/components/molecules/PaymentMethod";
 import { orderService } from "@/services/api/orderService";
 import { paymentService } from "@/services/api/paymentService";
-
 function Checkout() {
   const navigate = useNavigate()
-  const { cart, clearCart } = useCart()
+const { cart, clearCart } = useCart()
   const [loading, setLoading] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState('cash')
+  const [availablePaymentMethods, setAvailablePaymentMethods] = useState([])
+  const [gatewayConfig, setGatewayConfig] = useState({})
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -29,8 +30,36 @@ function Checkout() {
 
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
   const deliveryCharge = 150
-  const total = subtotal + deliveryCharge
+  const gatewayFee = calculateGatewayFee()
+  const total = subtotal + deliveryCharge + gatewayFee
 
+  // Load available payment methods from admin configuration
+  React.useEffect(() => {
+    loadPaymentMethods()
+  }, [])
+
+  async function loadPaymentMethods() {
+    try {
+      const methods = await paymentService.getAvailablePaymentMethods()
+      const config = await paymentService.getGatewayConfig()
+      setAvailablePaymentMethods(methods.filter(method => method.enabled))
+      setGatewayConfig(config)
+    } catch (error) {
+      console.error('Failed to load payment methods:', error)
+      toast.error('Failed to load payment options')
+    }
+  }
+
+  function calculateGatewayFee() {
+    const selectedMethod = availablePaymentMethods.find(method => method.id === paymentMethod)
+    if (!selectedMethod || !selectedMethod.fee) return 0
+    
+    const feeAmount = typeof selectedMethod.fee === 'number' 
+      ? selectedMethod.fee * subtotal 
+      : selectedMethod.fee
+    
+    return Math.max(feeAmount, selectedMethod.minimumFee || 0)
+  }
   function handleInputChange(e) {
     const { name, value } = e.target
     setFormData(prev => ({
@@ -193,13 +222,30 @@ function Checkout() {
     try {
       setLoading(true)
       let paymentResult = null
+// Process payment based on admin-managed gateway configuration
+      const selectedGateway = availablePaymentMethods.find(method => method.id === paymentMethod)
+      
+      if (!selectedGateway || !selectedGateway.enabled) {
+        throw new Error(`Payment method ${paymentMethod} is not available`)
+      }
 
-      // Process payment based on method
       if (paymentMethod === 'card') {
         paymentResult = await paymentService.processCardPayment(
-          { number: '4111111111111111', cvv: '123', expiry: '12/25' },
+          { 
+            cardNumber: '4111111111111111', 
+            cvv: '123', 
+            expiryDate: '12/25',
+            cardholderName: formData.name 
+          },
           total,
           Date.now()
+        )
+      } else if (paymentMethod === 'jazzcash' || paymentMethod === 'easypaisa') {
+        paymentResult = await paymentService.processDigitalWalletPayment(
+          paymentMethod,
+          total,
+          Date.now(),
+          formData.phone
         )
       } else if (paymentMethod === 'wallet') {
         paymentResult = await paymentService.processWalletPayment(total, Date.now())
@@ -277,7 +323,7 @@ function Checkout() {
                     </span>
                   </div>
                 ))}
-                <div className="border-t pt-4 space-y-2">
+<div className="border-t pt-4 space-y-2">
                   <div className="flex justify-between">
                     <span>Subtotal:</span>
                     <span>PKR {subtotal.toFixed(2)}</span>
@@ -286,6 +332,12 @@ function Checkout() {
                     <span>Delivery Charge:</span>
                     <span>PKR {deliveryCharge.toFixed(2)}</span>
                   </div>
+                  {gatewayFee > 0 && (
+                    <div className="flex justify-between">
+                      <span>Gateway Fee:</span>
+                      <span>PKR {gatewayFee.toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-lg font-semibold border-t pt-2">
                     <span>Total:</span>
                     <span>PKR {total.toFixed(2)}</span>
@@ -373,13 +425,44 @@ function Checkout() {
                 </div>
               </div>
 
-              {/* Payment Method */}
+{/* Payment Method */}
               <div className="card p-6">
                 <h2 className="text-xl font-semibold mb-4">Payment Method</h2>
-                <PaymentMethod
-                  selected={paymentMethod}
-                  onSelect={setPaymentMethod}
-                />
+                <div className="space-y-3">
+                  {availablePaymentMethods.map((method) => (
+                    <div
+                      key={method.id}
+                      className={`p-4 border-2 rounded-lg cursor-pointer transition-colors ${
+                        paymentMethod === method.id
+                          ? 'border-primary bg-primary/5'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                      onClick={() => setPaymentMethod(method.id)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="font-medium text-gray-900">{method.name}</h3>
+                          <p className="text-sm text-gray-600">{method.description}</p>
+                          {method.fee > 0 && (
+                            <p className="text-xs text-orange-600 mt-1">
+                              Fee: {typeof method.fee === 'number' ? `${(method.fee * 100).toFixed(1)}%` : `PKR ${method.fee}`}
+                              {method.minimumFee && ` (min PKR ${method.minimumFee})`}
+                            </p>
+                          )}
+                        </div>
+                        <div className={`w-4 h-4 rounded-full border-2 ${
+                          paymentMethod === method.id
+                            ? 'border-primary bg-primary'
+                            : 'border-gray-300'
+                        }`}>
+                          {paymentMethod === method.id && (
+                            <div className="w-full h-full rounded-full bg-white scale-50"></div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
                 
                 {paymentMethod === 'bank' && (
                   <div className="mt-4">

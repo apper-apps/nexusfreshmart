@@ -452,10 +452,23 @@ const PaymentManagement = () => {
                     <span className="text-sm text-gray-500">
                       Fee: {method.fee ? `${(method.fee * 100).toFixed(1)}%` : 'Free'}
                     </span>
-                    <Button
+<Button
                       size="sm"
                       variant={method.enabled ? 'secondary' : 'primary'}
-                      onClick={() => toast.info(`${method.name} ${method.enabled ? 'disabled' : 'enabled'}`)}
+                      onClick={async () => {
+                        try {
+                          if (method.enabled) {
+                            await paymentService.disableGateway(method.id);
+                            toast.success(`${method.name} disabled`);
+                          } else {
+                            await paymentService.enableGateway(method.id);
+                            toast.success(`${method.name} enabled`);
+                          }
+                          loadPaymentData();
+                        } catch (error) {
+                          toast.error(`Failed to ${method.enabled ? 'disable' : 'enable'} ${method.name}`);
+                        }
+                      }}
                     >
                       {method.enabled ? 'Disable' : 'Enable'}
                     </Button>

@@ -472,6 +472,65 @@ return { verified, transaction: { ...transaction } };
     return maxId + 1;
   }
 
+// Gateway Configuration Management
+  async getGatewayConfig() {
+    await this.delay(200);
+    return {
+      cardGateway: {
+        provider: 'stripe',
+        enabled: true,
+        apiKey: 'pk_test_xxxxx'
+      },
+      walletGateways: {
+        jazzcash: { enabled: true, merchantId: 'JC123' },
+        easypaisa: { enabled: true, merchantId: 'EP456' },
+        sadapay: { enabled: true, merchantId: 'SP789' }
+      },
+      bankGateway: {
+        enabled: true,
+        accounts: [
+          { bank: 'HBL', account: '1234567890' },
+          { bank: 'UBL', account: '0987654321' }
+        ]
+      }
+    };
+  }
+
+  async updateGatewayConfig(gatewayId, config) {
+    await this.delay(300);
+    // In a real implementation, this would update the gateway configuration
+    return { success: true, gatewayId, config };
+  }
+
+  async getGatewayStatus(gatewayId) {
+    await this.delay(200);
+    const methods = this.getAvailablePaymentMethods();
+    const method = methods.find(m => m.id === gatewayId);
+    return method ? { enabled: method.enabled, status: 'active' } : { enabled: false, status: 'inactive' };
+  }
+
+  async enableGateway(gatewayId) {
+    await this.delay(300);
+    // Update the payment method status
+    const methods = this.getAvailablePaymentMethods();
+    const methodIndex = methods.findIndex(m => m.id === gatewayId);
+    if (methodIndex !== -1) {
+      methods[methodIndex].enabled = true;
+    }
+    return { success: true, gatewayId, enabled: true };
+  }
+
+  async disableGateway(gatewayId) {
+    await this.delay(300);
+    // Update the payment method status
+    const methods = this.getAvailablePaymentMethods();
+    const methodIndex = methods.findIndex(m => m.id === gatewayId);
+    if (methodIndex !== -1) {
+      methods[methodIndex].enabled = false;
+    }
+    return { success: true, gatewayId, enabled: false };
+  }
+
   delay(ms = 300) {
     return new Promise(resolve => setTimeout(resolve, ms));
   }

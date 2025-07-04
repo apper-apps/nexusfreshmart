@@ -233,7 +233,7 @@ return (
             </div>
           </div>
 
-          {/* Payment Information */}
+{/* Payment Information */}
           <div className="card p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Payment Information</h2>
             
@@ -244,6 +244,35 @@ return (
                   {order.paymentMethod.replace('_', ' ')}
                 </span>
               </div>
+              
+              <div className="flex items-center space-x-3">
+                <ApperIcon name="CheckCircle" size={16} className="text-gray-500" />
+                <span className={`text-gray-900 capitalize ${
+                  order.paymentStatus === 'completed' ? 'text-green-600' :
+                  order.paymentStatus === 'pending' ? 'text-orange-600' :
+                  'text-red-600'
+                }`}>
+                  Payment {order.paymentStatus}
+                </span>
+              </div>
+
+              {order.paymentResult && (
+                <div className="flex items-center space-x-3">
+                  <ApperIcon name="Hash" size={16} className="text-gray-500" />
+                  <span className="text-gray-900 font-mono text-sm">
+                    {order.paymentResult.transactionId}
+                  </span>
+                </div>
+              )}
+
+              {order.paymentResult?.gatewayResponse && (
+                <div className="flex items-center space-x-3">
+                  <ApperIcon name="ExternalLink" size={16} className="text-gray-500" />
+                  <span className="text-gray-900 text-sm">
+                    Gateway Ref: {order.paymentResult.gatewayResponse.reference}
+                  </span>
+                </div>
+              )}
               
               {order.paymentProof && (
                 <div className="flex items-center space-x-3">
