@@ -11,14 +11,15 @@ import { orderService } from '@/services/api/orderService';
 import { paymentService } from '@/services/api/paymentService';
 
 const AdminDashboard = () => {
-  const [stats, setStats] = useState({
+const [stats, setStats] = useState({
     totalProducts: 0,
     totalOrders: 0,
     lowStockProducts: 0,
     todayRevenue: 0,
     walletBalance: 0,
     totalTransactions: 0,
-    monthlyRevenue: 0
+    monthlyRevenue: 0,
+    pendingVerifications: 0
   });
 const [recentOrders, setRecentOrders] = useState([]);
   const [walletTransactions, setWalletTransactions] = useState([]);
@@ -46,10 +47,13 @@ const loadDashboardData = async () => {
       const todayOrders = orders.filter(o => new Date(o.createdAt).toDateString() === today);
       const todayRevenue = todayOrders.reduce((sum, order) => sum + order.total, 0);
 
-      // Get wallet data
+// Get wallet data
       const walletBalance = await paymentService.getWalletBalance();
       const walletTransactions = await paymentService.getWalletTransactions();
       const monthlyRevenue = await orderService.getMonthlyRevenue();
+      
+      // Get pending verifications
+      const pendingVerifications = await orderService.getPendingVerifications();
 
       // Calculate revenue breakdown by payment method
       const revenueByMethod = orders.reduce((acc, order) => {
@@ -65,7 +69,8 @@ const loadDashboardData = async () => {
         todayRevenue,
         walletBalance,
         totalTransactions: walletTransactions.length,
-        monthlyRevenue
+        monthlyRevenue,
+        pendingVerifications: pendingVerifications.length
       });
 
       setRevenueBreakdown(Object.entries(revenueByMethod).map(([method, amount]) => ({
