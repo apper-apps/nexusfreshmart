@@ -1477,4 +1477,3 @@ return (
 };
 
 export default POS;
-export default POS;
