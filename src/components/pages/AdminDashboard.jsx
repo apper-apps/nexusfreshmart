@@ -1,96 +1,119 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { format } from 'date-fns';
-import { toast } from 'react-toastify';
-import ApperIcon from '@/components/ApperIcon';
-import Button from '@/components/atoms/Button';
-import Loading from '@/components/ui/Loading';
-import Error from '@/components/ui/Error';
-import { productService } from '@/services/api/productService';
-import { orderService } from '@/services/api/orderService';
-import { paymentService } from '@/services/api/paymentService';
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { format } from "date-fns";
+import { toast } from "react-toastify";
+import ApperIcon from "@/components/ApperIcon";
+import Button from "@/components/atoms/Button";
+import Error from "@/components/ui/Error";
+import Loading from "@/components/ui/Loading";
+import Orders from "@/components/pages/Orders";
+import { orderService } from "@/services/api/orderService";
+import { productService } from "@/services/api/productService";
+import { paymentService } from "@/services/api/paymentService";
 
 const AdminDashboard = () => {
-const [stats, setStats] = useState({
-    totalProducts: 0,
-    totalOrders: 0,
-    lowStockProducts: 0,
-    todayRevenue: 0,
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [stats, setStats] = useState({
     walletBalance: 0,
     totalTransactions: 0,
     monthlyRevenue: 0,
     pendingVerifications: 0
-  });
-const [recentOrders, setRecentOrders] = useState([]);
-  const [walletTransactions, setWalletTransactions] = useState([]);
-  const [revenueBreakdown, setRevenueBreakdown] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [walletLoading, setWalletLoading] = useState(false);
-  useEffect(() => {
-    loadDashboardData();
-  }, []);
+  })
+  const [lowStockProducts, setLowStockProducts] = useState([])
+  const [todayOrders, setTodayOrders] = useState([])
+  const [todayRevenue, setTodayRevenue] = useState(0)
+  const [walletTransactions, setWalletTransactions] = useState([])
+  const [revenueByMethod, setRevenueByMethod] = useState({})
+  const [sortedOrders, setSortedOrders] = useState([])
 
-const loadDashboardData = async () => {
+  const loadDashboardData = async () => {
     try {
-      setLoading(true);
-      setError(null);
-
-      const [products, orders] = await Promise.all([
-        productService.getAll(),
-        orderService.getAll()
-      ]);
-
-      // Calculate stats
-      const lowStockProducts = products.filter(p => p.stock <= 10).length;
-      const today = new Date().toDateString();
-      const todayOrders = orders.filter(o => new Date(o.createdAt).toDateString() === today);
-      const todayRevenue = todayOrders.reduce((sum, order) => sum + order.total, 0);
-
-// Get wallet data
-      const walletBalance = await paymentService.getWalletBalance();
-      const walletTransactions = await paymentService.getWalletTransactions();
-      const monthlyRevenue = await orderService.getMonthlyRevenue();
+      setLoading(true)
+      setError(null)
       
-      // Get pending verifications
-      const pendingVerifications = await orderService.getPendingVerifications();
-
-      // Calculate revenue breakdown by payment method
-      const revenueByMethod = orders.reduce((acc, order) => {
-        const method = order.paymentMethod || 'unknown';
-        acc[method] = (acc[method] || 0) + order.total;
-        return acc;
-      }, {});
-
+      // Load all dashboard data
+      const products = await productService.getAll()
+      const orders = await orderService.getAll()
+      
+      // Calculate low stock products
+      const lowStock = products.filter(p => p.stock < 10)
+      setLowStockProducts(lowStock)
+      
+      // Calculate today's orders and revenue
+      const today = new Date()
+      const todayOrdersData = orders.filter(order => {
+        const orderDate = new Date(order.createdAt)
+        return orderDate.toDateString() === today.toDateString()
+      })
+      setTodayOrders(todayOrdersData)
+      
+      const todayRevenueAmount = todayOrdersData.reduce((sum, order) => sum + order.total, 0)
+      setTodayRevenue(todayRevenueAmount)
+      
+      // Load wallet data and other stats
+      const walletBalance = await paymentService.getWalletBalance()
+      const walletTransactionsData = await paymentService.getWalletTransactions()
+      const monthlyRevenue = await orderService.getMonthlyRevenue()
+      const pendingVerifications = await orderService.getPendingVerifications()
+      
+      // Update stats object
       setStats({
-        totalProducts: products.length,
-        totalOrders: orders.length,
-        lowStockProducts,
-        todayRevenue,
-        walletBalance,
-        totalTransactions: walletTransactions.length,
-        monthlyRevenue,
-        pendingVerifications: pendingVerifications.length
-      });
-
-      setRevenueBreakdown(Object.entries(revenueByMethod).map(([method, amount]) => ({
+        walletBalance: walletBalance || 0,
+        totalTransactions: walletTransactionsData?.length || 0,
+        monthlyRevenue: monthlyRevenue || 0,
+        pendingVerifications: pendingVerifications || 0
+      })
+      
+setWalletTransactions(walletTransactionsData || [])
+      
+      // Calculate revenue by payment method
+      const revenueByMethodData = await orderService.getRevenueByPaymentMethod()
+      setRevenueByMethod(revenueByMethodData || {})
+      
+      // Process revenue breakdown for display
+      const breakdown = Object.entries(revenueByMethodData || {}).map(([method, amount]) => ({
         method,
         amount,
-        percentage: ((amount / orders.reduce((sum, o) => sum + o.total, 0)) * 100).toFixed(1)
-      })));
-
-      setWalletTransactions(walletTransactions.slice(0, 10));
-
-      // Recent orders (last 5)
-      const sortedOrders = orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      setRecentOrders(sortedOrders.slice(0, 5));
-
+        percentage: Math.round((amount / (monthlyRevenue || 1)) * 100)
+      }))
+      setRevenueBreakdown(breakdown)
+      
+      // Sort orders by date and set recent orders
+      const sortedOrdersData = [...orders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      setSortedOrders(sortedOrdersData)
+      setRecentOrders(sortedOrdersData.slice(0, 5))
+      
+      // Update stats with calculated values
+      setStats(prevStats => ({
+        ...prevStats,
+        totalProducts: products.length,
+        totalOrders: orders.length,
+        lowStockProducts: lowStock.length,
+        todayRevenue: todayRevenueAmount
+      }))
+      setLoading(false)
     } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      console.error('Error loading dashboard data:', err)
+      setError('Failed to load dashboard data')
+      setStats({
+        walletBalance: 0,
+        totalTransactions: 0,
+        monthlyRevenue: 0,
+        pendingVerifications: 0
+      })
+      setLoading(false)
     }
-  };
+}
+
+  useEffect(() => {
+    loadDashboardData()
+  }, [])
+
+  // Add missing state variables
+  const [walletLoading, setWalletLoading] = useState(false)
+  const [recentOrders, setRecentOrders] = useState([])
+  const [revenueBreakdown, setRevenueBreakdown] = useState([])
 
   if (loading) {
     return (
@@ -455,15 +478,3 @@ const quickActions = [
 };
 
 export default AdminDashboard;
-<div className="card p-6 bg-gradient-to-r from-orange-500 to-red-500 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-orange-100 text-sm font-medium">Payment Verifications</p>
-              <p className="text-3xl font-bold">{stats.pendingVerifications}</p>
-              <p className="text-orange-100 text-xs">Pending admin review</p>
-            </div>
-            <div className="bg-white/20 p-3 rounded-lg">
-              <ApperIcon name="Shield" size={24} />
-            </div>
-          </div>
-        </div>
