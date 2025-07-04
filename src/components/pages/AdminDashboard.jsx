@@ -73,10 +73,11 @@ const AdminDashboard = () => {
     );
   }
 
-  const quickActions = [
+const quickActions = [
     { label: 'Manage Products', path: '/admin/products', icon: 'Package', color: 'from-blue-500 to-cyan-500' },
     { label: 'POS Terminal', path: '/admin/pos', icon: 'Calculator', color: 'from-green-500 to-emerald-500' },
     { label: 'View Orders', path: '/orders', icon: 'ShoppingCart', color: 'from-purple-500 to-pink-500' },
+    { label: 'Delivery Tracking', path: '/admin/delivery-dashboard', icon: 'MapPin', color: 'from-indigo-500 to-purple-500' },
     { label: 'Analytics', path: '/admin/analytics', icon: 'TrendingUp', color: 'from-orange-500 to-red-500' }
   ];
 

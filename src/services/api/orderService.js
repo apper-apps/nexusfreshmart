@@ -55,6 +55,37 @@ class OrderService {
       order.id > max ? order.id : max, 0);
     return maxId + 1;
   }
+async assignDeliveryPersonnel(orderId, deliveryPersonId) {
+    await this.delay();
+    const order = await this.getById(orderId);
+    const updatedOrder = {
+      ...order,
+      deliveryPersonId: deliveryPersonId,
+      deliveryStatus: 'assigned'
+    };
+    return await this.update(orderId, updatedOrder);
+  }
+
+  async updateDeliveryStatus(orderId, deliveryStatus, actualDelivery = null) {
+    await this.delay();
+    const order = await this.getById(orderId);
+    const updatedOrder = {
+      ...order,
+      deliveryStatus,
+      ...(actualDelivery && { actualDelivery })
+    };
+    return await this.update(orderId, updatedOrder);
+  }
+
+  async getOrdersByDeliveryPerson(deliveryPersonId) {
+    await this.delay();
+    return this.orders.filter(order => order.deliveryPersonId === deliveryPersonId);
+  }
+
+  async getOrdersByDeliveryStatus(deliveryStatus) {
+    await this.delay();
+    return this.orders.filter(order => order.deliveryStatus === deliveryStatus);
+  }
 
   delay() {
     return new Promise(resolve => setTimeout(resolve, 400));

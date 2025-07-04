@@ -26,7 +26,11 @@
       "fileSize": 2048,
       "uploadedAt": "2024-01-15T10:30:00Z"
     },
-    "status": "delivered",
+"status": "delivered",
+    "deliveryPersonId": 1,
+    "deliveryStatus": "delivered",
+    "estimatedDelivery": "2024-01-15T12:00:00Z",
+    "actualDelivery": "2024-01-15T11:45:00Z",
     "deliveryAddress": {
       "name": "Ahmad Hassan",
       "phone": "+92 300 1234567",
@@ -34,6 +38,10 @@
       "address": "123 Main Street, Block A",
       "city": "Lahore",
       "postalCode": "54000",
+      "coordinates": {
+        "lat": 31.5204,
+        "lng": 74.3587
+      },
       "instructions": "Call before delivery"
     },
     "createdAt": "2024-01-15T09:00:00Z"
@@ -65,7 +73,11 @@
       "fileSize": 1524,
       "uploadedAt": "2024-01-16T14:15:00Z"
     },
-    "status": "shipped",
+"status": "shipped",
+    "deliveryPersonId": 2,
+    "deliveryStatus": "out_for_delivery",
+    "estimatedDelivery": "2024-01-16T18:00:00Z",
+    "actualDelivery": null,
     "deliveryAddress": {
       "name": "Fatima Khan",
       "phone": "+92 301 9876543",
@@ -73,6 +85,10 @@
       "address": "456 Garden Town, Street 5",
       "city": "Karachi",
       "postalCode": "75000",
+      "coordinates": {
+        "lat": 24.8607,
+        "lng": 67.0011
+      },
       "instructions": ""
     },
     "createdAt": "2024-01-16T13:30:00Z"
@@ -100,7 +116,11 @@
     "deliveryCharge": 150,
     "paymentMethod": "cash",
     "paymentProof": null,
-    "status": "packed",
+"status": "packed",
+    "deliveryPersonId": 3,
+    "deliveryStatus": "assigned",
+    "estimatedDelivery": "2024-01-18T14:00:00Z",
+    "actualDelivery": null,
     "deliveryAddress": {
       "name": "Mohammed Ali",
       "phone": "+92 302 5555666",
@@ -108,6 +128,10 @@
       "address": "789 Defence Housing, Phase 2",
       "city": "Islamabad",
       "postalCode": "44000",
+      "coordinates": {
+        "lat": 33.6844,
+        "lng": 73.0479
+      },
       "instructions": "Ring doorbell twice"
     },
     "createdAt": "2024-01-17T16:45:00Z"
@@ -139,7 +163,11 @@
       "fileSize": 3072,
       "uploadedAt": "2024-01-18T11:20:00Z"
     },
-    "status": "confirmed",
+"status": "confirmed",
+    "deliveryPersonId": null,
+    "deliveryStatus": "pending_assignment",
+    "estimatedDelivery": "2024-01-19T16:00:00Z",
+    "actualDelivery": null,
     "deliveryAddress": {
       "name": "Sara Ahmed",
       "phone": "+92 303 7777888",
@@ -147,6 +175,10 @@
       "address": "321 Clifton Block 5, Apartment 4B",
       "city": "Karachi",
       "postalCode": "75600",
+      "coordinates": {
+        "lat": 24.8615,
+        "lng": 67.0099
+      },
       "instructions": "Leave at reception"
     },
     "createdAt": "2024-01-18T10:00:00Z"
@@ -178,7 +210,11 @@
       "fileSize": 1800,
       "uploadedAt": "2024-01-19T15:30:00Z"
     },
-    "status": "pending",
+"status": "pending",
+    "deliveryPersonId": null,
+    "deliveryStatus": "pending_assignment",
+    "estimatedDelivery": "2024-01-20T15:00:00Z",
+    "actualDelivery": null,
     "deliveryAddress": {
       "name": "Usman Malik",
       "phone": "+92 304 1111222",
@@ -186,6 +222,10 @@
       "address": "654 Model Town, Block C",
       "city": "Lahore",
       "postalCode": "54700",
+      "coordinates": {
+        "lat": 31.5497,
+        "lng": 74.3436
+      },
       "instructions": "Call 30 minutes before delivery"
     },
     "createdAt": "2024-01-19T14:15:00Z"

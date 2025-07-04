@@ -1,0 +1,92 @@
+[
+  {
+    "Id": 1,
+    "name": "Ali Hassan",
+    "phone": "+92 300 1111111",
+    "email": "ali.hassan@freshmart.com",
+    "vehicleType": "motorcycle",
+    "vehicleNumber": "LHR-2024",
+    "status": "available",
+    "currentLocation": {
+      "lat": 31.5204,
+      "lng": 74.3587
+    },
+    "zone": "Lahore Central",
+    "rating": 4.8,
+    "totalDeliveries": 324,
+    "joinedDate": "2023-03-15",
+    "isActive": true
+  },
+  {
+    "Id": 2,
+    "name": "Fatima Khan",
+    "phone": "+92 301 2222222",
+    "email": "fatima.khan@freshmart.com",
+    "vehicleType": "car",
+    "vehicleNumber": "KHI-5678",
+    "status": "on_delivery",
+    "currentLocation": {
+      "lat": 24.8607,
+      "lng": 67.0011
+    },
+    "zone": "Karachi North",
+    "rating": 4.9,
+    "totalDeliveries": 456,
+    "joinedDate": "2023-01-20",
+    "isActive": true
+  },
+  {
+    "Id": 3,
+    "name": "Ahmed Malik",
+    "phone": "+92 302 3333333",
+    "email": "ahmed.malik@freshmart.com",
+    "vehicleType": "motorcycle",
+    "vehicleNumber": "ISB-9012",
+    "status": "available",
+    "currentLocation": {
+      "lat": 33.6844,
+      "lng": 73.0479
+    },
+    "zone": "Islamabad",
+    "rating": 4.7,
+    "totalDeliveries": 289,
+    "joinedDate": "2023-05-10",
+    "isActive": true
+  },
+  {
+    "Id": 4,
+    "name": "Sara Ahmed",
+    "phone": "+92 303 4444444",
+    "email": "sara.ahmed@freshmart.com",
+    "vehicleType": "car",
+    "vehicleNumber": "KHI-3456",
+    "status": "off_duty",
+    "currentLocation": {
+      "lat": 24.8615,
+      "lng": 67.0099
+    },
+    "zone": "Karachi South",
+    "rating": 4.6,
+    "totalDeliveries": 201,
+    "joinedDate": "2023-08-05",
+    "isActive": true
+  },
+  {
+    "Id": 5,
+    "name": "Usman Ali",
+    "phone": "+92 304 5555555",
+    "email": "usman.ali@freshmart.com",
+    "vehicleType": "motorcycle",
+    "vehicleNumber": "LHR-7890",
+    "status": "available",
+    "currentLocation": {
+      "lat": 31.5497,
+      "lng": 74.3436
+    },
+    "zone": "Lahore East",
+    "rating": 4.5,
+    "totalDeliveries": 178,
+    "joinedDate": "2023-09-12",
+    "isActive": true
+  }
+]
