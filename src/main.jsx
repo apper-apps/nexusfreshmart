@@ -356,24 +356,6 @@ class ErrorBoundary extends React.Component {
     }
   }
 
-  render() {
-    if (this.state.hasError) {
-      const canRetry = this.state.retryCount < this.state.maxRetries;
-      
-      return (
-        <ErrorComponent 
-          message={this.state.error?.message || 'An unexpected error occurred'} 
-          onRetry={canRetry ? this.handleRetry : undefined}
-          type={this.state.errorType}
-          retryCount={this.state.retryCount}
-          maxRetries={this.state.maxRetries}
-        />
-      );
-    }
-
-    return this.props.children;
-  }
-}
 render() {
     // If in fallback mode, render app without SDK features
     if (this.state.fallbackMode) {
@@ -402,6 +384,7 @@ render() {
     if (this.state.hasError) {
       const errorMessage = this.state.error?.message || 'An unexpected error occurred';
       const isSDKError = errorMessage.includes('Apper') || errorMessage.includes('SDK');
+      const canRetry = this.state.retryCount < this.state.maxRetries;
       
       return (
         <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
