@@ -47,6 +47,15 @@ class ProductService {
     }
     this.products.splice(index, 1);
     return true;
+}
+
+  async getByBarcode(barcode) {
+    await this.delay();
+    const product = this.products.find(p => p.barcode === barcode && p.isActive);
+    if (!product) {
+      throw new Error('Product not found');
+    }
+    return { ...product };
   }
 
   getNextId() {

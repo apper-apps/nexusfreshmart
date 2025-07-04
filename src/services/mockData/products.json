@@ -8,9 +8,10 @@
     "unit": "kg",
     "stock": 50,
     "imageUrl": "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=300&h=200&fit=crop",
+    "barcode": "1234567890123",
     "isActive": true
   },
-  {
+{
     "id": 2,
     "name": "Fresh Mutton",
     "category": "Meat",
@@ -19,9 +20,10 @@
     "unit": "kg",
     "stock": 15,
     "imageUrl": "https://images.unsplash.com/photo-1558030006-450675393462?w=300&h=200&fit=crop",
+    "barcode": "1234567890124",
     "isActive": true
   },
-  {
+{
     "id": 3,
     "name": "Red Apples",
     "category": "Fruits",
@@ -30,9 +32,10 @@
     "unit": "kg",
     "stock": 30,
     "imageUrl": "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=300&h=200&fit=crop",
+    "barcode": "1234567890125",
     "isActive": true
   },
-  {
+{
     "id": 4,
     "name": "Fresh Tomatoes",
     "category": "Vegetables",
@@ -41,9 +44,10 @@
     "unit": "kg",
     "stock": 25,
     "imageUrl": "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=300&h=200&fit=crop",
+    "barcode": "1234567890126",
     "isActive": true
   },
-  {
+{
     "id": 5,
     "name": "Chicken Breast",
     "category": "Meat",
@@ -52,9 +56,10 @@
     "unit": "kg",
     "stock": 20,
     "imageUrl": "https://images.unsplash.com/photo-1604503468506-a8da13d82791?w=300&h=200&fit=crop",
+    "barcode": "1234567890127",
     "isActive": true
   },
-  {
+{
     "id": 6,
     "name": "Bananas",
     "category": "Fruits",
@@ -63,9 +68,10 @@
     "unit": "dozen",
     "stock": 40,
     "imageUrl": "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=300&h=200&fit=crop",
+    "barcode": "1234567890128",
     "isActive": true
   },
-  {
+{
     "id": 7,
     "name": "Wheat Flour",
     "category": "Groceries",
@@ -74,9 +80,10 @@
     "unit": "kg",
     "stock": 100,
     "imageUrl": "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=300&h=200&fit=crop",
+    "barcode": "1234567890129",
     "isActive": true
   },
-  {
+{
     "id": 8,
     "name": "Fresh Onions",
     "category": "Vegetables",
@@ -85,9 +92,10 @@
     "unit": "kg",
     "stock": 60,
     "imageUrl": "https://images.unsplash.com/photo-1508747703725-719777637510?w=300&h=200&fit=crop",
+    "barcode": "1234567890130",
     "isActive": true
   },
-  {
+{
     "id": 9,
     "name": "Mangoes",
     "category": "Fruits",
@@ -96,9 +104,10 @@
     "unit": "kg",
     "stock": 35,
     "imageUrl": "https://images.unsplash.com/photo-1553279768-865429fa0078?w=300&h=200&fit=crop",
+    "barcode": "1234567890131",
     "isActive": true
   },
-  {
+{
     "id": 10,
     "name": "Potatoes",
     "category": "Vegetables",
@@ -107,9 +116,10 @@
     "unit": "kg",
     "stock": 80,
     "imageUrl": "https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=300&h=200&fit=crop",
+    "barcode": "1234567890132",
     "isActive": true
   },
-  {
+{
     "id": 11,
     "name": "Cooking Oil",
     "category": "Groceries",
@@ -118,9 +128,10 @@
     "unit": "liter",
     "stock": 25,
     "imageUrl": "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=300&h=200&fit=crop",
+    "barcode": "1234567890133",
     "isActive": true
   },
-  {
+{
     "id": 12,
     "name": "Fresh Fish",
     "category": "Meat",
@@ -129,9 +140,10 @@
     "unit": "kg",
     "stock": 8,
     "imageUrl": "https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=300&h=200&fit=crop",
+    "barcode": "1234567890134",
     "isActive": true
   },
-  {
+{
     "id": 13,
     "name": "Oranges",
     "category": "Fruits",
@@ -140,9 +152,10 @@
     "unit": "kg",
     "stock": 45,
     "imageUrl": "https://images.unsplash.com/photo-1582979512210-99b6a53386f9?w=300&h=200&fit=crop",
+    "barcode": "1234567890135",
     "isActive": true
   },
-  {
+{
     "id": 14,
     "name": "Carrots",
     "category": "Vegetables",
@@ -151,9 +164,10 @@
     "unit": "kg",
     "stock": 30,
     "imageUrl": "https://images.unsplash.com/photo-1445282768818-728615cc910a?w=300&h=200&fit=crop",
+    "barcode": "1234567890136",
     "isActive": true
   },
-  {
+{
     "id": 15,
     "name": "White Sugar",
     "category": "Groceries",
@@ -162,9 +176,10 @@
     "unit": "kg",
     "stock": 70,
     "imageUrl": "https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=300&h=200&fit=crop",
+    "barcode": "1234567890137",
     "isActive": true
   },
-  {
+{
     "id": 16,
     "name": "Beef Qeema",
     "category": "Meat",
@@ -173,9 +188,10 @@
     "unit": "kg",
     "stock": 12,
     "imageUrl": "https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?w=300&h=200&fit=crop",
+    "barcode": "1234567890138",
     "isActive": true
   },
-  {
+{
     "id": 17,
     "name": "Green Chillies",
     "category": "Vegetables",
@@ -184,9 +200,10 @@
     "unit": "kg",
     "stock": 20,
     "imageUrl": "https://images.unsplash.com/photo-1583097267049-c7d7a4799d40?w=300&h=200&fit=crop",
+    "barcode": "1234567890139",
     "isActive": true
   },
-  {
+{
     "id": 18,
     "name": "Grapes",
     "category": "Fruits",
@@ -195,9 +212,10 @@
     "unit": "kg",
     "stock": 25,
     "imageUrl": "https://images.unsplash.com/photo-1537640538966-79f369143f8f?w=300&h=200&fit=crop",
+    "barcode": "1234567890140",
     "isActive": true
   },
-  {
+{
     "id": 19,
     "name": "Milk",
     "category": "Groceries",
@@ -206,9 +224,10 @@
     "unit": "liter",
     "stock": 50,
     "imageUrl": "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=300&h=200&fit=crop",
+    "barcode": "1234567890141",
     "isActive": true
   },
-  {
+{
     "id": 20,
     "name": "Ginger",
     "category": "Vegetables",
@@ -217,6 +236,7 @@
     "unit": "kg",
     "stock": 15,
     "imageUrl": "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&h=200&fit=crop",
+    "barcode": "1234567890142",
     "isActive": true
   }
 ]

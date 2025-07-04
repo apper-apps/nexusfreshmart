@@ -4,11 +4,11 @@ import ApperIcon from '@/components/ApperIcon';
 import Button from '@/components/atoms/Button';
 import Input from '@/components/atoms/Input';
 import SearchBar from '@/components/molecules/SearchBar';
+import BarcodeScanner from '@/components/molecules/BarcodeScanner';
 import Loading from '@/components/ui/Loading';
 import Error from '@/components/ui/Error';
 import { productService } from '@/services/api/productService';
 import { posService } from '@/services/api/posService';
-
 const POS = () => {
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
@@ -19,7 +19,7 @@ const POS = () => {
   const [paymentType, setPaymentType] = useState('cash');
   const [customerPaid, setCustomerPaid] = useState('');
   const [processingPayment, setProcessingPayment] = useState(false);
-
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   useEffect(() => {
     loadProducts();
   }, []);
@@ -41,7 +41,7 @@ const POS = () => {
     }
   };
 
-  const filterProducts = () => {
+const filterProducts = () => {
     if (!searchTerm.trim()) {
       setFilteredProducts(products.slice(0, 20)); // Show first 20 products
       return;
@@ -49,9 +49,25 @@ const POS = () => {
 
     const filtered = products.filter(product =>
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.category.toLowerCase().includes(searchTerm.toLowerCase())
+      product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (product.barcode && product.barcode.includes(searchTerm))
     );
     setFilteredProducts(filtered);
+  };
+
+  const handleBarcodeScan = async (barcode) => {
+    try {
+      const product = await productService.getByBarcode(barcode);
+      if (product) {
+        addToCart(product);
+        toast.success(`${product.name} added to cart`);
+      } else {
+        toast.error('Product not found');
+      }
+    } catch (err) {
+      toast.error('Error finding product');
+    }
+    setShowBarcodeScanner(false);
   };
 
   const addToCart = (product) => {
@@ -215,15 +231,26 @@ const POS = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Products Section */}
-        <div className="lg:col-span-2">
+<div className="lg:col-span-2">
           <div className="card p-6">
             <div className="mb-6">
-              <SearchBar
-                onSearch={setSearchTerm}
-                placeholder="Search products..."
-              />
+              <div className="flex space-x-2 mb-4">
+                <div className="flex-1">
+                  <SearchBar
+                    onSearch={setSearchTerm}
+                    placeholder="Search products or scan barcode..."
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowBarcodeScanner(true)}
+                  icon="Scan"
+                  className="whitespace-nowrap"
+                >
+                  Scan Barcode
+                </Button>
+              </div>
             </div>
-
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[600px] overflow-y-auto">
               {filteredProducts.map((product) => (
                 <div
@@ -357,7 +384,13 @@ const POS = () => {
             )}
           </div>
         </div>
-      </div>
+</div>
+
+      <BarcodeScanner
+        isActive={showBarcodeScanner}
+        onScan={handleBarcodeScan}
+        onClose={() => setShowBarcodeScanner(false)}
+      />
     </div>
   );
 };
