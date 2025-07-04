@@ -887,12 +887,11 @@ return (
                     
                     {printStatus && (
                       <div className="mt-2 text-sm text-center">
-                        <span className="text-blue-600">{printStatus}</span>
+<span className="text-blue-600">{printStatus}</span>
                       </div>
                     )}
                   </div>
                 </div>
-</div>
               </>
             )}
           </div>
@@ -1470,10 +1469,12 @@ return (
                 Manage Inventory
               </Button>
             </div>
-          </div>
+</div>
         </div>
       )}
     </div>
+  );
 };
 
+export default POS;
 export default POS;
