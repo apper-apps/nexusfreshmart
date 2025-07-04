@@ -3,6 +3,12 @@ class PaymentService {
     this.transactions = [];
     this.walletBalance = 25000; // Initial wallet balance
     this.walletTransactions = [];
+    this.vendors = [];
+    this.vendorBills = [];
+    this.vendorPayments = [];
+    this.paymentProofs = [];
+    this.currentUserRole = 'admin';
+    this.financeManagerRole = 'finance_manager';
     this.cardBrands = {
       '4': 'visa',
       '5': 'mastercard',
@@ -130,14 +136,13 @@ class PaymentService {
     if (verified) {
       transaction.status = 'completed';
       transaction.verifiedAt = new Date().toISOString();
-      transaction.verificationData = verificationData;
+transaction.verificationData = verificationData;
     } else {
       transaction.status = 'verification_failed';
-      transaction.failureReason = 'Unable to verify payment. Please contact support.';
     }
 
+    // Return verification result
     return { verified, transaction: { ...transaction } };
-return { verified, transaction: { ...transaction } };
   }
 
   // Enhanced Payment Retry Logic
@@ -534,26 +539,7 @@ return { verified, transaction: { ...transaction } };
 delay(ms = 300) {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
-
-  // Vendor Management System
-  constructor() {
-    this.transactions = [];
-    this.walletBalance = 25000;
-    this.walletTransactions = [];
-    this.cardBrands = {
-      '4': 'visa',
-      '5': 'mastercard',
-      '3': 'amex',
-      '6': 'discover'
-    };
-    this.vendors = [];
-    this.vendorBills = [];
-    this.vendorPayments = [];
-    this.paymentProofs = [];
-    this.financeManagerRole = 'finance_manager';
-    this.currentUserRole = 'admin'; // Simulated user role
-  }
-
+  
   // Vendor CRUD Operations
   async createVendor(vendorData) {
     await this.delay(500);
