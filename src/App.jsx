@@ -53,27 +53,47 @@ function App() {
     }
   }
 
-  useEffect(() => {
+useEffect(() => {
     let interval;
     let timeout;
+    let mounted = true;
     
     // Check SDK status periodically with improved error handling
-    const checkStatus = () => {
+    const checkStatus = async () => {
+      if (!mounted) return;
+      
       try {
         const status = checkSDKStatus();
-        setSdkReady(status.ready);
+        
+        if (!mounted) return;
         
         if (status.ready) {
+          setSdkReady(true);
           setSdkError(null);
           if (interval) clearInterval(interval);
           if (timeout) clearTimeout(timeout);
         } else if (status.available && !status.initialized) {
-          // SDK loaded but not initialized properly
-          setSdkError(new Error('Apper SDK loaded but initialization failed'));
+          // SDK loaded but not initialized properly - try to initialize
+          try {
+            if (window.Apper && window.Apper.init) {
+              await window.Apper.init();
+              if (mounted) {
+                setSdkReady(true);
+                setSdkError(null);
+              }
+            }
+          } catch (initError) {
+            console.error('SDK initialization failed:', initError);
+            if (mounted) {
+              setSdkError(new Error('Apper SDK initialization failed: ' + initError.message));
+            }
+          }
         }
       } catch (error) {
         console.error('Error checking SDK status:', error);
-        setSdkError(error);
+        if (mounted) {
+          setSdkError(error);
+        }
       }
     };
 
@@ -84,13 +104,17 @@ function App() {
     let checkCount = 0;
     const startChecking = () => {
       interval = setInterval(() => {
+        if (!mounted) return;
+        
         checkStatus();
         checkCount++;
         
         // Reduce frequency after initial attempts
         if (checkCount > 10) {
           clearInterval(interval);
-          interval = setInterval(checkStatus, 5000); // Check every 5 seconds
+          if (mounted) {
+            interval = setInterval(checkStatus, 5000); // Check every 5 seconds
+          }
         }
       }, 1000);
     };
@@ -99,20 +123,26 @@ function App() {
     
     // Set timeout for SDK loading with better error handling
     timeout = setTimeout(() => {
+      if (!mounted) return;
+      
       if (!sdkReady) {
         const status = checkSDKStatus();
         const errorMsg = status.available 
           ? 'Apper SDK loaded but failed to initialize within timeout'
           : 'Apper SDK failed to load within timeout';
+        
+        // Don't throw error immediately, allow fallback mode
+        console.warn(errorMsg);
         setSdkError(new Error(errorMsg));
       }
-    }, 30000);
+    }, 15000); // Reduced timeout to 15 seconds
     
     return () => {
+      mounted = false;
       if (interval) clearInterval(interval);
       if (timeout) clearTimeout(timeout);
     };
-  }, [sdkReady]);
+  }, []); // Remove sdkReady dependency to prevent loops
 
   // Handle canvas-specific errors with better error categorization
   const handleCanvasError = (event) => {
@@ -142,29 +172,47 @@ function App() {
     };
   }, []);
   
-  // Create SDK utilities object with enhanced functionality
+// Create SDK utilities object with enhanced functionality
   const sdkUtils = {
     ready: sdkReady,
     error: sdkError,
-checkStatus: checkSDKStatus,
+    checkStatus: checkSDKStatus,
     reinitialize: async () => {
       try {
-        if (typeof window.apperSDK !== 'undefined' && window.apperSDK) {
-          window.apperSDK.isInitialized = false;
-          await window.apperSDK.initialize();
+        setSdkError(null);
+        setSdkReady(false);
+        
+        // Clear existing SDK instances
+        if (window.apperSDK) {
+          window.apperSDK = null;
+        }
+        
+        // Wait for SDK to be available
+        await new Promise((resolve, reject) => {
+          let attempts = 0;
+          const maxAttempts = 20;
+          
+          const checkSDK = () => {
+            if (typeof window.Apper !== 'undefined' && window.Apper.init) {
+              resolve();
+            } else if (attempts >= maxAttempts) {
+              reject(new Error('SDK not available for reinitialization'));
+            } else {
+              attempts++;
+              setTimeout(checkSDK, 500);
+            }
+          };
+          
+          checkSDK();
+        });
+        
+        // Initialize SDK
+        if (window.Apper && window.Apper.init) {
+          await window.Apper.init();
           setSdkReady(true);
           setSdkError(null);
         } else {
-          // Create new SDK instance if not available
-          const ApperSDK = window.ApperSDK;
-          if (ApperSDK) {
-            window.apperSDK = new ApperSDK();
-            await window.apperSDK.initialize();
-            setSdkReady(true);
-            setSdkError(null);
-          } else {
-            throw new Error('SDK class not available for reinitialization');
-          }
+          throw new Error('SDK initialization method not available');
         }
       } catch (error) {
         console.error('Failed to reinitialize SDK:', error);
