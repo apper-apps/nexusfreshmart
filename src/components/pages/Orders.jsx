@@ -144,6 +144,11 @@ const Orders = () => {
                   <span>View Details</span>
                 </Link>
                 
+<button className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 transition-colors">
+                  <ApperIcon name="MessageCircle" size={16} />
+                  <span>Chat Support</span>
+                </button>
+                
                 {order.status === 'delivered' && (
                   <button className="flex items-center space-x-2 text-green-600 hover:text-green-700 transition-colors">
                     <ApperIcon name="RotateCcw" size={16} />
