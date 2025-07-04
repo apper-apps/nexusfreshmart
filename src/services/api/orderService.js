@@ -50,10 +50,16 @@ if (orderData.paymentMethod === 'wallet') {
       }
     }
     
-    // Handle bank transfer verification
+// Handle bank transfer verification
     if (orderData.paymentMethod === 'bank' && orderData.paymentResult?.requiresVerification) {
       newOrder.paymentStatus = 'pending_verification';
       newOrder.status = 'payment_pending';
+    }
+    
+    // Handle payment proof submissions
+    if (orderData.paymentProof && orderData.paymentMethod === 'bank') {
+      newOrder.verificationStatus = 'pending';
+      newOrder.paymentProofSubmittedAt = new Date().toISOString();
     }
     
     this.orders.push(newOrder);
@@ -227,7 +233,74 @@ async getMonthlyRevenue() {
     });
     
     return revenueByMethod;
+return revenueByMethod;
   }
+
+  // Payment Verification Methods
+  async getPendingVerifications() {
+    await this.delay();
+    return this.orders
+      .filter(order => order.verificationStatus === 'pending' && order.paymentProof)
+      .map(order => ({
+        Id: order.id,
+        orderId: order.id,
+        amount: order.total,
+        paymentMethod: order.paymentMethod,
+        customerName: order.deliveryAddress?.name || 'Unknown',
+        paymentProof: order.paymentProof,
+        paymentProofFileName: order.paymentProofFileName,
+        submittedAt: order.paymentProofSubmittedAt || order.createdAt,
+        verificationStatus: order.verificationStatus
+      }));
+  }
+
+  async updateVerificationStatus(orderId, status, notes = '') {
+    await this.delay();
+    const orderIndex = this.orders.findIndex(o => o.id === parseInt(orderId));
+    
+    if (orderIndex === -1) {
+      throw new Error('Order not found');
+    }
+
+    const order = this.orders[orderIndex];
+    
+    if (order.verificationStatus !== 'pending') {
+      throw new Error('Order verification is not pending');
+    }
+
+    const updatedOrder = {
+      ...order,
+      verificationStatus: status,
+      verificationNotes: notes,
+      verifiedAt: new Date().toISOString(),
+      paymentStatus: status === 'verified' ? 'completed' : 'verification_failed',
+      status: status === 'verified' ? 'confirmed' : 'payment_verification_failed',
+      updatedAt: new Date().toISOString()
+    };
+
+    this.orders[orderIndex] = updatedOrder;
+    return { ...updatedOrder };
+  }
+
+  async getVerificationHistory(orderId) {
+    await this.delay();
+    const order = await this.getById(orderId);
+    
+    if (!order.paymentProof) {
+      return null;
+    }
+
+    return {
+      orderId: order.id,
+      submittedAt: order.paymentProofSubmittedAt,
+      verifiedAt: order.verifiedAt,
+      status: order.verificationStatus,
+      notes: order.verificationNotes,
+      paymentProof: order.paymentProof,
+      paymentProofFileName: order.paymentProofFileName
+    };
+  }
+
 delay() {
     return new Promise(resolve => setTimeout(resolve, 400));
   }

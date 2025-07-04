@@ -75,13 +75,13 @@ const { cart, clearCart } = useCart()
     }
   }
 
-  function handleFileUpload(e) {
+function handleFileUpload(e) {
     const file = e.target.files[0]
     if (file) {
       // Validate file type
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg']
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp']
       if (!allowedTypes.includes(file.type)) {
-        toast.error('Please upload a valid image file (JPEG, PNG)')
+        toast.error('Please upload a valid image file (JPEG, PNG, WebP)')
         return
       }
       // Validate file size (5MB max)
@@ -89,8 +89,23 @@ const { cart, clearCart } = useCart()
         toast.error('File size should be less than 5MB')
         return
       }
+      
+      // Clear any previous errors
+      if (errors.paymentProof) {
+        setErrors(prev => ({
+          ...prev,
+          paymentProof: ''
+        }))
+      }
+      
       setPaymentProof(file)
+      toast.success('Payment proof uploaded successfully')
     }
+  }
+
+  function removePaymentProof() {
+    setPaymentProof(null)
+    toast.info('Payment proof removed')
   }
 
   function validateForm() {
@@ -464,25 +479,87 @@ const { cart, clearCart } = useCart()
                   ))}
                 </div>
                 
-                {paymentMethod === 'bank' && (
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Upload Payment Proof
-                    </label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileUpload}
-                      className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/90"
-                    />
-                    {errors.paymentProof && (
-                      <p className="mt-1 text-sm text-red-600">{errors.paymentProof}</p>
-                    )}
+{paymentMethod === 'bank' && (
+                  <div className="mt-4 space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Upload Payment Proof *
+                      </label>
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-primary transition-colors">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileUpload}
+                          className="hidden"
+                          id="payment-proof-upload"
+                        />
+                        <label
+                          htmlFor="payment-proof-upload"
+                          className="cursor-pointer flex flex-col items-center space-y-2"
+                        >
+                          <ApperIcon name="Upload" size={32} className="text-gray-400" />
+                          <div>
+                            <span className="text-primary font-medium">Click to upload</span>
+                            <span className="text-gray-500"> or drag and drop</span>
+                          </div>
+                          <span className="text-xs text-gray-400">PNG, JPG, WebP up to 5MB</span>
+                        </label>
+                      </div>
+                      {errors.paymentProof && (
+                        <p className="mt-1 text-sm text-red-600">{errors.paymentProof}</p>
+                      )}
+                    </div>
+                    
                     {paymentProof && (
-                      <p className="mt-2 text-sm text-green-600">
-                        File uploaded: {paymentProof.name}
-                      </p>
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div className="flex-shrink-0">
+                              <ApperIcon name="FileImage" size={20} className="text-green-600" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-green-800">
+                                {paymentProof.name}
+                              </p>
+                              <p className="text-xs text-green-600">
+                                {(paymentProof.size / 1024 / 1024).toFixed(2)} MB
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={removePaymentProof}
+                            className="text-green-600 hover:text-green-800 transition-colors"
+                          >
+                            <ApperIcon name="X" size={16} />
+                          </button>
+                        </div>
+                        {paymentProof && (
+                          <div className="mt-3">
+                            <img
+                              src={URL.createObjectURL(paymentProof)}
+                              alt="Payment proof preview"
+                              className="max-w-full h-32 object-cover rounded-lg border border-green-200"
+                            />
+                          </div>
+                        )}
+                      </div>
                     )}
+                    
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <div className="flex items-start space-x-3">
+                        <ApperIcon name="Info" size={20} className="text-blue-600 flex-shrink-0 mt-0.5" />
+                        <div className="text-sm text-blue-800">
+                          <p className="font-medium mb-1">Bank Transfer Instructions:</p>
+                          <ul className="space-y-1 text-xs">
+                            <li>• Transfer the exact amount to our bank account</li>
+                            <li>• Take a clear screenshot of the transaction receipt</li>
+                            <li>• Upload the receipt image above</li>
+                            <li>• Your order will be processed after verification</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>

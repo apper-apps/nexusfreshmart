@@ -14,13 +14,14 @@ const PaymentManagement = () => {
   const [transactions, setTransactions] = useState([]);
   const [walletTransactions, setWalletTransactions] = useState([]);
   const [paymentMethods, setPaymentMethods] = useState([]);
-  const [stats, setStats] = useState({
+const [stats, setStats] = useState({
     totalTransactions: 0,
     successfulTransactions: 0,
     failedTransactions: 0,
     totalRevenue: 0,
     walletBalance: 0,
-    pendingRefunds: 0
+    pendingRefunds: 0,
+    pendingVerifications: 0
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -29,33 +30,37 @@ const PaymentManagement = () => {
   const [refundReason, setRefundReason] = useState('');
   const [selectedTransactionId, setSelectedTransactionId] = useState(null);
   const [processingRefund, setProcessingRefund] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterMethod, setFilterMethod] = useState('all');
+  const [pendingVerifications, setPendingVerifications] = useState([]);
+  const [processingVerification, setProcessingVerification] = useState(false);
 
   useEffect(() => {
     loadPaymentData();
   }, []);
 
-  const loadPaymentData = async () => {
+const loadPaymentData = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const [allTransactions, walletTxns, methods, orders] = await Promise.all([
+      const [allTransactions, walletTxns, methods, orders, verifications] = await Promise.all([
         paymentService.getAllTransactions(),
         paymentService.getWalletTransactions(),
         paymentService.getAvailablePaymentMethods(),
-        orderService.getAll()
+        orderService.getAll(),
+        orderService.getPendingVerifications()
       ]);
 
       const walletBalance = await paymentService.getWalletBalance();
 
       // Calculate stats
-      const successfulTxns = allTransactions.filter(t => t.status === 'completed');
+const successfulTxns = allTransactions.filter(t => t.status === 'completed');
       const failedTxns = allTransactions.filter(t => t.status === 'failed');
       const totalRevenue = successfulTxns.reduce((sum, t) => sum + t.amount, 0);
       const pendingRefunds = orders.filter(o => o.refundRequested).length;
+      const pendingVerificationsCount = verifications.length;
 
       setStats({
         totalTransactions: allTransactions.length,
@@ -63,12 +68,14 @@ const PaymentManagement = () => {
         failedTransactions: failedTxns.length,
         totalRevenue,
         walletBalance,
-        pendingRefunds
+        pendingRefunds,
+        pendingVerifications: pendingVerificationsCount
       });
 
-      setTransactions(allTransactions);
+setTransactions(allTransactions);
       setWalletTransactions(walletTxns);
       setPaymentMethods(methods);
+      setPendingVerifications(verifications);
 
     } catch (err) {
       setError(err.message);
@@ -96,6 +103,21 @@ const PaymentManagement = () => {
       toast.error(error.message || 'Failed to process refund');
     } finally {
       setProcessingRefund(false);
+    }
+};
+
+  const handleVerificationAction = async (orderId, action, notes = '') => {
+    setProcessingVerification(true);
+    try {
+      const status = action === 'approve' ? 'verified' : 'rejected';
+      await orderService.updateVerificationStatus(orderId, status, notes);
+      
+      toast.success(`Payment ${action === 'approve' ? 'approved' : 'rejected'} successfully`);
+      loadPaymentData();
+    } catch (error) {
+      toast.error(error.message || `Failed to ${action} payment`);
+    } finally {
+      setProcessingVerification(false);
     }
   };
 
@@ -135,11 +157,12 @@ const PaymentManagement = () => {
     });
   };
 
-  const tabs = [
+const tabs = [
     { id: 'overview', label: 'Overview', icon: 'BarChart3' },
     { id: 'transactions', label: 'Transactions', icon: 'CreditCard' },
     { id: 'wallet', label: 'Wallet Management', icon: 'Wallet' },
     { id: 'methods', label: 'Payment Methods', icon: 'Settings' },
+    { id: 'verification', label: 'Payment Verification', icon: 'Shield' },
     { id: 'refunds', label: 'Refunds', icon: 'RefreshCw' }
   ];
 
@@ -192,7 +215,7 @@ const PaymentManagement = () => {
           </div>
         </div>
 
-        <div className="card p-6 bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+<div className="card p-6 bg-gradient-to-r from-purple-500 to-pink-500 text-white">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-purple-100 text-sm font-medium">Wallet Balance</p>
@@ -200,6 +223,18 @@ const PaymentManagement = () => {
             </div>
             <div className="bg-white/20 p-3 rounded-lg">
               <ApperIcon name="Wallet" size={24} />
+            </div>
+          </div>
+        </div>
+
+        <div className="card p-6 bg-gradient-to-r from-orange-500 to-red-500 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-orange-100 text-sm font-medium">Pending Verifications</p>
+              <p className="text-3xl font-bold">{stats.pendingVerifications}</p>
+            </div>
+            <div className="bg-white/20 p-3 rounded-lg">
+              <ApperIcon name="Shield" size={24} />
             </div>
           </div>
         </div>
@@ -249,9 +284,13 @@ const PaymentManagement = () => {
                   <span className="text-gray-600">Failed Transactions</span>
                   <span className="font-semibold text-red-600">{stats.failedTransactions}</span>
                 </div>
-                <div className="flex justify-between items-center">
+<div className="flex justify-between items-center">
                   <span className="text-gray-600">Pending Refunds</span>
                   <span className="font-semibold text-orange-600">{stats.pendingRefunds}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Pending Verifications</span>
+                  <span className="font-semibold text-yellow-600">{stats.pendingVerifications}</span>
                 </div>
               </div>
             </div>
@@ -555,6 +594,97 @@ const PaymentManagement = () => {
                 </div>
               </div>
             </div>
+</div>
+        )}
+
+        {activeTab === 'verification' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Payment Verification Queue</h3>
+              <div className="flex items-center space-x-2 text-sm text-gray-600">
+                <ApperIcon name="Clock" size={16} />
+                <span>{stats.pendingVerifications} pending verifications</span>
+              </div>
+            </div>
+
+            {pendingVerifications.length === 0 ? (
+              <div className="card p-8 text-center">
+                <ApperIcon name="CheckCircle" size={48} className="text-green-400 mx-auto mb-4" />
+                <h4 className="text-lg font-medium text-gray-900 mb-2">All Caught Up!</h4>
+                <p className="text-gray-600">No payment verifications pending at the moment.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {pendingVerifications.map((verification) => (
+                  <div key={verification.Id} className="card p-6 border-l-4 border-yellow-400">
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h4 className="font-semibold text-gray-900">Order #{verification.orderId}</h4>
+                        <p className="text-sm text-gray-600">
+                          Submitted {format(new Date(verification.submittedAt), 'MMM dd, yyyy hh:mm a')}
+                        </p>
+                      </div>
+                      <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">
+                        Pending
+                      </span>
+                    </div>
+
+                    <div className="space-y-3 mb-4">
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Amount:</span>
+                        <span className="font-medium">Rs. {verification.amount.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Payment Method:</span>
+                        <span className="font-medium capitalize">{verification.paymentMethod}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Customer:</span>
+                        <span className="font-medium">{verification.customerName}</span>
+                      </div>
+                    </div>
+
+                    {verification.paymentProof && (
+                      <div className="mb-4">
+                        <p className="text-sm font-medium text-gray-700 mb-2">Payment Proof:</p>
+                        <div className="relative">
+                          <img
+                            src={verification.paymentProof}
+                            alt="Payment proof"
+                            className="w-full h-48 object-cover rounded-lg border border-gray-200"
+                          />
+                          <button
+                            onClick={() => window.open(verification.paymentProof, '_blank')}
+                            className="absolute top-2 right-2 bg-white/80 hover:bg-white p-2 rounded-lg transition-colors"
+                          >
+                            <ApperIcon name="ExternalLink" size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex space-x-3">
+                      <Button
+                        onClick={() => handleVerificationAction(verification.orderId, 'approve')}
+                        disabled={processingVerification}
+                        className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+                      >
+                        <ApperIcon name="Check" size={16} className="mr-2" />
+                        Approve
+                      </Button>
+                      <Button
+                        onClick={() => handleVerificationAction(verification.orderId, 'reject', 'Invalid payment proof')}
+                        disabled={processingVerification}
+                        className="flex-1 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600"
+                      >
+                        <ApperIcon name="X" size={16} className="mr-2" />
+                        Reject
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
