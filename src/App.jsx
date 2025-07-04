@@ -25,18 +25,32 @@ function App() {
   const [sdkReady, setSdkReady] = useState(false);
   const [sdkError, setSdkError] = useState(null);
   
-  // Enhanced SDK status checking with better error handling
+// Enhanced SDK status checking with better error handling
   function checkSDKStatus() {
-    const status = {
-      available: typeof window.Apper !== 'undefined',
-      initialized: typeof window.Apper?.init === 'function',
-      ready: typeof window.Apper !== 'undefined' && typeof window.Apper.init === 'function'
-    };
-    
-    // Log status for debugging
-    console.log('SDK Status Check:', status);
-    
-    return status;
+    try {
+      const status = {
+        available: typeof window.Apper !== 'undefined',
+        initialized: typeof window.Apper?.init === 'function',
+        ready: typeof window.Apper !== 'undefined' && typeof window.Apper.init === 'function',
+        sdkInstance: typeof window.apperSDK !== 'undefined',
+        instanceReady: window.apperSDK?.isInitialized === true
+      };
+      
+      // Log status for debugging
+      console.log('SDK Status Check:', status);
+      
+      return status;
+    } catch (error) {
+      console.error('Error checking SDK status:', error);
+      return {
+        available: false,
+        initialized: false,
+        ready: false,
+        sdkInstance: false,
+        instanceReady: false,
+        error: error.message
+      };
+    }
   }
 
   useEffect(() => {
@@ -132,11 +146,29 @@ function App() {
   const sdkUtils = {
     ready: sdkReady,
     error: sdkError,
-    checkStatus: checkSDKStatus,
-    reinitialize: () => {
-      if (typeof window.apperSDK !== 'undefined') {
-        window.apperSDK.isInitialized = false;
-        window.apperSDK.initialize().catch(console.error);
+checkStatus: checkSDKStatus,
+    reinitialize: async () => {
+      try {
+        if (typeof window.apperSDK !== 'undefined' && window.apperSDK) {
+          window.apperSDK.isInitialized = false;
+          await window.apperSDK.initialize();
+          setSdkReady(true);
+          setSdkError(null);
+        } else {
+          // Create new SDK instance if not available
+          const ApperSDK = window.ApperSDK;
+          if (ApperSDK) {
+            window.apperSDK = new ApperSDK();
+            await window.apperSDK.initialize();
+            setSdkReady(true);
+            setSdkError(null);
+          } else {
+            throw new Error('SDK class not available for reinitialization');
+          }
+        }
+      } catch (error) {
+        console.error('Failed to reinitialize SDK:', error);
+        setSdkError(error);
       }
     }
   };
