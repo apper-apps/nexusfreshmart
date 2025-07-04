@@ -237,7 +237,7 @@ return revenueByMethod;
   }
 
   // Payment Verification Methods
-  async getPendingVerifications() {
+async getPendingVerifications() {
     await this.delay();
     return this.orders
       .filter(order => order.verificationStatus === 'pending' && order.paymentProof)
@@ -247,14 +247,14 @@ return revenueByMethod;
         amount: order.total,
         paymentMethod: order.paymentMethod,
         customerName: order.deliveryAddress?.name || 'Unknown',
-        paymentProof: order.paymentProof,
-        paymentProofFileName: order.paymentProofFileName,
-        submittedAt: order.paymentProofSubmittedAt || order.createdAt,
+        paymentProof: `/api/uploads/${order.paymentProof.fileName}`, // Simulate proof URL
+        paymentProofFileName: order.paymentProof.fileName,
+        submittedAt: order.paymentProof.uploadedAt || order.createdAt,
         verificationStatus: order.verificationStatus
       }));
   }
 
-  async updateVerificationStatus(orderId, status, notes = '') {
+async updateVerificationStatus(orderId, status, notes = '') {
     await this.delay();
     const orderIndex = this.orders.findIndex(o => o.id === parseInt(orderId));
     
@@ -264,7 +264,7 @@ return revenueByMethod;
 
     const order = this.orders[orderIndex];
     
-    if (order.verificationStatus !== 'pending') {
+    if (order.verificationStatus && order.verificationStatus !== 'pending') {
       throw new Error('Order verification is not pending');
     }
 
@@ -273,10 +273,20 @@ return revenueByMethod;
       verificationStatus: status,
       verificationNotes: notes,
       verifiedAt: new Date().toISOString(),
+      verifiedBy: 'admin',
       paymentStatus: status === 'verified' ? 'completed' : 'verification_failed',
       status: status === 'verified' ? 'confirmed' : 'payment_verification_failed',
       updatedAt: new Date().toISOString()
     };
+
+    // If verified, move order to confirmed status for processing
+    if (status === 'verified') {
+      updatedOrder.status = 'confirmed';
+      updatedOrder.paymentVerifiedAt = new Date().toISOString();
+    } else {
+      updatedOrder.status = 'payment_rejected';
+      updatedOrder.paymentRejectedAt = new Date().toISOString();
+    }
 
     this.orders[orderIndex] = updatedOrder;
     return { ...updatedOrder };

@@ -135,9 +135,10 @@ const quickActions = [
     { label: 'Manage Products', path: '/admin/products', icon: 'Package', color: 'from-blue-500 to-cyan-500' },
     { label: 'POS Terminal', path: '/admin/pos', icon: 'Calculator', color: 'from-green-500 to-emerald-500' },
     { label: 'View Orders', path: '/orders', icon: 'ShoppingCart', color: 'from-purple-500 to-pink-500' },
+    { label: 'Payment Verification', path: '/admin/payments?tab=verification', icon: 'Shield', color: 'from-orange-500 to-red-500' },
     { label: 'Payment Management', path: '/admin/payments', icon: 'CreditCard', color: 'from-teal-500 to-cyan-500' },
     { label: 'Delivery Tracking', path: '/admin/delivery-dashboard', icon: 'MapPin', color: 'from-indigo-500 to-purple-500' },
-    { label: 'Analytics', path: '/admin/analytics', icon: 'TrendingUp', color: 'from-orange-500 to-red-500' }
+    { label: 'Analytics', path: '/admin/analytics', icon: 'TrendingUp', color: 'from-amber-500 to-orange-500' }
   ];
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -449,3 +450,15 @@ const quickActions = [
 };
 
 export default AdminDashboard;
+<div className="card p-6 bg-gradient-to-r from-orange-500 to-red-500 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-orange-100 text-sm font-medium">Payment Verifications</p>
+              <p className="text-3xl font-bold">{stats.pendingVerifications}</p>
+              <p className="text-orange-100 text-xs">Pending admin review</p>
+            </div>
+            <div className="bg-white/20 p-3 rounded-lg">
+              <ApperIcon name="Shield" size={24} />
+            </div>
+          </div>
+        </div>

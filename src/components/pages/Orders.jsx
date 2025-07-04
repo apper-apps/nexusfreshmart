@@ -89,9 +89,30 @@ const Orders = () => {
                   </p>
                 </div>
               </div>
-              
-              <div className="flex items-center space-x-4">
+<div className="flex items-center space-x-4">
                 <OrderStatusBadge status={order.status} />
+                {(order.paymentMethod === 'jazzcash' || order.paymentMethod === 'easypaisa' || order.paymentMethod === 'bank') && (
+                  <div className="flex items-center space-x-1">
+                    {order.verificationStatus === 'verified' && (
+                      <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full flex items-center">
+                        <ApperIcon name="CheckCircle" size={12} className="mr-1" />
+                        Payment Verified
+                      </span>
+                    )}
+                    {order.verificationStatus === 'rejected' && (
+                      <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full flex items-center">
+                        <ApperIcon name="XCircle" size={12} className="mr-1" />
+                        Payment Rejected
+                      </span>
+                    )}
+                    {order.verificationStatus === 'pending' && (
+                      <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full flex items-center">
+                        <ApperIcon name="Clock" size={12} className="mr-1" />
+                        Pending Verification
+                      </span>
+                    )}
+                  </div>
+                )}
                 <div className="text-right">
                   <p className="text-xl font-bold gradient-text">
                     Rs. {order.total.toLocaleString()}

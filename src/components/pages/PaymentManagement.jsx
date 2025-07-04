@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { format } from 'date-fns';
-import { toast } from 'react-toastify';
-import ApperIcon from '@/components/ApperIcon';
-import Button from '@/components/atoms/Button';
-import Input from '@/components/atoms/Input';
-import Loading from '@/components/ui/Loading';
-import Error from '@/components/ui/Error';
-import { paymentService } from '@/services/api/paymentService';
-import { orderService } from '@/services/api/orderService';
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { format } from "date-fns";
+import { toast } from "react-toastify";
+import ApperIcon from "@/components/ApperIcon";
+import Button from "@/components/atoms/Button";
+import Input from "@/components/atoms/Input";
+import Error from "@/components/ui/Error";
+import Loading from "@/components/ui/Loading";
+import { orderService } from "@/services/api/orderService";
+import { paymentService } from "@/services/api/paymentService";
 
 // Payment Gateway Management Component
 const PaymentGatewayManagement = ({ paymentMethods, onGatewayUpdate }) => {
@@ -337,7 +337,7 @@ const PaymentManagement = () => {
   const [transactions, setTransactions] = useState([]);
   const [walletTransactions, setWalletTransactions] = useState([]);
   const [paymentMethods, setPaymentMethods] = useState([]);
-const [stats, setStats] = useState({
+  const [stats, setStats] = useState({
     totalTransactions: 0,
     successfulTransactions: 0,
     failedTransactions: 0,
@@ -348,22 +348,27 @@ const [stats, setStats] = useState({
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('overview');
-  const [refundAmount, setRefundAmount] = useState('');
-  const [refundReason, setRefundReason] = useState('');
-  const [selectedTransactionId, setSelectedTransactionId] = useState(null);
-  const [processingRefund, setProcessingRefund] = useState(false);
-const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
   const [filterMethod, setFilterMethod] = useState('all');
   const [pendingVerifications, setPendingVerifications] = useState([]);
   const [processingVerification, setProcessingVerification] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [selectedTransactionId, setSelectedTransactionId] = useState(null);
+  const [refundAmount, setRefundAmount] = useState('');
+  const [refundReason, setRefundReason] = useState('');
+  const [processingRefund, setProcessingRefund] = useState(false);
 
-  useEffect(() => {
-    loadPaymentData();
-  }, []);
+  const tabs = [
+    { id: 'overview', label: 'Overview', icon: 'BarChart3' },
+    { id: 'transactions', label: 'Transactions', icon: 'CreditCard' },
+    { id: 'wallet', label: 'Wallet Management', icon: 'Wallet' },
+    { id: 'methods', label: 'Payment Methods', icon: 'Settings' },
+    { id: 'verification', label: 'Payment Verification', icon: 'Shield' },
+    { id: 'refunds', label: 'Refunds', icon: 'RefreshCw' }
+  ];
 
-const loadPaymentData = async () => {
+  const loadPaymentData = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -379,7 +384,7 @@ const loadPaymentData = async () => {
       const walletBalance = await paymentService.getWalletBalance();
 
       // Calculate stats
-const successfulTxns = allTransactions.filter(t => t.status === 'completed');
+      const successfulTxns = allTransactions.filter(t => t.status === 'completed');
       const failedTxns = allTransactions.filter(t => t.status === 'failed');
       const totalRevenue = successfulTxns.reduce((sum, t) => sum + t.amount, 0);
       const pendingRefunds = orders.filter(o => o.refundRequested).length;
@@ -395,7 +400,7 @@ const successfulTxns = allTransactions.filter(t => t.status === 'completed');
         pendingVerifications: pendingVerificationsCount
       });
 
-setTransactions(allTransactions);
+      setTransactions(allTransactions);
       setWalletTransactions(walletTxns);
       setPaymentMethods(methods);
       setPendingVerifications(verifications);
@@ -407,6 +412,19 @@ setTransactions(allTransactions);
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadPaymentData();
+  }, []);
+
+  useEffect(() => {
+    // Check for tab parameter in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+    if (tabParam && tabs.find(t => t.id === tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, []);
 
   const handleRefundProcess = async (orderId) => {
     if (!refundAmount || !refundReason) {
@@ -469,7 +487,8 @@ setTransactions(allTransactions);
     }
   };
 
-  const getFilteredTransactions = () => {
+
+const getFilteredTransactions = () => {
     return transactions.filter(transaction => {
       const matchesSearch = transaction.transactionId.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            transaction.orderId.toString().includes(searchTerm);
@@ -479,15 +498,6 @@ setTransactions(allTransactions);
       return matchesSearch && matchesStatus && matchesMethod;
     });
   };
-
-const tabs = [
-    { id: 'overview', label: 'Overview', icon: 'BarChart3' },
-    { id: 'transactions', label: 'Transactions', icon: 'CreditCard' },
-    { id: 'wallet', label: 'Wallet Management', icon: 'Wallet' },
-    { id: 'methods', label: 'Payment Methods', icon: 'Settings' },
-    { id: 'verification', label: 'Payment Verification', icon: 'Shield' },
-    { id: 'refunds', label: 'Refunds', icon: 'RefreshCw' }
-  ];
 
   if (loading) {
     return (
@@ -894,10 +904,11 @@ const tabs = [
             </div>
 
             {pendingVerifications.length === 0 ? (
-              <div className="card p-8 text-center">
+<div className="card p-8 text-center">
                 <ApperIcon name="CheckCircle" size={48} className="text-green-400 mx-auto mb-4" />
                 <h4 className="text-lg font-medium text-gray-900 mb-2">All Caught Up!</h4>
                 <p className="text-gray-600">No payment verifications pending at the moment.</p>
+                <p className="text-sm text-gray-500 mt-2">New payment proofs will appear here for admin review.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -949,22 +960,30 @@ const tabs = [
                       </div>
                     )}
 
-                    <div className="flex space-x-3">
+<div className="flex space-x-3">
                       <Button
-                        onClick={() => handleVerificationAction(verification.orderId, 'approve')}
+                        onClick={() => handleVerificationAction(verification.orderId, 'approve', 'Payment verified by admin')}
                         disabled={processingVerification}
                         className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
                       >
-                        <ApperIcon name="Check" size={16} className="mr-2" />
-                        Approve
+                        {processingVerification ? (
+                          <ApperIcon name="Loader" size={16} className="mr-2 animate-spin" />
+                        ) : (
+                          <ApperIcon name="Check" size={16} className="mr-2" />
+                        )}
+                        Verify Payment
                       </Button>
                       <Button
-                        onClick={() => handleVerificationAction(verification.orderId, 'reject', 'Invalid payment proof')}
+                        onClick={() => handleVerificationAction(verification.orderId, 'reject', 'Payment proof rejected - invalid or unclear')}
                         disabled={processingVerification}
                         className="flex-1 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600"
                       >
-                        <ApperIcon name="X" size={16} className="mr-2" />
-                        Reject
+                        {processingVerification ? (
+                          <ApperIcon name="Loader" size={16} className="mr-2 animate-spin" />
+                        ) : (
+                          <ApperIcon name="X" size={16} className="mr-2" />
+                        )}
+                        Reject Payment
                       </Button>
                     </div>
                   </div>
