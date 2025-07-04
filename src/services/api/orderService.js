@@ -1,5 +1,5 @@
-import ordersData from '../mockData/orders.json';
-import { paymentService } from './paymentService';
+import ordersData from "../mockData/orders.json";
+import { paymentService } from "@/services/api/paymentService";
 
 class OrderService {
   constructor() {
@@ -18,19 +18,40 @@ class OrderService {
       throw new Error('Order not found');
     }
     return { ...order };
-  }
+}
 
-async create(orderData) {
+  async create(orderData) {
     await this.delay();
-    const newOrder = {
+    // Validate payment data
+    if (orderData.paymentMethod && orderData.paymentMethod !== 'cash') {
+      if (!orderData.paymentResult && orderData.paymentMethod !== 'wallet') {
+        throw new Error('Payment result is required for non-cash payments');
+      }
+    }
+    
+const newOrder = {
       id: this.getNextId(),
       ...orderData,
-      createdAt: new Date().toISOString()
+      paymentStatus: orderData.paymentStatus || (orderData.paymentMethod === 'cash' ? 'pending' : 'completed'),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
     
-    // If payment method is wallet, record wallet transaction
+    // Handle wallet payments
     if (orderData.paymentMethod === 'wallet') {
-      await paymentService.processWalletPayment(orderData.total, newOrder.id);
+try {
+        const walletTransaction = await paymentService.processWalletPayment(orderData.total, newOrder.id);
+        newOrder.paymentResult = walletTransaction;
+        newOrder.paymentStatus = 'completed';
+      } catch (walletError) {
+        throw new Error('Wallet payment failed: ' + walletError.message);
+      }
+    }
+    
+    // Handle bank transfer verification
+    if (orderData.paymentMethod === 'bank' && orderData.paymentResult?.requiresVerification) {
+      newOrder.paymentStatus = 'pending_verification';
+      newOrder.status = 'payment_pending';
     }
     
     this.orders.push(newOrder);
@@ -56,13 +77,15 @@ async create(orderData) {
     this.orders.splice(index, 1);
     return true;
   }
+}
 
   getNextId() {
     const maxId = this.orders.reduce((max, order) => 
       order.id > max ? order.id : max, 0);
     return maxId + 1;
   }
-async assignDeliveryPersonnel(orderId, deliveryPersonId) {
+
+  async assignDeliveryPersonnel(orderId, deliveryPersonId) {
     await this.delay();
     const order = await this.getById(orderId);
     const updatedOrder = {
@@ -72,7 +95,6 @@ async assignDeliveryPersonnel(orderId, deliveryPersonId) {
     };
     return await this.update(orderId, updatedOrder);
   }
-
   async updateDeliveryStatus(orderId, deliveryStatus, actualDelivery = null) {
     await this.delay();
     const order = await this.getById(orderId);
@@ -92,9 +114,9 @@ async assignDeliveryPersonnel(orderId, deliveryPersonId) {
   async getOrdersByDeliveryStatus(deliveryStatus) {
     await this.delay();
     return this.orders.filter(order => order.deliveryStatus === deliveryStatus);
-  }
+}
 
-// Payment Integration Methods
+  // Payment Integration Methods
   async updatePaymentStatus(orderId, paymentStatus, paymentResult = null) {
     await this.delay();
     const order = await this.getById(orderId);
@@ -102,7 +124,9 @@ async assignDeliveryPersonnel(orderId, deliveryPersonId) {
       ...order,
       paymentStatus,
       paymentResult,
-      ...(paymentStatus === 'paid' && { paidAt: new Date().toISOString() })
+      updatedAt: new Date().toISOString(),
+      ...(paymentStatus === 'completed' && { paidAt: new Date().toISOString() }),
+      ...(paymentStatus === 'completed' && order.status === 'payment_pending' && { status: 'confirmed' })
     };
     return await this.update(orderId, updatedOrder);
   }
@@ -117,11 +141,54 @@ async assignDeliveryPersonnel(orderId, deliveryPersonId) {
     return this.orders.filter(order => order.paymentMethod === paymentMethod);
   }
 
-  async processRefund(orderId, refundAmount, reason) {
+  async verifyOrderPayment(orderId, verificationData) {
     await this.delay();
     const order = await this.getById(orderId);
+    
+    if (order.paymentStatus !== 'pending_verification') {
+      throw new Error('Order payment does not require verification');
+    }
+    
+    try {
+      const verificationResult = await paymentService.verifyPayment(
+        order.paymentResult.transactionId, 
+        verificationData
+      );
+      
+      if (verificationResult.verified) {
+        const updatedOrder = await this.updatePaymentStatus(orderId, 'completed', verificationResult.transaction);
+        return updatedOrder;
+      } else {
+        throw new Error('Payment verification failed');
+      }
+    } catch (error) {
+      throw new Error('Payment verification error: ' + error.message);
+    }
+  }
+
+  async retryPayment(orderId, newPaymentData) {
+    await this.delay();
+    const order = await this.getById(orderId);
+    
+    if (order.paymentStatus === 'completed') {
+      throw new Error('Payment already completed for this order');
+    }
+    
+    const updatedOrder = {
+      ...order,
+      paymentResult: newPaymentData,
+      paymentStatus: 'completed',
+      updatedAt: new Date().toISOString(),
+      paidAt: new Date().toISOString()
+    };
+    
+    return await this.update(orderId, updatedOrder);
+  }
+  async processRefund(orderId, refundAmount, reason) {
+    await this.delay();
+const order = await this.getById(orderId);
     const refund = {
-      id: this.getNextId(),
+      id: Date.now(), // Use timestamp for refund ID
       orderId,
       amount: refundAmount,
       reason,
@@ -137,8 +204,9 @@ async assignDeliveryPersonnel(orderId, deliveryPersonId) {
     };
     
     return await this.update(orderId, updatedOrder);
-  }
-async getMonthlyRevenue() {
+}
+
+  async getMonthlyRevenue() {
     await this.delay();
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();

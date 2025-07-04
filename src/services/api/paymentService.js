@@ -137,9 +137,64 @@ class PaymentService {
     }
 
     return { verified, transaction: { ...transaction } };
+return { verified, transaction: { ...transaction } };
   }
 
-  // Get Payment Methods
+  // Enhanced Payment Retry Logic
+  async retryPayment(originalTransactionId, retryData) {
+    await this.delay(1000);
+    
+    const originalTransaction = this.transactions.find(t => t.transactionId === originalTransactionId);
+    if (!originalTransaction) {
+      throw new Error('Original transaction not found');
+    }
+    
+    // Create retry transaction
+    const retryTransaction = {
+      Id: this.getNextId(),
+      orderId: originalTransaction.orderId,
+      amount: originalTransaction.amount,
+      paymentMethod: originalTransaction.paymentMethod,
+      status: 'processing',
+      transactionId: this.generateTransactionId(),
+      timestamp: new Date().toISOString(),
+      isRetry: true,
+      originalTransactionId: originalTransactionId,
+      retryAttempt: (originalTransaction.retryAttempt || 0) + 1,
+      ...retryData
+    };
+    
+    // Simulate retry processing
+    const success = Math.random() > 0.3; // 70% success rate for retries
+    
+    if (success) {
+      retryTransaction.status = 'completed';
+      retryTransaction.gatewayResponse = {
+        authCode: this.generateAuthCode(),
+        reference: this.generateReference()
+      };
+    } else {
+      retryTransaction.status = 'failed';
+      retryTransaction.failureReason = 'Retry payment failed';
+    }
+    
+    this.transactions.push(retryTransaction);
+    return { ...retryTransaction };
+  }
+
+  // Enhanced Error Handling
+  async handlePaymentError(transactionId, errorDetails) {
+    await this.delay(300);
+    
+    const transaction = this.transactions.find(t => t.transactionId === transactionId);
+    if (transaction) {
+      transaction.status = 'failed';
+      transaction.errorDetails = errorDetails;
+      transaction.failedAt = new Date().toISOString();
+    }
+    
+    return transaction;
+  }
   getAvailablePaymentMethods() {
     return [
       {

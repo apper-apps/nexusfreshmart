@@ -1,22 +1,25 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
-import ApperIcon from '@/components/ApperIcon';
-import Button from '@/components/atoms/Button';
-import Input from '@/components/atoms/Input';
-import PaymentMethod from '@/components/molecules/PaymentMethod';
-import { useCart } from '@/hooks/useCart';
-import { orderService } from '@/services/api/orderService';
-import { paymentService } from '@/services/api/paymentService';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { useCart } from "@/hooks/useCart";
+import ApperIcon from "@/components/ApperIcon";
+import Button from "@/components/atoms/Button";
+import Input from "@/components/atoms/Input";
+import PaymentMethod from "@/components/molecules/PaymentMethod";
+import { orderService } from "@/services/api/orderService";
+import { paymentService } from "@/services/api/paymentService";
 
 const Checkout = () => {
   const navigate = useNavigate();
   const { cart, getCartTotal, clearCart } = useCart();
-const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('');
   const [paymentProof, setPaymentProof] = useState(null);
   const [cardData, setCardData] = useState({});
   const [processingPayment, setProcessingPayment] = useState(false);
+  const [paymentRetryCount, setPaymentRetryCount] = useState(0);
+  const [verificationRequired, setVerificationRequired] = useState(false);
+  const [pendingTransaction, setPendingTransaction] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -65,11 +68,85 @@ const [loading, setLoading] = useState(false);
       return false;
     }
     
-    return true;
+return true;
   };
 
-const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handlePaymentRetry = async () => {
+    if (paymentRetryCount >= 3) {
+      toast.error('Maximum retry attempts reached. Please try a different payment method.');
+      return;
+    }
+    
+    setPaymentRetryCount(prev => prev + 1);
+    await handleSubmit(null, true);
+  };
+
+  const handlePaymentVerification = async (transactionId) => {
+    try {
+      setProcessingPayment(true);
+      const verificationResult = await paymentService.verifyPayment(transactionId, {
+        paymentProof: paymentProof,
+        customerPhone: formData.phone
+      });
+      
+      if (verificationResult.verified) {
+        toast.success('Payment verified successfully!');
+        setVerificationRequired(false);
+        // Continue with order creation
+        await completeOrder(verificationResult.transaction);
+      } else {
+        toast.error('Payment verification failed. Please contact support.');
+      }
+    } catch (error) {
+      toast.error('Verification failed: ' + error.message);
+    } finally {
+      setProcessingPayment(false);
+    }
+  };
+
+  const completeOrder = async (paymentResult) => {
+    try {
+      const orderData = {
+        items: cart.map(item => ({
+          productId: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          unit: item.unit
+        })),
+        total: total,
+        deliveryCharge: deliveryCharge,
+        paymentMethod: paymentMethod,
+        paymentResult: paymentResult,
+        paymentStatus: paymentResult?.status || 'pending',
+        paymentProof: paymentProof ? {
+          fileName: paymentProof.name,
+          fileSize: paymentProof.size,
+          uploadedAt: new Date().toISOString()
+        } : null,
+        deliveryAddress: {
+          name: formData.name,
+          phone: formData.phone,
+          email: formData.email,
+          address: formData.address,
+          city: formData.city,
+          postalCode: formData.postalCode,
+          instructions: formData.instructions
+        },
+        status: paymentMethod === 'cash' ? 'pending' : 'confirmed'
+      };
+
+      const order = await orderService.create(orderData);
+      clearCart();
+      toast.success('Order placed successfully!');
+      navigate(`/orders/${order.Id}`);
+    } catch (error) {
+      toast.error('Failed to create order: ' + error.message);
+    }
+  };
+
+  const handleSubmit = async (e, isRetry = false) => {
+    if (e) e.preventDefault();
     
     if (!validateForm()) return;
     
@@ -97,57 +174,51 @@ const handleSubmit = async (e) => {
             paymentResult = await paymentService.processDigitalWalletPayment(paymentMethod, total, `ORDER-${Date.now()}`, formData.phone);
           } else if (paymentMethod === 'bank') {
             paymentResult = await paymentService.processBankTransfer(total, `ORDER-${Date.now()}`, {});
+            
+            // Bank transfers require verification
+            if (paymentResult.requiresVerification) {
+              setVerificationRequired(true);
+              setPendingTransaction(paymentResult);
+              toast.info('Payment submitted for verification. Please upload your payment proof.');
+              return;
+            }
+          } else if (paymentMethod === 'wallet') {
+            paymentResult = await paymentService.processWalletPayment(total, `ORDER-${Date.now()}`);
           }
           
           toast.success('Payment processed successfully!');
+          
+          // Complete order creation
+          await completeOrder(paymentResult);
+          
         } catch (paymentError) {
-          toast.error(paymentError.message);
+          console.error('Payment error:', paymentError);
+          
+          if (paymentError.message.includes('insufficient') || 
+              paymentError.message.includes('declined') || 
+              paymentError.message.includes('failed')) {
+            toast.error(paymentError.message);
+            
+            // Offer retry for certain errors
+            if (!isRetry && paymentRetryCount < 3) {
+              toast.info('Would you like to retry the payment?');
+            }
+          } else {
+            toast.error('Payment failed: ' + paymentError.message);
+          }
           return;
         }
+      } else {
+        // Cash on delivery - directly create order
+        await completeOrder(null);
       }
       
-      const orderData = {
-        items: cart.map(item => ({
-          productId: item.id,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          unit: item.unit
-        })),
-        total: total,
-        deliveryCharge: deliveryCharge,
-        paymentMethod: paymentMethod,
-        paymentResult: paymentResult,
-        paymentProof: paymentProof ? {
-          fileName: paymentProof.name,
-          fileSize: paymentProof.size,
-          uploadedAt: new Date().toISOString()
-        } : null,
-        deliveryAddress: {
-          name: formData.name,
-          phone: formData.phone,
-          email: formData.email,
-          address: formData.address,
-          city: formData.city,
-          postalCode: formData.postalCode,
-          instructions: formData.instructions
-        },
-        status: paymentMethod === 'cash' ? 'pending' : 'confirmed'
-      };
-
-      const order = await orderService.create(orderData);
-      
-      // Clear cart
-      clearCart();
-      
-      toast.success('Order placed successfully!');
-      navigate(`/orders/${order.id}`);
-      
     } catch (error) {
+      console.error('Order creation error:', error);
       toast.error('Failed to place order. Please try again.');
     } finally {
       setLoading(false);
-      setProcessingPayment(false);
+setProcessingPayment(false);
     }
   };
 
@@ -155,7 +226,6 @@ const handleSubmit = async (e) => {
     navigate('/cart');
     return null;
   }
-
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <h1 className="text-3xl font-bold text-gray-900 mb-8">Checkout</h1>
@@ -269,6 +339,36 @@ const handleSubmit = async (e) => {
                   )}
                 </div>
               </div>
+)}
+            
+            {/* Payment Verification Section */}
+            {verificationRequired && pendingTransaction && (
+              <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center space-x-2 mb-3">
+                  <ApperIcon name="Clock" size={20} className="text-blue-600" />
+                  <h4 className="font-medium text-blue-900">Payment Verification Required</h4>
+                </div>
+                <p className="text-sm text-blue-700 mb-4">
+                  Your payment has been submitted for verification. Please upload your payment proof to complete the order.
+                </p>
+                <div className="space-y-3">
+                  <div className="text-sm">
+                    <strong>Transaction ID:</strong> {pendingTransaction.transactionId}
+                  </div>
+                  <div className="text-sm">
+                    <strong>Amount:</strong> Rs. {total.toLocaleString()}
+                  </div>
+                  <Button
+                    variant="primary"
+                    size="small"
+                    onClick={() => handlePaymentVerification(pendingTransaction.transactionId)}
+                    loading={processingPayment}
+                    disabled={!paymentProof}
+                  >
+                    Verify Payment
+                  </Button>
+                </div>
+              </div>
             )}
           </div>
         </div>
@@ -314,17 +414,34 @@ const handleSubmit = async (e) => {
             </div>
           </div>
 
-          {/* Place Order Button */}
-<Button
-            variant="primary"
-            size="large"
-            icon="CreditCard"
-            onClick={handleSubmit}
-            loading={loading || processingPayment}
-            className="w-full"
-          >
-            {processingPayment ? 'Processing Payment...' : 'Place Order'}
-          </Button>
+{/* Place Order Button */}
+          <div className="space-y-3">
+            <Button
+              variant="primary"
+              size="large"
+              icon="CreditCard"
+              onClick={handleSubmit}
+              loading={loading || processingPayment}
+              disabled={verificationRequired}
+              className="w-full"
+            >
+              {processingPayment ? 'Processing Payment...' : 
+               verificationRequired ? 'Payment Verification Required' : 'Place Order'}
+            </Button>
+            
+            {/* Retry Button */}
+            {paymentRetryCount > 0 && paymentRetryCount < 3 && !processingPayment && (
+              <Button
+                variant="secondary"
+                size="large"
+                icon="RotateCcw"
+                onClick={handlePaymentRetry}
+                className="w-full"
+              >
+                Retry Payment ({3 - paymentRetryCount} attempts left)
+              </Button>
+            )}
+          </div>
           
           <p className="text-xs text-gray-500 mt-3 text-center">
             By placing this order, you agree to our terms and conditions.
