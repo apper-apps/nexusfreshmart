@@ -531,8 +531,442 @@ return { verified, transaction: { ...transaction } };
     return { success: true, gatewayId, enabled: false };
   }
 
-  delay(ms = 300) {
+delay(ms = 300) {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  // Vendor Management System
+  constructor() {
+    this.transactions = [];
+    this.walletBalance = 25000;
+    this.walletTransactions = [];
+    this.cardBrands = {
+      '4': 'visa',
+      '5': 'mastercard',
+      '3': 'amex',
+      '6': 'discover'
+    };
+    this.vendors = [];
+    this.vendorBills = [];
+    this.vendorPayments = [];
+    this.paymentProofs = [];
+    this.financeManagerRole = 'finance_manager';
+    this.currentUserRole = 'admin'; // Simulated user role
+  }
+
+  // Vendor CRUD Operations
+  async createVendor(vendorData) {
+    await this.delay(500);
+    
+    if (!vendorData.name || !vendorData.email || !vendorData.phone) {
+      throw new Error('Vendor name, email, and phone are required');
+    }
+
+    const vendor = {
+      Id: this.getNextVendorId(),
+      name: vendorData.name,
+      email: vendorData.email,
+      phone: vendorData.phone,
+      address: vendorData.address || '',
+      taxId: vendorData.taxId || '',
+      bankAccount: vendorData.bankAccount || '',
+      paymentTerms: vendorData.paymentTerms || 'Net 30',
+      status: 'active',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      totalPaid: 0,
+      totalOwed: 0,
+      lastPaymentDate: null
+    };
+
+    this.vendors.push(vendor);
+    return { ...vendor };
+  }
+
+  async updateVendor(vendorId, vendorData) {
+    await this.delay(400);
+    
+    const vendor = this.vendors.find(v => v.Id === vendorId);
+    if (!vendor) {
+      throw new Error('Vendor not found');
+    }
+
+    Object.assign(vendor, {
+      ...vendorData,
+      updatedAt: new Date().toISOString()
+    });
+
+    return { ...vendor };
+  }
+
+  async deleteVendor(vendorId) {
+    await this.delay(300);
+    
+    const index = this.vendors.findIndex(v => v.Id === vendorId);
+    if (index === -1) {
+      throw new Error('Vendor not found');
+    }
+
+    // Check for pending payments
+    const pendingPayments = this.vendorPayments.filter(p => 
+      p.vendorId === vendorId && p.status === 'pending'
+    );
+    
+    if (pendingPayments.length > 0) {
+      throw new Error('Cannot delete vendor with pending payments');
+    }
+
+    this.vendors.splice(index, 1);
+    return { success: true };
+  }
+
+  async getAllVendors() {
+    await this.delay(300);
+    return [...this.vendors];
+  }
+
+  async getVendorById(vendorId) {
+    await this.delay(200);
+    const vendor = this.vendors.find(v => v.Id === vendorId);
+    if (!vendor) {
+      throw new Error('Vendor not found');
+    }
+    return { ...vendor };
+  }
+
+  // Vendor Bill Management
+  async createVendorBill(billData) {
+    await this.delay(500);
+    
+    if (!this.validateFinanceManagerRole()) {
+      throw new Error('Insufficient permissions. Finance manager role required.');
+    }
+
+    if (!billData.vendorId || !billData.amount || !billData.description) {
+      throw new Error('Vendor ID, amount, and description are required');
+    }
+
+    const vendor = this.vendors.find(v => v.Id === billData.vendorId);
+    if (!vendor) {
+      throw new Error('Vendor not found');
+    }
+
+    const bill = {
+      Id: this.getNextBillId(),
+      vendorId: billData.vendorId,
+      vendorName: vendor.name,
+      amount: billData.amount,
+      description: billData.description,
+      billNumber: billData.billNumber || this.generateBillNumber(),
+      dueDate: billData.dueDate || this.calculateDueDate(vendor.paymentTerms),
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      createdBy: this.currentUserRole,
+      category: billData.category || 'general',
+      taxAmount: billData.taxAmount || 0,
+      totalAmount: billData.amount + (billData.taxAmount || 0)
+    };
+
+    this.vendorBills.push(bill);
+    
+    // Update vendor total owed
+    vendor.totalOwed += bill.totalAmount;
+    vendor.updatedAt = new Date().toISOString();
+
+    return { ...bill };
+  }
+
+  async processVendorBillPayment(billId, paymentData) {
+    await this.delay(800);
+    
+    if (!this.validateFinanceManagerRole()) {
+      throw new Error('Insufficient permissions. Finance manager role required.');
+    }
+
+    const bill = this.vendorBills.find(b => b.Id === billId);
+    if (!bill) {
+      throw new Error('Bill not found');
+    }
+
+    if (bill.status === 'paid') {
+      throw new Error('Bill is already paid');
+    }
+
+    const vendor = this.vendors.find(v => v.Id === bill.vendorId);
+    if (!vendor) {
+      throw new Error('Vendor not found');
+    }
+
+    // Validate payment amount
+    if (paymentData.amount > bill.totalAmount) {
+      throw new Error('Payment amount cannot exceed bill amount');
+    }
+
+    const payment = {
+      Id: this.getNextPaymentId(),
+      billId: billId,
+      vendorId: bill.vendorId,
+      vendorName: vendor.name,
+      amount: paymentData.amount,
+      paymentMethod: paymentData.paymentMethod || 'bank_transfer',
+      status: 'pending_proof',
+      transactionId: this.generateTransactionId(),
+      timestamp: new Date().toISOString(),
+      paidBy: this.currentUserRole,
+      reference: paymentData.reference || '',
+      notes: paymentData.notes || '',
+      requiresProof: true,
+      proofStatus: 'pending'
+    };
+
+    this.vendorPayments.push(payment);
+
+    // Update bill status
+    if (paymentData.amount >= bill.totalAmount) {
+      bill.status = 'paid';
+      bill.paidAt = new Date().toISOString();
+      bill.paymentId = payment.Id;
+    } else {
+      bill.status = 'partially_paid';
+      bill.partialPayments = (bill.partialPayments || []).concat(payment.Id);
+    }
+
+    bill.updatedAt = new Date().toISOString();
+
+    return { ...payment };
+  }
+
+  // Payment Proof Management
+  async uploadPaymentProof(paymentId, proofData) {
+    await this.delay(600);
+    
+    if (!this.validateFinanceManagerRole()) {
+      throw new Error('Insufficient permissions. Finance manager role required.');
+    }
+
+    const payment = this.vendorPayments.find(p => p.Id === paymentId);
+    if (!payment) {
+      throw new Error('Payment not found');
+    }
+
+    // Simulate file upload validation
+    if (!proofData.fileName || !proofData.fileType || !proofData.fileSize) {
+      throw new Error('Invalid proof file data');
+    }
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+    if (!allowedTypes.includes(proofData.fileType)) {
+      throw new Error('Only JPEG, PNG, and PDF files are allowed');
+    }
+
+    if (proofData.fileSize > 5 * 1024 * 1024) { // 5MB limit
+      throw new Error('File size must be less than 5MB');
+    }
+
+    const proof = {
+      Id: this.getNextProofId(),
+      paymentId: paymentId,
+      fileName: proofData.fileName,
+      fileType: proofData.fileType,
+      fileSize: proofData.fileSize,
+      fileUrl: this.generateFileUrl(proofData.fileName), // Simulated URL
+      uploadedAt: new Date().toISOString(),
+      uploadedBy: this.currentUserRole,
+      status: 'pending_verification',
+      verificationNotes: ''
+    };
+
+    this.paymentProofs.push(proof);
+
+    // Update payment status
+    payment.proofStatus = 'uploaded';
+    payment.proofId = proof.Id;
+    payment.updatedAt = new Date().toISOString();
+
+    return { ...proof };
+  }
+
+  async verifyPaymentProof(proofId, verificationData) {
+    await this.delay(400);
+    
+    if (!this.validateFinanceManagerRole()) {
+      throw new Error('Insufficient permissions. Finance manager role required.');
+    }
+
+    const proof = this.paymentProofs.find(p => p.Id === proofId);
+    if (!proof) {
+      throw new Error('Payment proof not found');
+    }
+
+    const payment = this.vendorPayments.find(p => p.Id === proof.paymentId);
+    if (!payment) {
+      throw new Error('Associated payment not found');
+    }
+
+    // Simulate verification process
+    const verified = verificationData.approved !== false; // Default to approved unless explicitly false
+
+    proof.status = verified ? 'verified' : 'rejected';
+    proof.verifiedAt = new Date().toISOString();
+    proof.verifiedBy = this.currentUserRole;
+    proof.verificationNotes = verificationData.notes || '';
+
+    if (verified) {
+      payment.status = 'completed';
+      payment.proofStatus = 'verified';
+      payment.completedAt = new Date().toISOString();
+
+      // Update vendor totals
+      const vendor = this.vendors.find(v => v.Id === payment.vendorId);
+      if (vendor) {
+        vendor.totalPaid += payment.amount;
+        vendor.totalOwed -= payment.amount;
+        vendor.lastPaymentDate = new Date().toISOString();
+        vendor.updatedAt = new Date().toISOString();
+      }
+    } else {
+      payment.status = 'proof_rejected';
+      payment.proofStatus = 'rejected';
+      payment.rejectedAt = new Date().toISOString();
+    }
+
+    payment.updatedAt = new Date().toISOString();
+
+    return { 
+      verified, 
+      proof: { ...proof }, 
+      payment: { ...payment } 
+    };
+  }
+
+  // Finance Manager Role Validation
+  validateFinanceManagerRole() {
+    return this.currentUserRole === 'admin' || this.currentUserRole === this.financeManagerRole;
+  }
+
+  async setUserRole(role) {
+    await this.delay(100);
+    this.currentUserRole = role;
+    return { role };
+  }
+
+  async getCurrentUserRole() {
+    await this.delay(100);
+    return { role: this.currentUserRole };
+  }
+
+  // Reporting and Analytics
+  async getVendorPaymentSummary(vendorId) {
+    await this.delay(400);
+    
+    const vendor = this.vendors.find(v => v.Id === vendorId);
+    if (!vendor) {
+      throw new Error('Vendor not found');
+    }
+
+    const bills = this.vendorBills.filter(b => b.vendorId === vendorId);
+    const payments = this.vendorPayments.filter(p => p.vendorId === vendorId);
+
+    const summary = {
+      vendor: { ...vendor },
+      totalBills: bills.length,
+      totalBillAmount: bills.reduce((sum, bill) => sum + bill.totalAmount, 0),
+      paidBills: bills.filter(b => b.status === 'paid').length,
+      pendingBills: bills.filter(b => b.status === 'pending').length,
+      overdueBills: bills.filter(b => 
+        b.status === 'pending' && new Date(b.dueDate) < new Date()
+      ).length,
+      totalPayments: payments.length,
+      completedPayments: payments.filter(p => p.status === 'completed').length,
+      pendingPayments: payments.filter(p => p.status === 'pending_proof').length,
+      rejectedPayments: payments.filter(p => p.status === 'proof_rejected').length
+    };
+
+    return summary;
+  }
+
+  async getVendorPaymentHistory(vendorId, limit = 50) {
+    await this.delay(300);
+    
+    const payments = this.vendorPayments
+      .filter(p => p.vendorId === vendorId)
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+      .slice(0, limit);
+
+    return payments.map(payment => ({ ...payment }));
+  }
+
+  async getPendingVendorBills() {
+    await this.delay(300);
+    
+    const pendingBills = this.vendorBills
+      .filter(bill => bill.status === 'pending')
+      .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+
+    return pendingBills.map(bill => ({ ...bill }));
+  }
+
+  async getOverdueBills() {
+    await this.delay(300);
+    
+    const today = new Date();
+    const overdueBills = this.vendorBills
+      .filter(bill => bill.status === 'pending' && new Date(bill.dueDate) < today)
+      .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+
+    return overdueBills.map(bill => ({ ...bill }));
+  }
+
+  async getPaymentProofQueue() {
+    await this.delay(300);
+    
+    const pendingProofs = this.paymentProofs
+      .filter(proof => proof.status === 'pending_verification')
+      .sort((a, b) => new Date(a.uploadedAt) - new Date(b.uploadedAt));
+
+    return pendingProofs.map(proof => ({ ...proof }));
+  }
+
+  // Utility Methods for Vendor System
+  getNextVendorId() {
+    const maxId = this.vendors.reduce((max, vendor) => 
+      vendor.Id > max ? vendor.Id : max, 0);
+    return maxId + 1;
+  }
+
+  getNextBillId() {
+    const maxId = this.vendorBills.reduce((max, bill) => 
+      bill.Id > max ? bill.Id : max, 0);
+    return maxId + 1;
+  }
+
+  getNextPaymentId() {
+    const maxId = this.vendorPayments.reduce((max, payment) => 
+      payment.Id > max ? payment.Id : max, 0);
+    return maxId + 1;
+  }
+
+  getNextProofId() {
+    const maxId = this.paymentProofs.reduce((max, proof) => 
+      proof.Id > max ? proof.Id : max, 0);
+    return maxId + 1;
+  }
+
+  generateBillNumber() {
+    return 'BILL-' + Date.now().toString().slice(-8);
+  }
+
+  calculateDueDate(paymentTerms) {
+    const days = parseInt(paymentTerms.replace(/\D/g, '')) || 30;
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + days);
+    return dueDate.toISOString();
+  }
+
+  generateFileUrl(fileName) {
+    // Simulate file URL generation
+    return `https://storage.example.com/proofs/${Date.now()}-${fileName}`;
   }
 }
 
