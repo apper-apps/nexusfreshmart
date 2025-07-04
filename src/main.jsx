@@ -31,19 +31,19 @@ class ApperSDK {
       script.async = true;
       
       script.onload = () => {
-        console.log('Apper SDK script loaded, checking availability...');
+console.log('Apper SDK script loaded, checking availability...');
         
-        // Poll for SDK availability
-        const checkSDKAvailability = () => {
-          if (window.Apper && typeof window.Apper === 'object') {
+        // Poll for SDK availability with proper context binding
+        const checkSDKAvailability = function() {
+          if (window.Apper && typeof window.Apper === 'object' && typeof window.Apper.init === 'function') {
             this.isLoaded = true;
             console.log('Apper SDK is available and ready');
             resolve();
           } else {
             console.log('Apper SDK still initializing...');
-            setTimeout(checkSDKAvailability, 100);
+            setTimeout(checkSDKAvailability.bind(this), 100);
           }
-        };
+        }.bind(this);
         
         checkSDKAvailability();
       };
@@ -57,10 +57,12 @@ class ApperSDK {
       document.head.appendChild(script);
 
       // Timeout fallback with better error message
-      setTimeout(() => {
+setTimeout(() => {
         if (!this.isLoaded) {
           const errorMsg = window.Apper 
-            ? 'Apper SDK script loaded but SDK not properly initialized'
+            ? (typeof window.Apper.init === 'function' 
+                ? 'Apper SDK script loaded but SDK not properly initialized' 
+                : 'Apper SDK object exists but missing init method')
             : 'Apper SDK script loading timeout - check network connection and SDK URL';
           console.error(errorMsg);
           reject(new Error(errorMsg));
