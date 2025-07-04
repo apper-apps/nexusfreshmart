@@ -216,9 +216,9 @@ return true;
     } catch (error) {
       console.error('Order creation error:', error);
       toast.error('Failed to place order. Please try again.');
-    } finally {
+} finally {
       setLoading(false);
-setProcessingPayment(false);
+      setProcessingPayment(false);
     }
   };
 

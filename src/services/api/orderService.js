@@ -1,4 +1,6 @@
 import ordersData from "../mockData/orders.json";
+import React from "react";
+import Error from "@/components/ui/Error";
 import { paymentService } from "@/services/api/paymentService";
 
 class OrderService {
@@ -11,14 +13,14 @@ class OrderService {
     return [...this.orders];
   }
 
-  async getById(id) {
+async getById(id) {
     await this.delay();
     const order = this.orders.find(o => o.id === id);
     if (!order) {
       throw new Error('Order not found');
     }
     return { ...order };
-}
+  }
 
   async create(orderData) {
     await this.delay();
@@ -38,8 +40,8 @@ const newOrder = {
     };
     
     // Handle wallet payments
-    if (orderData.paymentMethod === 'wallet') {
-try {
+if (orderData.paymentMethod === 'wallet') {
+      try {
         const walletTransaction = await paymentService.processWalletPayment(orderData.total, newOrder.id);
         newOrder.paymentResult = walletTransaction;
         newOrder.paymentStatus = 'completed';
@@ -74,17 +76,15 @@ try {
     if (index === -1) {
       throw new Error('Order not found');
     }
-    this.orders.splice(index, 1);
+this.orders.splice(index, 1);
     return true;
   }
-}
 
   getNextId() {
     const maxId = this.orders.reduce((max, order) => 
       order.id > max ? order.id : max, 0);
     return maxId + 1;
   }
-
   async assignDeliveryPersonnel(orderId, deliveryPersonId) {
     await this.delay();
     const order = await this.getById(orderId);
@@ -112,11 +112,11 @@ try {
   }
 
   async getOrdersByDeliveryStatus(deliveryStatus) {
-    await this.delay();
-    return this.orders.filter(order => order.deliveryStatus === deliveryStatus);
-}
+return this.orders.filter(order => order.deliveryStatus === deliveryStatus);
+  }
 
   // Payment Integration Methods
+  async updatePaymentStatus(orderId, paymentStatus, paymentResult = null) {
   async updatePaymentStatus(orderId, paymentStatus, paymentResult = null) {
     await this.delay();
     const order = await this.getById(orderId);
@@ -202,11 +202,11 @@ const order = await this.getById(orderId);
       refund,
       status: 'refund_requested'
     };
-    
-    return await this.update(orderId, updatedOrder);
-}
+return await this.update(orderId, updatedOrder);
+  }
 
   async getMonthlyRevenue() {
+    await this.delay();
     await this.delay();
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
@@ -230,8 +230,7 @@ const order = await this.getById(orderId);
     
     return revenueByMethod;
   }
-
-  delay() {
+delay() {
     return new Promise(resolve => setTimeout(resolve, 400));
   }
 }
