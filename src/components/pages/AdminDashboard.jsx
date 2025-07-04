@@ -135,10 +135,10 @@ const quickActions = [
     { label: 'Manage Products', path: '/admin/products', icon: 'Package', color: 'from-blue-500 to-cyan-500' },
     { label: 'POS Terminal', path: '/admin/pos', icon: 'Calculator', color: 'from-green-500 to-emerald-500' },
     { label: 'View Orders', path: '/orders', icon: 'ShoppingCart', color: 'from-purple-500 to-pink-500' },
+    { label: 'Payment Management', path: '/admin/payments', icon: 'CreditCard', color: 'from-teal-500 to-cyan-500' },
     { label: 'Delivery Tracking', path: '/admin/delivery-dashboard', icon: 'MapPin', color: 'from-indigo-500 to-purple-500' },
     { label: 'Analytics', path: '/admin/analytics', icon: 'TrendingUp', color: 'from-orange-500 to-red-500' }
   ];
-
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
@@ -239,8 +239,8 @@ const quickActions = [
 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         {/* Quick Actions */}
         <div className="card p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {quickActions.map((action) => (
               <Link
                 key={action.path}
@@ -261,7 +261,6 @@ const quickActions = [
             ))}
           </div>
         </div>
-
         {/* Recent Orders */}
         <div className="card p-6">
           <div className="flex items-center justify-between mb-4">
