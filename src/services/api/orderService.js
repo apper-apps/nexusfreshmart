@@ -1,4 +1,5 @@
 import ordersData from '../mockData/orders.json';
+import { paymentService } from './paymentService';
 
 class OrderService {
   constructor() {
@@ -19,13 +20,19 @@ class OrderService {
     return { ...order };
   }
 
-  async create(orderData) {
+async create(orderData) {
     await this.delay();
     const newOrder = {
       id: this.getNextId(),
       ...orderData,
       createdAt: new Date().toISOString()
     };
+    
+    // If payment method is wallet, record wallet transaction
+    if (orderData.paymentMethod === 'wallet') {
+      await paymentService.processWalletPayment(orderData.total, newOrder.id);
+    }
+    
     this.orders.push(newOrder);
     return { ...newOrder };
   }
@@ -130,6 +137,30 @@ async assignDeliveryPersonnel(orderId, deliveryPersonId) {
     };
     
     return await this.update(orderId, updatedOrder);
+  }
+async getMonthlyRevenue() {
+    await this.delay();
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    
+    const monthlyOrders = this.orders.filter(order => {
+      const orderDate = new Date(order.createdAt);
+      return orderDate.getMonth() === currentMonth && orderDate.getFullYear() === currentYear;
+    });
+    
+    return monthlyOrders.reduce((sum, order) => sum + order.total, 0);
+  }
+
+  async getRevenueByPaymentMethod() {
+    await this.delay();
+    const revenueByMethod = {};
+    
+    this.orders.forEach(order => {
+      const method = order.paymentMethod || 'unknown';
+      revenueByMethod[method] = (revenueByMethod[method] || 0) + order.total;
+    });
+    
+    return revenueByMethod;
   }
 
   delay() {

@@ -1,6 +1,8 @@
 class PaymentService {
   constructor() {
     this.transactions = [];
+    this.walletBalance = 25000; // Initial wallet balance
+    this.walletTransactions = [];
     this.cardBrands = {
       '4': 'visa',
       '5': 'mastercard',
@@ -272,6 +274,145 @@ class PaymentService {
 
   getNextId() {
     const maxId = this.transactions.reduce((max, transaction) => 
+      transaction.Id > max ? transaction.Id : max, 0);
+    return maxId + 1;
+  }
+// Wallet Management Methods
+  async getWalletBalance() {
+    await this.delay(200);
+    return this.walletBalance;
+  }
+
+  async updateWalletBalance(amount) {
+    await this.delay(200);
+    this.walletBalance += amount;
+    return this.walletBalance;
+  }
+
+  async depositToWallet(amount) {
+    await this.delay(500);
+    
+    if (amount <= 0) {
+      throw new Error('Deposit amount must be positive');
+    }
+
+    this.walletBalance += amount;
+    
+    const transaction = {
+      Id: this.getWalletTransactionId(),
+      type: 'deposit',
+      amount,
+      balance: this.walletBalance,
+      timestamp: new Date().toISOString(),
+      description: 'Wallet deposit',
+      reference: this.generateReference()
+    };
+
+    this.walletTransactions.push(transaction);
+    return { ...transaction };
+  }
+
+  async withdrawFromWallet(amount) {
+    await this.delay(500);
+    
+    if (amount <= 0) {
+      throw new Error('Withdrawal amount must be positive');
+    }
+
+    if (amount > this.walletBalance) {
+      throw new Error('Insufficient wallet balance');
+    }
+
+    this.walletBalance -= amount;
+    
+    const transaction = {
+      Id: this.getWalletTransactionId(),
+      type: 'withdraw',
+      amount,
+      balance: this.walletBalance,
+      timestamp: new Date().toISOString(),
+      description: 'Wallet withdrawal',
+      reference: this.generateReference()
+    };
+
+    this.walletTransactions.push(transaction);
+    return { ...transaction };
+  }
+
+  async transferFromWallet(amount, recipientId = null) {
+    await this.delay(500);
+    
+    if (amount <= 0) {
+      throw new Error('Transfer amount must be positive');
+    }
+
+    if (amount > this.walletBalance) {
+      throw new Error('Insufficient wallet balance');
+    }
+
+    this.walletBalance -= amount;
+    
+    const transaction = {
+      Id: this.getWalletTransactionId(),
+      type: 'transfer',
+      amount,
+      balance: this.walletBalance,
+      timestamp: new Date().toISOString(),
+      description: `Wallet transfer${recipientId ? ` to ${recipientId}` : ''}`,
+      reference: this.generateReference(),
+      recipientId
+    };
+
+    this.walletTransactions.push(transaction);
+    return { ...transaction };
+  }
+
+  async processWalletPayment(amount, orderId) {
+    await this.delay(500);
+    
+    if (amount <= 0) {
+      throw new Error('Payment amount must be positive');
+    }
+
+    if (amount > this.walletBalance) {
+      throw new Error('Insufficient wallet balance for payment');
+    }
+
+    this.walletBalance -= amount;
+    
+    const transaction = {
+      Id: this.getWalletTransactionId(),
+      type: 'payment',
+      amount,
+      balance: this.walletBalance,
+      timestamp: new Date().toISOString(),
+      description: `Payment for order #${orderId}`,
+      reference: this.generateReference(),
+      orderId
+    };
+
+    this.walletTransactions.push(transaction);
+    return { ...transaction };
+  }
+
+  async getWalletTransactions(limit = 50) {
+    await this.delay(300);
+    return [...this.walletTransactions]
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+      .slice(0, limit);
+  }
+
+  async getWalletTransactionById(id) {
+    await this.delay(300);
+    const transaction = this.walletTransactions.find(t => t.Id === id);
+    if (!transaction) {
+      throw new Error('Wallet transaction not found');
+    }
+    return { ...transaction };
+  }
+
+  getWalletTransactionId() {
+    const maxId = this.walletTransactions.reduce((max, transaction) => 
       transaction.Id > max ? transaction.Id : max, 0);
     return maxId + 1;
   }
