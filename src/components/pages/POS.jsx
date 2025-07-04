@@ -20,6 +20,25 @@ const POS = () => {
   const [customerPaid, setCustomerPaid] = useState('');
   const [processingPayment, setProcessingPayment] = useState(false);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
+  
+  // Receipt configuration state
+  const [receiptConfig, setReceiptConfig] = useState({
+    storeName: 'FreshMart',
+    storeAddress: '123 Main Street, City, State 12345',
+    storePhone: '(555) 123-4567',
+    storeEmail: 'info@freshmart.com',
+    footerMessage: 'Thank you for shopping with FreshMart!',
+    showLogo: true,
+    receiptFormat: 'standard', // 'thermal' or 'standard'
+    autoPrint: true,
+    includeBarcode: true
+  });
+  
+  const [showReceiptPreview, setShowReceiptPreview] = useState(false);
+  const [showReceiptConfig, setShowReceiptConfig] = useState(false);
+  const [previewTransaction, setPreviewTransaction] = useState(null);
+  const [lastTransaction, setLastTransaction] = useState(null);
+  const [printStatus, setPrintStatus] = useState('');
   useEffect(() => {
     loadProducts();
   }, []);
@@ -121,7 +140,7 @@ const filterProducts = () => {
     return Math.max(0, paid - total);
   };
 
-  const processPayment = async () => {
+const processPayment = async () => {
     if (cart.length === 0) {
       toast.error('Cart is empty');
       return;
@@ -170,8 +189,12 @@ const filterProducts = () => {
       
       toast.success('Payment processed successfully!');
       
-      // Print receipt (in real app, this would trigger printer)
-      printReceipt(transactionData);
+      // Handle receipt printing based on configuration
+      if (receiptConfig.autoPrint) {
+        printReceipt(transactionData);
+      } else {
+        showReceiptPreviewModal(transactionData);
+      }
 
     } catch (err) {
       toast.error('Payment processing failed');
@@ -180,33 +203,212 @@ const filterProducts = () => {
     }
   };
 
-  const printReceipt = (transaction) => {
-    const receiptWindow = window.open('', '_blank');
-    const receipt = `
+const generateReceiptHTML = (transaction) => {
+    const receiptNumber = `RCP-${Date.now()}`;
+    const currentDate = new Date().toLocaleString();
+    
+    const receiptStyles = receiptConfig.receiptFormat === 'thermal' ? `
+      <style>
+        @media print {
+          @page { 
+            size: 80mm auto; 
+            margin: 0; 
+          }
+          body { 
+            font-size: 12px; 
+            line-height: 1.3; 
+            margin: 0; 
+            padding: 5mm; 
+          }
+        }
+        body { 
+          font-family: 'Courier New', monospace; 
+          width: 72mm; 
+          margin: 0 auto; 
+          padding: 10px; 
+          background: white; 
+        }
+        .header { text-align: center; margin-bottom: 10px; }
+        .store-name { font-size: 18px; font-weight: bold; margin-bottom: 5px; }
+        .store-info { font-size: 10px; line-height: 1.2; }
+        .divider { border-top: 1px dashed #000; margin: 8px 0; }
+        .item-row { display: flex; justify-content: space-between; margin: 2px 0; }
+        .item-name { flex: 1; }
+        .item-price { text-align: right; }
+        .total-section { margin-top: 10px; }
+        .total-row { display: flex; justify-content: space-between; font-weight: bold; }
+        .footer { text-align: center; margin-top: 10px; font-size: 10px; }
+        .receipt-number { font-size: 10px; text-align: center; margin-top: 5px; }
+      </style>
+    ` : `
+      <style>
+        @media print {
+          @page { 
+            size: A4; 
+            margin: 15mm; 
+          }
+          body { 
+            font-size: 14px; 
+            line-height: 1.4; 
+          }
+        }
+        body { 
+          font-family: Arial, sans-serif; 
+          max-width: 400px; 
+          margin: 0 auto; 
+          padding: 20px; 
+          background: white; 
+        }
+        .header { text-align: center; margin-bottom: 20px; }
+        .store-name { font-size: 24px; font-weight: bold; color: #2E7D32; margin-bottom: 10px; }
+        .store-info { font-size: 12px; color: #666; line-height: 1.3; }
+        .divider { border-top: 2px solid #2E7D32; margin: 15px 0; }
+        .transaction-info { margin-bottom: 15px; }
+        .item-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee; }
+        .item-details { flex: 1; }
+        .item-name { font-weight: 500; }
+        .item-subtitle { font-size: 12px; color: #666; }
+        .item-price { font-weight: bold; color: #2E7D32; }
+        .total-section { margin-top: 20px; padding-top: 15px; border-top: 2px solid #2E7D32; }
+        .total-row { display: flex; justify-content: space-between; margin: 5px 0; }
+        .final-total { font-size: 18px; font-weight: bold; color: #2E7D32; }
+        .footer { text-align: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee; }
+        .footer-message { font-style: italic; color: #666; }
+        .receipt-number { font-size: 10px; color: #999; margin-top: 10px; }
+      </style>
+    `;
+
+    return `
+      <!DOCTYPE html>
       <html>
-        <head><title>Receipt</title></head>
-        <body style="font-family: Arial, sans-serif; padding: 20px;">
-          <h2>FreshMart Receipt</h2>
-          <p>Date: ${new Date().toLocaleString()}</p>
-          <hr>
-          ${transaction.items.map(item => `
-            <div>${item.name} x${item.quantity} - Rs. ${(item.price * item.quantity).toLocaleString()}</div>
-          `).join('')}
-          <hr>
-          <p><strong>Total: Rs. ${transaction.total.toLocaleString()}</strong></p>
-          ${transaction.paymentType === 'cash' ? `
-            <p>Paid: Rs. ${transaction.customerPaid.toLocaleString()}</p>
-            <p>Change: Rs. ${transaction.change.toLocaleString()}</p>
-          ` : ''}
-          <p>Payment: ${transaction.paymentType}</p>
-          <hr>
-          <p>Thank you for shopping with FreshMart!</p>
+        <head>
+          <title>Receipt - ${receiptNumber}</title>
+          <meta charset="UTF-8">
+          ${receiptStyles}
+        </head>
+        <body>
+          <div class="header">
+            <div class="store-name">${receiptConfig.storeName}</div>
+            <div class="store-info">
+              ${receiptConfig.storeAddress}<br>
+              ${receiptConfig.storePhone}<br>
+              ${receiptConfig.storeEmail}
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="transaction-info">
+            <div>Receipt #: ${receiptNumber}</div>
+            <div>Date: ${currentDate}</div>
+            <div>Cashier: ${transaction.cashierId}</div>
+            <div>Payment: ${transaction.paymentType.toUpperCase()}</div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="items-section">
+            ${transaction.items.map(item => `
+              <div class="item-row">
+                <div class="item-details">
+                  <div class="item-name">${item.name}</div>
+                  <div class="item-subtitle">${item.quantity} x Rs. ${item.price.toLocaleString()}</div>
+                </div>
+                <div class="item-price">Rs. ${(item.price * item.quantity).toLocaleString()}</div>
+              </div>
+            `).join('')}
+          </div>
+
+          <div class="total-section">
+            <div class="total-row">
+              <span>Subtotal:</span>
+              <span>Rs. ${transaction.total.toLocaleString()}</span>
+            </div>
+            <div class="total-row">
+              <span>Tax (0%):</span>
+              <span>Rs. 0</span>
+            </div>
+            <div class="total-row final-total">
+              <span>Total:</span>
+              <span>Rs. ${transaction.total.toLocaleString()}</span>
+            </div>
+            ${transaction.paymentType === 'cash' ? `
+              <div class="total-row">
+                <span>Paid:</span>
+                <span>Rs. ${transaction.customerPaid.toLocaleString()}</span>
+              </div>
+              <div class="total-row">
+                <span>Change:</span>
+                <span>Rs. ${transaction.change.toLocaleString()}</span>
+              </div>
+            ` : ''}
+          </div>
+
+          <div class="footer">
+            <div class="footer-message">${receiptConfig.footerMessage}</div>
+            <div class="receipt-number">Receipt #: ${receiptNumber}</div>
+          </div>
         </body>
       </html>
     `;
-    receiptWindow.document.write(receipt);
-    receiptWindow.document.close();
-    receiptWindow.print();
+  };
+
+  const printReceipt = (transaction) => {
+    try {
+      setPrintStatus('Preparing receipt...');
+      
+      const receiptHTML = generateReceiptHTML(transaction);
+      const receiptWindow = window.open('', '_blank', 'width=400,height=600');
+      
+      if (!receiptWindow) {
+        toast.error('Please allow pop-ups to print receipts');
+        setPrintStatus('');
+        return;
+      }
+
+      receiptWindow.document.write(receiptHTML);
+      receiptWindow.document.close();
+      
+      receiptWindow.onload = () => {
+        setPrintStatus('Printing...');
+        setTimeout(() => {
+          receiptWindow.print();
+          setPrintStatus('');
+          toast.success('Receipt printed successfully');
+        }, 500);
+      };
+
+      receiptWindow.onafterprint = () => {
+        receiptWindow.close();
+      };
+
+      setLastTransaction(transaction);
+      
+    } catch (error) {
+      setPrintStatus('');
+      toast.error('Failed to print receipt');
+      console.error('Print error:', error);
+    }
+  };
+
+  const showReceiptPreviewModal = (transaction) => {
+    setPreviewTransaction(transaction);
+    setShowReceiptPreview(true);
+  };
+
+  const printFromPreview = () => {
+    if (previewTransaction) {
+      printReceipt(previewTransaction);
+      setShowReceiptPreview(false);
+    }
+  };
+
+  const reprintLastReceipt = () => {
+    if (lastTransaction) {
+      printReceipt(lastTransaction);
+    } else {
+      toast.error('No previous receipt to reprint');
+    }
   };
 
   if (loading) {
@@ -367,6 +569,25 @@ const filterProducts = () => {
                         )}
                       </div>
                     )}
+<div className="grid grid-cols-2 gap-2 mb-4">
+                      <Button
+                        variant="outline"
+                        size="small"
+                        icon="Settings"
+                        onClick={() => setShowReceiptConfig(true)}
+                      >
+                        Receipt Config
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="small"
+                        icon="Printer"
+                        onClick={reprintLastReceipt}
+                        disabled={!lastTransaction}
+                      >
+                        Reprint Last
+                      </Button>
+                    </div>
 
                     <Button
                       variant="primary"
@@ -378,19 +599,203 @@ const filterProducts = () => {
                     >
                       Process Payment
                     </Button>
+                    
+                    {printStatus && (
+                      <div className="mt-2 text-sm text-center">
+                        <span className="text-blue-600">{printStatus}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </>
             )}
           </div>
         </div>
-</div>
-
-      <BarcodeScanner
+      </div>
+<BarcodeScanner
         isActive={showBarcodeScanner}
         onScan={handleBarcodeScan}
         onClose={() => setShowBarcodeScanner(false)}
       />
+
+      {/* Receipt Preview Modal */}
+      {showReceiptPreview && previewTransaction && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Receipt Preview</h3>
+              <button
+                onClick={() => setShowReceiptPreview(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <ApperIcon name="X" size={24} />
+              </button>
+            </div>
+            
+            <div className="border border-gray-200 rounded-lg p-4 mb-4 bg-gray-50">
+              <div className="text-center mb-4">
+                <h4 className="text-xl font-bold text-primary">{receiptConfig.storeName}</h4>
+                <p className="text-sm text-gray-600">{receiptConfig.storeAddress}</p>
+                <p className="text-sm text-gray-600">{receiptConfig.storePhone}</p>
+              </div>
+              
+              <div className="border-t border-gray-300 pt-3 mb-3">
+                <p className="text-sm">Date: {new Date().toLocaleString()}</p>
+                <p className="text-sm">Payment: {previewTransaction.paymentType.toUpperCase()}</p>
+              </div>
+              
+              <div className="space-y-2 mb-3">
+                {previewTransaction.items.map((item, index) => (
+                  <div key={index} className="flex justify-between text-sm">
+                    <div>
+                      <div className="font-medium">{item.name}</div>
+                      <div className="text-gray-600">{item.quantity} x Rs. {item.price.toLocaleString()}</div>
+                    </div>
+                    <div className="font-medium">Rs. {(item.price * item.quantity).toLocaleString()}</div>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="border-t border-gray-300 pt-3">
+                <div className="flex justify-between font-bold text-lg text-primary">
+                  <span>Total:</span>
+                  <span>Rs. {previewTransaction.total.toLocaleString()}</span>
+                </div>
+                {previewTransaction.paymentType === 'cash' && (
+                  <>
+                    <div className="flex justify-between text-sm">
+                      <span>Paid:</span>
+                      <span>Rs. {previewTransaction.customerPaid.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Change:</span>
+                      <span>Rs. {previewTransaction.change.toLocaleString()}</span>
+                    </div>
+                  </>
+                )}
+              </div>
+              
+              <div className="text-center mt-4 pt-3 border-t border-gray-300">
+                <p className="text-sm text-gray-600 italic">{receiptConfig.footerMessage}</p>
+              </div>
+            </div>
+            
+            <div className="flex space-x-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowReceiptPreview(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={printFromPreview}
+                icon="Printer"
+                className="flex-1"
+              >
+                Print Receipt
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Receipt Configuration Modal */}
+      {showReceiptConfig && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Receipt Configuration</h3>
+              <button
+                onClick={() => setShowReceiptConfig(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <ApperIcon name="X" size={24} />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <Input
+                label="Store Name"
+                value={receiptConfig.storeName}
+                onChange={(e) => setReceiptConfig({...receiptConfig, storeName: e.target.value})}
+              />
+              
+              <Input
+                label="Store Address"
+                value={receiptConfig.storeAddress}
+                onChange={(e) => setReceiptConfig({...receiptConfig, storeAddress: e.target.value})}
+              />
+              
+              <Input
+                label="Store Phone"
+                value={receiptConfig.storePhone}
+                onChange={(e) => setReceiptConfig({...receiptConfig, storePhone: e.target.value})}
+              />
+              
+              <Input
+                label="Store Email"
+                value={receiptConfig.storeEmail}
+                onChange={(e) => setReceiptConfig({...receiptConfig, storeEmail: e.target.value})}
+              />
+              
+              <Input
+                label="Footer Message"
+                value={receiptConfig.footerMessage}
+                onChange={(e) => setReceiptConfig({...receiptConfig, footerMessage: e.target.value})}
+              />
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Receipt Format
+                </label>
+                <select
+                  value={receiptConfig.receiptFormat}
+                  onChange={(e) => setReceiptConfig({...receiptConfig, receiptFormat: e.target.value})}
+                  className="input-field"
+                >
+                  <option value="standard">Standard (A4)</option>
+                  <option value="thermal">Thermal (80mm)</option>
+                </select>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="autoPrint"
+                  checked={receiptConfig.autoPrint}
+                  onChange={(e) => setReceiptConfig({...receiptConfig, autoPrint: e.target.checked})}
+                  className="rounded border-gray-300"
+                />
+                <label htmlFor="autoPrint" className="text-sm text-gray-700">
+                  Auto-print receipts after payment
+                </label>
+              </div>
+            </div>
+            
+            <div className="flex space-x-3 mt-6">
+              <Button
+                variant="outline"
+                onClick={() => setShowReceiptConfig(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setShowReceiptConfig(false);
+                  toast.success('Receipt configuration saved');
+                }}
+                className="flex-1"
+              >
+                Save Configuration
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
