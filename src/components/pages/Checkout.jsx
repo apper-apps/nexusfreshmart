@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useCart } from "@/hooks/useCart";
@@ -6,6 +6,7 @@ import ApperIcon from "@/components/ApperIcon";
 import Button from "@/components/atoms/Button";
 import Input from "@/components/atoms/Input";
 import Error from "@/components/ui/Error";
+import Account from "@/components/pages/Account";
 import PaymentMethod from "@/components/molecules/PaymentMethod";
 import { orderService } from "@/services/api/orderService";
 import { paymentService } from "@/services/api/paymentService";
@@ -34,7 +35,7 @@ const { cart, clearCart } = useCart()
   const gatewayFee = calculateGatewayFee()
   const total = subtotal + deliveryCharge + gatewayFee
 
-  // Load available payment methods from admin configuration
+// Load available payment methods from admin configuration
   React.useEffect(() => {
     loadPaymentMethods()
   }, [])
@@ -45,6 +46,11 @@ const { cart, clearCart } = useCart()
       const config = await paymentService.getGatewayConfig()
       setAvailablePaymentMethods(methods.filter(method => method.enabled))
       setGatewayConfig(config)
+      
+      // Set default payment method to first enabled method
+      if (methods.length > 0) {
+        setPaymentMethod(methods[0].id)
+      }
     } catch (error) {
       console.error('Failed to load payment methods:', error)
       toast.error('Failed to load payment options')
@@ -322,7 +328,7 @@ paymentResult,
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Order Summary */}
-          <div className="order-2 lg:order-1">
+<div className="order-2 lg:order-1">
             <div className="card p-6 mb-6">
               <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
               <div className="space-y-4">
@@ -330,9 +336,12 @@ paymentResult,
                   <div key={item.id} className="flex items-center justify-between py-2 border-b">
                     <div className="flex items-center">
                       <img 
-                        src={item.image} 
+                        src={item.image || item.imageUrl || '/placeholder-image.jpg'} 
                         alt={item.name}
                         className="w-12 h-12 object-cover rounded mr-3"
+                        onError={(e) => {
+                          e.target.src = '/placeholder-image.jpg';
+                        }}
                       />
                       <div>
                         <h3 className="font-medium">{item.name}</h3>
@@ -340,28 +349,28 @@ paymentResult,
                       </div>
                     </div>
                     <span className="font-semibold">
-                      PKR {(item.price * item.quantity).toFixed(2)}
+                      Rs. {(item.price * item.quantity).toLocaleString()}
                     </span>
                   </div>
                 ))}
 <div className="border-t pt-4 space-y-2">
                   <div className="flex justify-between">
                     <span>Subtotal:</span>
-                    <span>PKR {subtotal.toFixed(2)}</span>
+                    <span>Rs. {subtotal.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Delivery Charge:</span>
-                    <span>PKR {deliveryCharge.toFixed(2)}</span>
+                    <span>Rs. {deliveryCharge.toLocaleString()}</span>
                   </div>
                   {gatewayFee > 0 && (
                     <div className="flex justify-between">
                       <span>Gateway Fee:</span>
-                      <span>PKR {gatewayFee.toFixed(2)}</span>
+                      <span>Rs. {gatewayFee.toLocaleString()}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-lg font-semibold border-t pt-2">
                     <span>Total:</span>
-                    <span>PKR {total.toFixed(2)}</span>
+                    <span className="gradient-text">Rs. {total.toLocaleString()}</span>
                   </div>
                 </div>
               </div>
@@ -635,13 +644,14 @@ paymentResult,
               </div>
 
               {/* Submit Button */}
+{/* Submit Button */}
               <div className="card p-6">
                 <Button
                   type="submit"
                   disabled={loading}
                   className="w-full"
                 >
-                  {loading ? 'Processing...' : `Place Order - PKR ${total.toFixed(2)}`}
+                  {loading ? 'Processing...' : `Place Order - Rs. ${total.toLocaleString()}`}
                 </Button>
               </div>
             </form>

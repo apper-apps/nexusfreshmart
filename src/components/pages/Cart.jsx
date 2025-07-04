@@ -137,3 +137,5 @@ const Cart = () => {
 };
 
 export default Cart;
+// Show cart content or empty state
+  // (Empty state is handled in the return JSX)

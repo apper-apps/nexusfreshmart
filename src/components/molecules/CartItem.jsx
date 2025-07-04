@@ -25,14 +25,16 @@ const CartItem = ({ item }) => {
     toast.success(`${item.name} removed from cart`);
   };
 
-  return (
+return (
     <div className="flex items-center space-x-4 p-4 bg-white rounded-lg shadow-sm border border-gray-100">
       <img
-        src={item.imageUrl}
+        src={item.image || item.imageUrl || '/placeholder-image.jpg'}
         alt={item.name}
         className="w-16 h-16 object-cover rounded-lg"
+        onError={(e) => {
+          e.target.src = '/placeholder-image.jpg';
+        }}
       />
-      
       <div className="flex-1">
         <h4 className="font-medium text-gray-900">{item.name}</h4>
         <p className="text-sm text-gray-500">Rs. {item.price.toLocaleString()}/{item.unit}</p>

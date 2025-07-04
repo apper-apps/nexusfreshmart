@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from "react";
 
 export const useCart = () => {
   const [cart, setCart] = useState([]);
@@ -21,6 +21,7 @@ export const useCart = () => {
     setIsLoading(true);
     
     // Simulate API delay
+// Simulate API delay
     setTimeout(() => {
       setCart(prevCart => {
         const existingItem = prevCart.find(item => item.id === product.id);
@@ -33,15 +34,21 @@ export const useCart = () => {
               : item
           );
         } else {
-          // If item doesn't exist, add new item
-          return [...prevCart, { ...product, quantity: 1 }];
+          // If item doesn't exist, add new item with proper field mapping
+          const cartItem = {
+            ...product,
+            quantity: 1,
+            // Ensure image field is properly mapped
+            image: product.image || product.imageUrl || '/placeholder-image.jpg'
+          };
+          return [...prevCart, cartItem];
         }
-      });
+});
       setIsLoading(false);
     }, 200);
   };
 
-const removeFromCart = (productId) => {
+  const removeFromCart = (productId) => {
     setCart(prevCart => prevCart.filter(item => item.id !== productId));
   };
 
