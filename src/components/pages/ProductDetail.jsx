@@ -100,40 +100,17 @@ const ProductDetail = () => {
 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
         {/* Product Image */}
         <div className="space-y-4">
-          <div className="relative image-container">
+          <div className="relative">
             <picture className="block w-full h-96 rounded-2xl overflow-hidden bg-gray-100">
               <source
-                srcSet={`${product.imageUrl}&fm=webp&w=800&q=85 1x, ${product.imageUrl}&fm=webp&w=1600&q=85&dpr=2 2x`}
+                srcSet={`${product.imageUrl}&fm=webp&w=600 1x, ${product.imageUrl}&fm=webp&w=1200&dpr=2 2x`}
                 type="image/webp"
-                media="(min-width: 1024px)"
-              />
-              <source
-                srcSet={`${product.imageUrl}&fm=webp&w=600&q=85 1x, ${product.imageUrl}&fm=webp&w=1200&q=85&dpr=2 2x`}
-                type="image/webp"
-                media="(max-width: 1023px)"
-              />
-              <source
-                srcSet={`${product.imageUrl}&w=800&q=85 1x, ${product.imageUrl}&w=1600&q=85&dpr=2 2x`}
-                media="(min-width: 1024px)"
               />
               <img
-                src={`${product.imageUrl}&w=600&q=85`}
+                src={`${product.imageUrl}&w=600`}
                 alt={product.name}
-                loading="eager"
-                decoding="async"
-                className="w-full h-96 object-cover responsive-image image-loaded"
+                className="w-full h-96 object-cover transition-all duration-500 hover:scale-105"
                 style={{ backgroundColor: '#f3f4f6' }}
-                onLoad={(e) => e.target.classList.add('image-loaded')}
-                onError={(e) => {
-                  e.target.src = `data:image/svg+xml;base64,${btoa(`
-                    <svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
-                      <rect width="400" height="300" fill="#f3f4f6"/>
-                      <text x="200" y="150" text-anchor="middle" fill="#9ca3af" font-family="sans-serif">
-                        Image not available
-                      </text>
-                    </svg>
-                  `)}`;
-                }}
               />
             </picture>
             {product.stock <= 10 && product.stock > 0 && (

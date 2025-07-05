@@ -93,61 +93,25 @@ background-size: 200% 100%;
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
-  opacity: 0.8;
 }
 
 .image-loaded {
-  opacity: 1;
-  transition: opacity 0.4s ease-in-out;
+  transition: opacity 0.3s ease-in-out;
 }
 
-/* Lazy Loading States */
-.lazy-loading {
-  background: linear-gradient(90deg, #f9fafb 25%, #f3f4f6 50%, #f9fafb 75%);
-  background-size: 200% 100%;
-  animation: shimmer 2s infinite;
-}
-
-.lazy-loaded {
-  animation: fadeIn 0.5s ease-in-out;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-/* Image Performance Optimizations */
-.responsive-image {
-  will-change: transform;
-  backface-visibility: hidden;
-  transform: translateZ(0);
-}
-/* Enhanced Responsive Images */
+/* Responsive Images */
 .responsive-image {
   width: 100%;
   height: auto;
   -o-object-fit: cover;
      object-fit: cover;
-  transition: transform 0.3s ease, opacity 0.3s ease;
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
+  transition: transform 0.3s ease;
 }
 
 .responsive-image:hover {
   transform: scale(1.02);
 }
 
-/* Image Loading Performance */
-.responsive-image[loading="lazy"] {
-  content-visibility: auto;
-  contain-intrinsic-size: 300px 200px;
-}
-
-/* WebP Support Detection */
-.webp .responsive-image {
-  image-rendering: auto;
-}
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
