@@ -165,10 +165,11 @@ return (
               style={{ zIndex: 9999 }}
               limit={3}
             />
-          </div>
+</div>
         </BrowserRouter>
       </PersistGate>
     </Provider>
+  );
 }
 
 export default App;
