@@ -126,9 +126,9 @@ background-size: 200% 100%;
 /* Enhanced Responsive Images */
 .responsive-image {
   width: 100%;
-  height: 100%;
-  -o-object-fit: contain;
-     object-fit: contain;
+  height: auto;
+  -o-object-fit: cover;
+     object-fit: cover;
   transition: transform 0.3s ease, opacity 0.3s ease;
   image-rendering: -webkit-optimize-contrast;
   image-rendering: crisp-edges;
@@ -147,34 +147,6 @@ background-size: 200% 100%;
 /* WebP Support Detection */
 .webp .responsive-image {
   image-rendering: auto;
-}
-
-/* Image Container Aspect Ratios */
-.aspect-square {
-  aspect-ratio: 1 / 1;
-}
-
-.aspect-photo {
-  aspect-ratio: 4 / 3;
-}
-
-.aspect-product {
-  aspect-ratio: 3 / 4;
-}
-
-/* Image Fit Utilities */
-.image-contain {
-  -o-object-fit: contain;
-     object-fit: contain;
-  -o-object-position: center;
-     object-position: center;
-}
-
-.image-cover {
-  -o-object-fit: cover;
-     object-fit: cover;
-  -o-object-position: center;
-     object-position: center;
 }
 /* Custom Scrollbar */
 ::-webkit-scrollbar {

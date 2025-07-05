@@ -21,11 +21,11 @@ export default {
         display: ['Poppins', 'sans-serif'],
         body: ['Inter', 'sans-serif'],
       },
-boxShadow: {
+      boxShadow: {
         'card': '0 4px 8px rgba(0, 0, 0, 0.1)',
         'premium': '0 8px 32px rgba(0, 0, 0, 0.12)',
       },
-      animation: {
+animation: {
         'shimmer': 'shimmer 2s infinite linear',
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'fade-in': 'fadeIn 0.5s ease-in-out',
@@ -47,12 +47,6 @@ boxShadow: {
       },
       scale: {
         '102': '1.02',
-      },
-      aspectRatio: {
-        'square': '1 / 1',
-        'photo': '4 / 3',
-        'product': '3 / 4',
-        'wide': '16 / 9',
       },
     },
   },

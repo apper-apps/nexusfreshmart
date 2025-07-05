@@ -32,8 +32,8 @@ return (
       className="card p-4 cursor-pointer hover:shadow-premium transform hover:scale-102 transition-all duration-300"
       onClick={handleCardClick}
     >
-<div className="relative mb-4 image-container">
-        <picture className="block w-full h-48 rounded-lg overflow-hidden bg-gray-100 aspect-photo">
+      <div className="relative mb-4 image-container">
+        <picture className="block w-full h-48 rounded-lg overflow-hidden bg-gray-100">
           <source
             srcSet={`${product.imageUrl}&fm=webp&w=400&q=80 1x, ${product.imageUrl}&fm=webp&w=800&q=80&dpr=2 2x`}
             type="image/webp"
@@ -46,7 +46,7 @@ return (
             alt={product.name}
             loading="lazy"
             decoding="async"
-            className="responsive-image image-contain transition-opacity duration-300"
+            className="w-full h-48 object-cover responsive-image transition-opacity duration-300"
             style={{ backgroundColor: '#f3f4f6' }}
             onLoad={(e) => {
               e.target.classList.add('image-loaded');
