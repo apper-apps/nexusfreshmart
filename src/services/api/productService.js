@@ -1,4 +1,6 @@
-import productsData from '../mockData/products.json';
+import productsData from "../mockData/products.json";
+import React from "react";
+import Error from "@/components/ui/Error";
 
 class ProductService {
   constructor() {
@@ -36,10 +38,14 @@ async create(productData) {
       throw new Error('Stock cannot be negative');
     }
 
-    const newProduct = {
+const newProduct = {
       id: this.getNextId(),
       ...productData,
       price: parseFloat(productData.price),
+      purchasePrice: parseFloat(productData.purchasePrice) || 0,
+      discountValue: parseFloat(productData.discountValue) || 0,
+      minSellingPrice: parseFloat(productData.minSellingPrice) || 0,
+      profitMargin: parseFloat(productData.profitMargin) || 0,
       stock: parseInt(productData.stock),
       minStock: productData.minStock ? parseInt(productData.minStock) : 10,
       isActive: productData.isActive !== undefined ? productData.isActive : true
@@ -206,6 +212,56 @@ async bulkUpdatePrices(updateData) {
 delay(ms = 150) { // Reduced delay for faster perceived performance
     return new Promise(resolve => setTimeout(resolve, ms));
   }
-}
 
+  // Calculate profit metrics for a product
+  calculateProfitMetrics(productData) {
+    const price = parseFloat(productData.price) || 0;
+    const purchasePrice = parseFloat(productData.purchasePrice) || 0;
+    const discountValue = parseFloat(productData.discountValue) || 0;
+    
+    let finalPrice = price;
+    
+    // Apply discount based on type
+    if (discountValue > 0) {
+      if (productData.discountType === 'Percentage') {
+        finalPrice = price - (price * discountValue / 100);
+      } else {
+        finalPrice = price - discountValue;
+      }
+    }
+    
+    // Ensure final price is not negative
+    finalPrice = Math.max(0, finalPrice);
+    
+    // Calculate minimum selling price (purchase price + 10% margin)
+    const minSellingPrice = purchasePrice > 0 ? purchasePrice * 1.1 : 0;
+    
+    // Calculate profit margin percentage
+    let profitMargin = 0;
+    if (purchasePrice > 0 && finalPrice > 0) {
+      profitMargin = ((finalPrice - purchasePrice) / purchasePrice) * 100;
+    }
+    
+    return {
+      minSellingPrice: Math.round(minSellingPrice * 100) / 100,
+      profitMargin: Math.round(profitMargin * 100) / 100,
+      finalPrice: Math.round(finalPrice * 100) / 100
+    };
+  }
+
+  // Validate business rules for product pricing
+  validateProfitRules(productData) {
+    const purchasePrice = parseFloat(productData.purchasePrice) || 0;
+    const price = parseFloat(productData.price) || 0;
+    
+    if (purchasePrice > 0 && price <= purchasePrice) {
+      return {
+        isValid: false,
+        error: 'Selling price must be greater than purchase price'
+      };
+    }
+    
+    return { isValid: true };
+  }
+}
 export const productService = new ProductService();

@@ -20,10 +20,15 @@ const ProductManagement = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [showBulkPriceModal, setShowBulkPriceModal] = useState(false);
-  const [formData, setFormData] = useState({
+const [formData, setFormData] = useState({
     name: "",
     price: "",
     previousPrice: "",
+    purchasePrice: "",
+    discountType: "Fixed Amount",
+    discountValue: "",
+    minSellingPrice: "",
+    profitMargin: "",
     category: "",
     stock: "",
     minStock: "",
@@ -59,13 +64,62 @@ const ProductManagement = () => {
     loadProducts();
   }, []);
 
-  // Handle form input changes with validation
+// Handle form input changes with validation and profit calculations
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    setFormData(prev => {
+      const newData = {
+        ...prev,
+        [name]: value
+      };
+      
+      // Auto-calculate profit metrics when relevant fields change
+      if (name === 'price' || name === 'purchasePrice' || name === 'discountType' || name === 'discountValue') {
+        const calculations = calculateProfitMetrics(newData);
+        return {
+          ...newData,
+          ...calculations
+        };
+      }
+      
+      return newData;
+    });
+  };
+
+  // Calculate profit metrics based on current form data
+  const calculateProfitMetrics = (data) => {
+    const price = parseFloat(data.price) || 0;
+    const purchasePrice = parseFloat(data.purchasePrice) || 0;
+    const discountValue = parseFloat(data.discountValue) || 0;
+    
+    let finalPrice = price;
+    
+    // Apply discount based on type
+    if (discountValue > 0) {
+      if (data.discountType === 'Percentage') {
+        finalPrice = price - (price * discountValue / 100);
+      } else {
+        finalPrice = price - discountValue;
+      }
+    }
+    
+    // Ensure final price is not negative
+    finalPrice = Math.max(0, finalPrice);
+    
+    // Calculate minimum selling price (purchase price + 10% margin)
+    const minSellingPrice = purchasePrice > 0 ? purchasePrice * 1.1 : 0;
+    
+    // Calculate profit margin percentage
+    let profitMargin = 0;
+    if (purchasePrice > 0 && finalPrice > 0) {
+      profitMargin = ((finalPrice - purchasePrice) / purchasePrice) * 100;
+    }
+    
+    return {
+      minSellingPrice: minSellingPrice.toFixed(2),
+      profitMargin: profitMargin.toFixed(2)
+    };
   };
 
   // Form submission with comprehensive validation
@@ -94,11 +148,24 @@ const ProductManagement = () => {
         return;
       }
 
+// Validate business rules
+      const purchasePrice = parseFloat(formData.purchasePrice) || 0;
+      const price = parseFloat(formData.price) || 0;
+      
+      if (purchasePrice > 0 && price <= purchasePrice) {
+        toast.error("Selling price must be greater than purchase price");
+        return;
+      }
+
       // Prepare product data with proper validation
       const productData = {
         ...formData,
         price: parseFloat(formData.price) || 0,
         previousPrice: formData.previousPrice ? parseFloat(formData.previousPrice) : null,
+        purchasePrice: parseFloat(formData.purchasePrice) || 0,
+        discountValue: parseFloat(formData.discountValue) || 0,
+        minSellingPrice: parseFloat(formData.minSellingPrice) || 0,
+        profitMargin: parseFloat(formData.profitMargin) || 0,
         stock: parseInt(formData.stock) || 0,
         minStock: formData.minStock ? parseInt(formData.minStock) : 5,
         imageUrl: formData.imageUrl || "/api/placeholder/300/200",
@@ -129,10 +196,15 @@ const ProductManagement = () => {
     if (!product) return;
     
     setEditingProduct(product);
-    setFormData({
+setFormData({
       name: product.name || "",
       price: product.price?.toString() || "",
       previousPrice: product.previousPrice?.toString() || "",
+      purchasePrice: product.purchasePrice?.toString() || "",
+      discountType: product.discountType || "Fixed Amount",
+      discountValue: product.discountValue?.toString() || "",
+      minSellingPrice: product.minSellingPrice?.toString() || "",
+      profitMargin: product.profitMargin?.toString() || "",
       category: product.category || "",
       stock: product.stock?.toString() || "",
       minStock: product.minStock?.toString() || "",
@@ -163,10 +235,15 @@ const ProductManagement = () => {
 
   // Reset form state
   const resetForm = () => {
-    setFormData({
+setFormData({
       name: "",
       price: "",
       previousPrice: "",
+      purchasePrice: "",
+      discountType: "Fixed Amount",
+      discountValue: "",
+      minSellingPrice: "",
+      profitMargin: "",
       category: "",
       stock: "",
       minStock: "",
@@ -308,8 +385,11 @@ const ProductManagement = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Category
                     </th>
+<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Price / Purchase
+                    </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Price
+                      Profit Margin
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Stock
@@ -349,15 +429,38 @@ const ProductManagement = () => {
                           {product.category || "No Category"}
                         </Badge>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <div className="flex flex-col">
                           <span className="font-medium">Rs. {product.price || 0}</span>
+                          {product.purchasePrice && (
+                            <span className="text-xs text-gray-500">
+                              Cost: Rs. {product.purchasePrice}
+                            </span>
+                          )}
                           {product.previousPrice && (
-                            <span className="text-xs text-gray-500 line-through">
-                              Rs. {product.previousPrice}
+                            <span className="text-xs text-gray-400 line-through">
+                              Was: Rs. {product.previousPrice}
                             </span>
                           )}
                         </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {product.profitMargin ? (
+                          <div className="flex flex-col">
+                            <Badge 
+                              variant={parseFloat(product.profitMargin) > 20 ? "success" : parseFloat(product.profitMargin) > 10 ? "warning" : "error"}
+                            >
+                              {product.profitMargin}%
+                            </Badge>
+                            {product.minSellingPrice && (
+                              <span className="text-xs text-gray-500 mt-1">
+                                Min: Rs. {product.minSellingPrice}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <Badge 
@@ -462,6 +565,66 @@ const ProductManagement = () => {
                   value={formData.previousPrice}
                   onChange={handleInputChange}
                   icon="TrendingDown"
+                />
+</div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="Purchase Price (Rs.) *"
+                  name="purchasePrice"
+                  type="number"
+                  step="0.01"
+                  value={formData.purchasePrice}
+                  onChange={handleInputChange}
+                  required
+                  icon="ShoppingCart"
+                />
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Discount Type
+                  </label>
+                  <select
+                    name="discountType"
+                    value={formData.discountType}
+                    onChange={handleInputChange}
+                    className="input-field"
+                  >
+                    <option value="Fixed Amount">Fixed Amount (Rs.)</option>
+                    <option value="Percentage">Percentage (%)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Input
+                  label={`Discount Value ${formData.discountType === 'Percentage' ? '(%)' : '(Rs.)'}`}
+                  name="discountValue"
+                  type="number"
+                  step={formData.discountType === 'Percentage' ? "0.1" : "0.01"}
+                  max={formData.discountType === 'Percentage' ? "100" : undefined}
+                  value={formData.discountValue}
+                  onChange={handleInputChange}
+                  icon="Tag"
+                />
+                <Input
+                  label="Min Selling Price (Rs.)"
+                  name="minSellingPrice"
+                  type="number"
+                  step="0.01"
+                  value={formData.minSellingPrice}
+                  readOnly
+                  className="bg-gray-50"
+                  icon="TrendingDown"
+                />
+                <Input
+                  label="Profit Margin (%)"
+                  name="profitMargin"
+                  type="number"
+                  step="0.01"
+                  value={formData.profitMargin}
+                  readOnly
+                  className="bg-gray-50"
+                  icon="TrendingUp"
                 />
               </div>
 
