@@ -71,7 +71,7 @@
   position: relative;
   overflow: hidden;
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-background-size: 200% 100%;
+  background-size: 200% 100%;
   animation: shimmer 2s infinite;
 }
 
@@ -121,11 +121,11 @@ background-size: 200% 100%;
   @apply bg-gray-100;
 }
 
-:::-webkit-scrollbar-thumb {
+::-webkit-scrollbar-thumb {
   @apply bg-gray-300 rounded-full;
 }
 
-:::-webkit-scrollbar-thumb:hover {
+::-webkit-scrollbar-thumb:hover {
   @apply bg-gray-400;
 }
 
@@ -157,8 +157,7 @@ background-size: 200% 100%;
   .cart-item {
     @apply flex-col space-y-3;
   }
-  
-  .cart-item-controls {
-@apply justify-between w-full;
+.cart-item-controls {
+    @apply justify-between w-full;
   }
 }

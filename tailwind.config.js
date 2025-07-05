@@ -25,7 +25,7 @@ export default {
         'card': '0 4px 8px rgba(0, 0, 0, 0.1)',
         'premium': '0 8px 32px rgba(0, 0, 0, 0.12)',
       },
-animation: {
+      animation: {
         'shimmer': 'shimmer 2s infinite linear',
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'quantity-change': 'quantity-pulse 0.3s ease-in-out',
