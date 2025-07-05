@@ -74,9 +74,16 @@ useEffect(() => {
           if (timeout) clearTimeout(timeout);
         } else if (status.available && !status.initialized) {
           // SDK loaded but not initialized properly - try to initialize
-          try {
-            if (window.Apper && window.Apper.init) {
-              await window.Apper.init();
+try {
+            // Check multiple possible SDK locations
+            const sdkInstance = window.apperSDK || window.Apper || window.ApperSDK || window.apper;
+            
+            if (sdkInstance && typeof sdkInstance.init === 'function') {
+              await sdkInstance.init({
+                projectId: import.meta.env.VITE_APPER_PROJECT_ID,
+                publicKey: import.meta.env.VITE_APPER_PUBLIC_KEY,
+                debug: import.meta.env.VITE_APPER_DEBUG === 'true'
+              });
               if (mounted) {
                 setSdkReady(true);
                 setSdkError(null);
@@ -183,37 +190,47 @@ useEffect(() => {
         setSdkReady(false);
         
         // Clear existing SDK instances
+// Clean up existing SDK references
         if (window.apperSDK) {
           window.apperSDK = null;
         }
         
-        // Wait for SDK to be available
+        // Enhanced SDK availability checking for reinitialization
         await new Promise((resolve, reject) => {
           let attempts = 0;
-          const maxAttempts = 20;
+          const maxAttempts = 30;
           
           const checkSDK = () => {
-            if (typeof window.Apper !== 'undefined' && window.Apper.init) {
-              resolve();
+            // Check multiple possible SDK locations
+            const sdkInstance = window.apperSDK || window.Apper || window.ApperSDK || window.apper;
+            
+            if (sdkInstance && typeof sdkInstance.init === 'function') {
+              resolve(sdkInstance);
             } else if (attempts >= maxAttempts) {
-              reject(new Error('SDK not available for reinitialization'));
+              reject(new Error(`SDK not available for reinitialization after ${maxAttempts} attempts`));
             } else {
               attempts++;
-              setTimeout(checkSDK, 500);
+              // Exponential backoff for retries
+              const delay = Math.min(1000, 100 * Math.pow(1.2, attempts));
+              setTimeout(checkSDK, delay);
             }
           };
           
           checkSDK();
-        });
-        
-        // Initialize SDK
-        if (window.Apper && window.Apper.init) {
-          await window.Apper.init();
+        }).then(async (sdkInstance) => {
+          // Initialize SDK with proper configuration
+          await sdkInstance.init({
+            projectId: import.meta.env.VITE_APPER_PROJECT_ID,
+            publicKey: import.meta.env.VITE_APPER_PUBLIC_KEY,
+            debug: import.meta.env.VITE_APPER_DEBUG === 'true'
+          });
+          
+          // Store reference for future use
+          window.apperSDK = sdkInstance;
+          
           setSdkReady(true);
           setSdkError(null);
-        } else {
-          throw new Error('SDK initialization method not available');
-        }
+        });
       } catch (error) {
         console.error('Failed to reinitialize SDK:', error);
         setSdkError(error);

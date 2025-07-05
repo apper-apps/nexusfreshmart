@@ -87,7 +87,7 @@ this.projectId = import.meta.env.VITE_APPER_PROJECT_ID;
           script.crossOrigin = 'anonymous';
           
           // Add error handling for postMessage conflicts
-          const originalPostMessage = window.postMessage;
+const originalPostMessage = window.postMessage;
           window.postMessage = function(message, targetOrigin, transfer) {
             try {
               if (typeof message === 'object' && message !== null) {
@@ -104,6 +104,41 @@ this.projectId = import.meta.env.VITE_APPER_PROJECT_ID;
               console.warn('PostMessage error prevented:', error);
               return false;
             }
+          };
+          
+          // Enhanced SDK availability checking
+          const checkSDKAvailability = (onSuccess, onError, maxAttempts = 30) => {
+            let attempts = 0;
+            
+            const checkForSDK = () => {
+              console.log(`SDK check attempt ${attempts + 1}/${maxAttempts}`);
+              
+              // Check multiple possible SDK locations
+              const sdkAvailable = (
+                (typeof window.Apper !== 'undefined' && window.Apper) ||
+                (typeof window.ApperSDK !== 'undefined' && window.ApperSDK) ||
+                (typeof window.apper !== 'undefined' && window.apper)
+              );
+              
+              if (sdkAvailable) {
+                console.log('SDK found:', sdkAvailable);
+                onSuccess(sdkAvailable);
+                return;
+              }
+              
+              attempts++;
+              if (attempts >= maxAttempts) {
+                console.error('SDK not available after', maxAttempts, 'attempts');
+                onError(new Error(`SDK not available after ${maxAttempts} attempts`));
+                return;
+              }
+              
+              // Exponential backoff for retries
+              const delay = Math.min(1000, 100 * Math.pow(1.5, attempts));
+              setTimeout(checkForSDK, delay);
+            };
+            
+            checkForSDK();
           };
 
           script.onload = () => {
@@ -294,6 +329,7 @@ class ErrorBoundary extends React.Component {
       errorType
     });
   }
+}
 
   categorizeError(error) {
     if (!error) return 'unknown';
@@ -307,8 +343,43 @@ class ErrorBoundary extends React.Component {
     }
     if (message.includes('Canvas') || message.includes('render')) {
       return 'canvas';
-}
+    }
     return 'unknown';
+  }
+
+  // Helper method to check SDK availability
+  checkSDKAvailability(onSuccess, onError, maxAttempts = 30) {
+    let attempts = 0;
+    
+    const checkForSDK = () => {
+      console.log(`SDK check attempt ${attempts + 1}/${maxAttempts}`);
+      
+      // Check multiple possible SDK locations
+      const sdkAvailable = (
+        (typeof window.Apper !== 'undefined' && window.Apper) ||
+        (typeof window.ApperSDK !== 'undefined' && window.ApperSDK) ||
+        (typeof window.apper !== 'undefined' && window.apper)
+      );
+      
+      if (sdkAvailable) {
+        console.log('SDK found:', sdkAvailable);
+        onSuccess(sdkAvailable);
+        return;
+      }
+      
+      attempts++;
+      if (attempts >= maxAttempts) {
+        console.error('SDK not available after', maxAttempts, 'attempts');
+        onError(new Error(`SDK not available after ${maxAttempts} attempts`));
+        return;
+      }
+      
+      // Exponential backoff for retries
+      const delay = Math.min(1000, 100 * Math.pow(1.5, attempts));
+      setTimeout(checkForSDK, delay);
+    };
+    
+    checkForSDK();
   }
 
   // Enhanced retry logic with proper async handling and circuit breaker
@@ -344,14 +415,13 @@ class ErrorBoundary extends React.Component {
         isRetrying: false
       });
 
-      // If it's an SDK error, try to reinitialize with better error handling
+// If it's an SDK error, try to reinitialize with better error handling
       if (this.state.errorType === 'sdk') {
         try {
           // Clear any existing SDK instances
           if (window.apperSDK) {
             window.apperSDK = null;
           }
-          
           // Wait for SDK to be available
           await new Promise((resolve, reject) => {
             let attempts = 0;
@@ -368,9 +438,37 @@ class ErrorBoundary extends React.Component {
             checkSDK();
           });
 
-          // Initialize new SDK instance
-          const sdk = new ApperSDK();
-          await sdk.initialize();
+// Initialize SDK with proper error handling
+          try {
+            let sdkInstance = null;
+            
+            // Wait for SDK to be available
+            await new Promise((resolve, reject) => {
+              this.checkSDKAvailability(
+                (sdk) => {
+                  sdkInstance = sdk;
+                  resolve();
+                },
+                (error) => reject(error),
+                30 // 30 attempts with exponential backoff
+              );
+            });
+            
+            // Initialize the SDK
+            if (sdkInstance && typeof sdkInstance.init === 'function') {
+              await sdkInstance.init({
+                projectId: import.meta.env.VITE_APPER_PROJECT_ID,
+                publicKey: import.meta.env.VITE_APPER_PUBLIC_KEY,
+                debug: import.meta.env.VITE_APPER_DEBUG === 'true'
+              });
+              console.log('SDK initialized successfully');
+            } else {
+              throw new Error('SDK initialization method not available');
+            }
+          } catch (innerError) {
+            console.error('SDK initialization failed:', innerError);
+            throw innerError;
+          }
           
           console.log('SDK retry successful');
         } catch (sdkError) {
@@ -476,8 +574,70 @@ async function initializeApp(retryCount = 0) {
   
   try {
     // Initialize SDK
-    const sdk = new ApperSDK();
-    await sdk.initialize();
+// Enhanced SDK initialization with fallback
+    try {
+      await new Promise((resolve, reject) => {
+        const checkSDKAvailability = (onSuccess, onError, maxAttempts = 30) => {
+          let attempts = 0;
+          
+          const checkForSDK = () => {
+            console.log(`SDK check attempt ${attempts + 1}/${maxAttempts}`);
+            
+            // Check multiple possible SDK locations
+            const sdkAvailable = (
+              (typeof window.Apper !== 'undefined' && window.Apper) ||
+              (typeof window.ApperSDK !== 'undefined' && window.ApperSDK) ||
+              (typeof window.apper !== 'undefined' && window.apper)
+            );
+            
+            if (sdkAvailable) {
+              console.log('SDK found:', sdkAvailable);
+              onSuccess(sdkAvailable);
+              return;
+            }
+            
+            attempts++;
+            if (attempts >= maxAttempts) {
+              console.error('SDK not available after', maxAttempts, 'attempts');
+              onError(new Error(`SDK not available after ${maxAttempts} attempts`));
+              return;
+            }
+            
+            // Exponential backoff for retries
+            const delay = Math.min(1000, 100 * Math.pow(1.5, attempts));
+            setTimeout(checkForSDK, delay);
+          };
+          
+          checkForSDK();
+        };
+
+        checkSDKAvailability(
+          async (sdkInstance) => {
+            try {
+              if (typeof sdkInstance.init === 'function') {
+                await sdkInstance.init({
+                  projectId: import.meta.env.VITE_APPER_PROJECT_ID,
+                  publicKey: import.meta.env.VITE_APPER_PUBLIC_KEY,
+                  debug: import.meta.env.VITE_APPER_DEBUG === 'true'
+                });
+                window.apperSDK = sdkInstance; // Store reference
+                resolve();
+              } else {
+                reject(new Error('SDK init method not available'));
+              }
+            } catch (error) {
+              reject(error);
+            }
+          },
+          (error) => reject(error),
+          30
+        );
+      });
+      console.log('SDK ready for React app');
+    } catch (error) {
+      console.error('SDK initialization failed:', error);
+      // Continue with app initialization even if SDK fails
+    }
     
     // Initialize React app
     const rootElement = document.getElementById('root');
