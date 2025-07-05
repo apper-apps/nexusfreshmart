@@ -1,27 +1,28 @@
 import React from 'react';
+import { useDispatch } from 'react-redux';
 import { toast } from 'react-toastify';
 import ApperIcon from '@/components/ApperIcon';
 import Button from '@/components/atoms/Button';
-import { useCart } from '@/hooks/useCart';
+import { updateQuantity, removeFromCart } from '@/store/cartSlice';
 
 const CartItem = ({ item }) => {
-  const { updateQuantity, removeFromCart } = useCart();
+  const dispatch = useDispatch();
 
 const handleQuantityChange = (newQuantity) => {
     if (newQuantity === 0) {
-      removeFromCart(item.id);
+      dispatch(removeFromCart(item.id));
       toast.success(`${item.name} removed from cart`);
     } else if (newQuantity > item.stock) {
       toast.warning(`Only ${item.stock} ${item.unit || 'pieces'} available in stock`);
       return;
     } else if (newQuantity > 0) {
-      updateQuantity(item.id, newQuantity);
+      dispatch(updateQuantity({ productId: item.id, quantity: newQuantity }));
       toast.info(`${item.name} quantity updated to ${newQuantity}`);
     }
   };
 
-  const handleRemove = () => {
-    removeFromCart(item.id);
+const handleRemove = () => {
+    dispatch(removeFromCart(item.id));
     toast.success(`${item.name} removed from cart`);
   };
 

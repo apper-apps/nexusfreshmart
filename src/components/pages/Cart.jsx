@@ -1,14 +1,18 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import ApperIcon from '@/components/ApperIcon';
 import Button from '@/components/atoms/Button';
 import CartItem from '@/components/molecules/CartItem';
 import Empty from '@/components/ui/Empty';
-import { useCart } from '@/hooks/useCart';
+import { selectCartItems, selectCartTotal, selectCartItemCount, clearCart } from '@/store/cartSlice';
 
 const Cart = () => {
   const navigate = useNavigate();
-  const { cart, getCartTotal, getCartCount, clearCart } = useCart();
+  const dispatch = useDispatch();
+  const cart = useSelector(selectCartItems);
+  const cartTotal = useSelector(selectCartTotal);
+  const cartCount = useSelector(selectCartItemCount);
 
   if (cart.length === 0) {
     return (
@@ -21,19 +25,18 @@ const Cart = () => {
     );
   }
 
-  const subtotal = getCartTotal();
+const subtotal = cartTotal;
   const deliveryCharge = 150; // Fixed delivery charge
   const total = subtotal + deliveryCharge;
-
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex items-center justify-between mb-8">
+<div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold text-gray-900">
-          Shopping Cart ({getCartCount()} items)
+          Shopping Cart ({cartCount} items)
         </h1>
         
-        <button
-          onClick={clearCart}
+<button
+          onClick={() => dispatch(clearCart())}
           className="flex items-center space-x-2 text-red-600 hover:text-red-700 transition-colors"
         >
           <ApperIcon name="Trash2" size={20} />
@@ -66,8 +69,8 @@ const Cart = () => {
             <h2 className="text-xl font-semibold text-gray-900 mb-6">Order Summary</h2>
             
             <div className="space-y-4 mb-6">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Subtotal ({getCartCount()} items)</span>
+<div className="flex justify-between items-center">
+                <span className="text-gray-600">Subtotal ({cartCount} items)</span>
                 <span className="font-medium transition-all duration-300">Rs. {subtotal.toLocaleString()}</span>
               </div>
               

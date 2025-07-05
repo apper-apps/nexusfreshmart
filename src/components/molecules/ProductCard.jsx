@@ -1,19 +1,25 @@
 import React, { memo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import ApperIcon from '@/components/ApperIcon';
 import Button from '@/components/atoms/Button';
 import Badge from '@/components/atoms/Badge';
-import { useCart } from '@/hooks/useCart';
+import { addToCart, setLoading, selectCartLoading } from '@/store/cartSlice';
+
 const ProductCard = memo(({ product }) => {
   const navigate = useNavigate();
-  const { addToCart, isLoading } = useCart();
-
-  const handleAddToCart = useCallback((e) => {
+  const dispatch = useDispatch();
+  const isLoading = useSelector(selectCartLoading);
+const handleAddToCart = useCallback((e) => {
     e.stopPropagation();
-    addToCart(product);
-    toast.success(`${product.name} added to cart!`, { autoClose: 2000 });
-  }, [addToCart, product]);
+    dispatch(setLoading(true));
+    setTimeout(() => {
+      dispatch(addToCart(product));
+      dispatch(setLoading(false));
+      toast.success(`${product.name} added to cart!`, { autoClose: 2000 });
+    }, 200);
+  }, [dispatch, product]);
 
   const handleCardClick = useCallback(() => {
     navigate(`/product/${product.id}`);

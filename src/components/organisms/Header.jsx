@@ -1,21 +1,20 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import ApperIcon from '@/components/ApperIcon';
 import SearchBar from '@/components/molecules/SearchBar';
-import { useCart } from '@/hooks/useCart';
+import { selectCartItemCount } from '@/store/cartSlice';
 
 const Header = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
   const navigate = useNavigate();
-  const { getCartCount } = useCart();
+  const cartCount = useSelector(selectCartItemCount);
   const [searchResults, setSearchResults] = useState([]);
 
   const handleSearch = (searchTerm) => {
     if (searchTerm.trim()) {
       navigate(`/category/All?search=${encodeURIComponent(searchTerm)}`);
     }
-  };
-
-  const cartCount = getCartCount();
+};
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">

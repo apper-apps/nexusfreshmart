@@ -1,15 +1,17 @@
 import 'react-toastify/dist/ReactToastify.css';
-import React, { useEffect, useState, Suspense, useMemo, useCallback } from "react";
+import React, { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
+import { Provider } from "react-redux";
+import { PersistGate } from "redux-persist/integration/react";
+import { persistor, store } from "@/store";
 import Layout from "@/components/organisms/Layout";
 import Loading from "@/components/ui/Loading";
-
-// Core pages - loaded immediately
-import Home from "@/components/pages/Home";
 import ProductDetail from "@/components/pages/ProductDetail";
 import Cart from "@/components/pages/Cart";
 import Checkout from "@/components/pages/Checkout";
+import Home from "@/components/pages/Home";
+// Core pages - loaded immediately
 
 // Heavy pages - code split with React.lazy()
 const AdminDashboard = React.lazy(() => import("@/components/pages/AdminDashboard"));
@@ -112,62 +114,61 @@ function App() {
     return () => clearTimeout(preloadTimer);
   }, []);
 return (
-    <BrowserRouter>
-      <div className="min-h-screen bg-background">
-        {/* Minimal SDK Status Indicator (only in development) */}
-        {import.meta.env.DEV && sdkError && (
-          <div className="fixed top-0 right-0 z-50 p-2 text-xs">
-            <div className="px-2 py-1 rounded bg-orange-500 text-white">
-              SDK: Background Loading
-            </div>
+    <Provider store={store}>
+      <PersistGate loading={<Loading type="page" />} persistor={persistor}>
+        <BrowserRouter>
+          <div className="min-h-screen bg-background">
+            {/* Minimal SDK Status Indicator (only in development) */}
+            {import.meta.env.DEV && sdkError && (
+              <div className="fixed top-0 right-0 z-50 p-2 text-xs">
+                <div className="px-2 py-1 rounded bg-orange-500 text-white">
+                  SDK: Background Loading
+                </div>
+              </div>
+            )}
+            <Suspense fallback={<Loading type="page" />}>
+              <Routes>
+                <Route path="/" element={<Layout />}>
+                  {/* Core routes - no lazy loading */}
+                  <Route index element={<Home />} />
+                  <Route path="product/:productId" element={<ProductDetail />} />
+                  <Route path="cart" element={<Cart />} />
+                  <Route path="checkout" element={<Checkout />} />
+                  
+                  {/* Lazy loaded routes */}
+                  <Route path="category/:categoryName" element={<Category />} />
+                  <Route path="orders" element={<Orders />} />
+                  <Route path="orders/:orderId" element={<OrderTracking />} />
+                  <Route path="account" element={<Account />} />
+                  
+                  {/* Heavy admin routes - lazy loaded */}
+                  <Route path="admin" element={<AdminDashboard />} />
+                  <Route path="admin/products" element={<ProductManagement />} />
+                  <Route path="admin/pos" element={<POS />} />
+                  <Route path="admin/delivery-dashboard" element={<DeliveryTracking />} />
+                  <Route path="admin/analytics" element={<Analytics />} />
+                  <Route path="admin/payments" element={<PaymentManagement />} />
+                </Route>
+              </Routes>
+            </Suspense>
+            <ToastContainer
+              position="top-right"
+              autoClose={3000}
+              hideProgressBar={false}
+              newestOnTop
+              closeOnClick
+              rtl={false}
+              pauseOnFocusLoss={false}
+              draggable
+              pauseOnHover={false}
+              theme="colored"
+              style={{ zIndex: 9999 }}
+              limit={3}
+            />
           </div>
-        )}
-<Suspense fallback={<Loading type="page" />}>
-          <Routes>
-            <Route path="/" element={<Layout />}>
-              {/* Core routes - no lazy loading */}
-              <Route index element={<Home />} />
-              <Route path="product/:productId" element={<ProductDetail />} />
-              <Route path="cart" element={<Cart />} />
-              <Route path="checkout" element={<Checkout />} />
-              
-              {/* Lazy loaded routes */}
-              <Route path="category/:categoryName" element={<Category />} />
-              <Route path="orders" element={<Orders />} />
-              <Route path="orders/:orderId" element={<OrderTracking />} />
-              <Route path="account" element={<Account />} />
-              
-              {/* Heavy admin routes - lazy loaded */}
-              <Route path="admin" element={<AdminDashboard />} />
-              <Route path="admin/products" element={<ProductManagement />} />
-              <Route path="admin/pos" element={<POS />} />
-              <Route path="admin/delivery-dashboard" element={<DeliveryTracking />} />
-              <Route path="admin/analytics" element={<Analytics />} />
-              <Route path="admin/payments" element={<PaymentManagement />} />
-            </Route>
-          </Routes>
-        </Suspense>
-<ToastContainer
-          position="top-right"
-          autoClose={3000}
-          hideProgressBar={false}
-          newestOnTop
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss={false}
-          draggable
-          pauseOnHover={false}
-          theme="colored"
-          style={{ zIndex: 9999 }}
-          limit={3}
-        />
-      </div>
-
-  
-
-
-    </BrowserRouter>
-  );
+        </BrowserRouter>
+      </PersistGate>
+    </Provider>
 }
 
 export default App;
