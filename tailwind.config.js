@@ -25,15 +25,28 @@ export default {
         'card': '0 4px 8px rgba(0, 0, 0, 0.1)',
         'premium': '0 8px 32px rgba(0, 0, 0, 0.12)',
       },
-      animation: {
+animation: {
         'shimmer': 'shimmer 2s infinite linear',
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'fade-in': 'fadeIn 0.5s ease-in-out',
+        'scale-in': 'scaleIn 0.3s ease-out',
       },
       keyframes: {
         shimmer: {
           '0%': { transform: 'translateX(-100%)' },
           '100%': { transform: 'translateX(100%)' },
         },
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        scaleIn: {
+          '0%': { transform: 'scale(0.95)', opacity: '0' },
+          '100%': { transform: 'scale(1)', opacity: '1' },
+        },
+      },
+      scale: {
+        '102': '1.02',
       },
     },
   },

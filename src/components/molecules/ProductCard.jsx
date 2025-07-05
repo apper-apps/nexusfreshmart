@@ -32,18 +32,36 @@ return (
       className="card p-4 cursor-pointer hover:shadow-premium transform hover:scale-102 transition-all duration-300"
       onClick={handleCardClick}
     >
-      <div className="relative mb-4">
+      <div className="relative mb-4 image-container">
         <picture className="block w-full h-48 rounded-lg overflow-hidden bg-gray-100">
           <source
-            srcSet={`${product.imageUrl}&fm=webp 1x, ${product.imageUrl}&fm=webp&dpr=2 2x`}
+            srcSet={`${product.imageUrl}&fm=webp&w=400&q=80 1x, ${product.imageUrl}&fm=webp&w=800&q=80&dpr=2 2x`}
             type="image/webp"
           />
+          <source
+            srcSet={`${product.imageUrl}&w=400&q=80 1x, ${product.imageUrl}&w=800&q=80&dpr=2 2x`}
+          />
           <img
-            src={product.imageUrl}
+            src={`${product.imageUrl}&w=400&q=80`}
             alt={product.name}
             loading="lazy"
-            className="w-full h-48 object-cover transition-opacity duration-300 hover:opacity-95"
+            decoding="async"
+            className="w-full h-48 object-cover responsive-image transition-opacity duration-300"
             style={{ backgroundColor: '#f3f4f6' }}
+            onLoad={(e) => {
+              e.target.classList.add('image-loaded');
+              e.target.classList.remove('image-loading');
+            }}
+            onError={(e) => {
+              e.target.src = `data:image/svg+xml;base64,${btoa(`
+                <svg width="300" height="200" xmlns="http://www.w3.org/2000/svg">
+                  <rect width="300" height="200" fill="#f3f4f6"/>
+                  <text x="150" y="100" text-anchor="middle" fill="#9ca3af" font-family="sans-serif" font-size="14">
+                    Image not available
+                  </text>
+                </svg>
+              `)}`;
+            }}
           />
         </picture>
         {product.stock <= 10 && product.stock > 0 && (

@@ -5,26 +5,45 @@ import { ToastContainer } from "react-toastify";
 import Layout from "@/components/organisms/Layout";
 import Loading from "@/components/ui/Loading";
 
-// Core pages - loaded immediately
+// Critical pages - loaded immediately for core user flow
 import Home from "@/components/pages/Home";
 import ProductDetail from "@/components/pages/ProductDetail";
 import Cart from "@/components/pages/Cart";
 import Checkout from "@/components/pages/Checkout";
 
-// Heavy pages - code split with React.lazy()
-const AdminDashboard = React.lazy(() => import("@/components/pages/AdminDashboard"));
-const ProductManagement = React.lazy(() => import("@/components/pages/ProductManagement"));
-const Analytics = React.lazy(() => import("@/components/pages/Analytics"));
-const POS = React.lazy(() => import("@/components/pages/POS"));
-const PaymentManagement = React.lazy(() => import("@/components/pages/PaymentManagement"));
-const DeliveryTracking = React.lazy(() => import("@/components/pages/DeliveryTracking"));
+// Heavy admin pages - lazy loaded with highest priority for code splitting
+const AdminDashboard = React.lazy(() => 
+  import("@/components/pages/AdminDashboard").then(module => ({ default: module.default }))
+);
+const ProductManagement = React.lazy(() => 
+  import("@/components/pages/ProductManagement").then(module => ({ default: module.default }))
+);
+const Analytics = React.lazy(() => 
+  import("@/components/pages/Analytics").then(module => ({ default: module.default }))
+);
+const POS = React.lazy(() => 
+  import("@/components/pages/POS").then(module => ({ default: module.default }))
+);
+const PaymentManagement = React.lazy(() => 
+  import("@/components/pages/PaymentManagement").then(module => ({ default: module.default }))
+);
+const DeliveryTracking = React.lazy(() => 
+  import("@/components/pages/DeliveryTracking").then(module => ({ default: module.default }))
+);
 
-// Medium priority pages - lazy loaded
-const Category = React.lazy(() => import("@/components/pages/Category"));
-const Orders = React.lazy(() => import("@/components/pages/Orders"));
-const OrderTracking = React.lazy(() => import("@/components/pages/OrderTracking"));
-const Account = React.lazy(() => import("@/components/pages/Account"));
-// Import components
+// User-facing pages - lazy loaded with medium priority
+const Category = React.lazy(() => 
+  import("@/components/pages/Category").then(module => ({ default: module.default }))
+);
+const Orders = React.lazy(() => 
+  import("@/components/pages/Orders").then(module => ({ default: module.default }))
+);
+const OrderTracking = React.lazy(() => 
+  import("@/components/pages/OrderTracking").then(module => ({ default: module.default }))
+);
+const Account = React.lazy(() => 
+  import("@/components/pages/Account").then(module => ({ default: module.default }))
+);
 
 function App() {
   const [sdkReady, setSdkReady] = useState(false);
@@ -100,16 +119,28 @@ function App() {
     checkStatus: checkSDKStatus
   }), [sdkReady, sdkError, checkSDKStatus]);
 
-  // Component preloader for performance
+// Intelligent component preloader for performance optimization
   useEffect(() => {
-    // Preload likely-to-be-visited components after initial render
-    const preloadTimer = setTimeout(() => {
+    // Preload user-facing components after core app loads
+    const preloadUserPages = setTimeout(() => {
+      // High probability user pages
       import("@/components/pages/Category").catch(() => {});
       import("@/components/pages/Orders").catch(() => {});
       import("@/components/pages/Account").catch(() => {});
-    }, 2000);
+    }, 1500);
 
-    return () => clearTimeout(preloadTimer);
+    // Preload admin components for admin users (delayed)
+    const preloadAdminPages = setTimeout(() => {
+      if (window.location.pathname.includes('/admin')) {
+        import("@/components/pages/AdminDashboard").catch(() => {});
+        import("@/components/pages/ProductManagement").catch(() => {});
+      }
+    }, 3000);
+
+    return () => {
+      clearTimeout(preloadUserPages);
+      clearTimeout(preloadAdminPages);
+    };
   }, []);
 return (
     <BrowserRouter>
