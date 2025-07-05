@@ -28,9 +28,14 @@ const addToCart = (product) => {
         if (existingItem) {
           // If item exists, increase quantity but respect stock limits
           const newQuantity = Math.min(existingItem.quantity + 1, product.stock);
+          if (newQuantity === existingItem.quantity) {
+            // Stock limit reached
+            setIsLoading(false);
+            return prevCart;
+          }
           return prevCart.map(item =>
             item.id === product.id
-              ? { ...item, quantity: newQuantity }
+              ? { ...item, quantity: newQuantity, updatedAt: Date.now() }
               : item
           );
         } else {
@@ -38,6 +43,8 @@ const addToCart = (product) => {
           const cartItem = {
             ...product,
             quantity: 1,
+            addedAt: Date.now(),
+            updatedAt: Date.now(),
             // Ensure image field is properly mapped
             image: product.image || product.imageUrl || '/placeholder-image.jpg',
             // Ensure all required fields are present
@@ -69,11 +76,25 @@ const addToCart = (product) => {
         if (item.id === productId) {
           // Validate against stock
           const validQuantity = Math.min(newQuantity, item.stock);
-          return { ...item, quantity: validQuantity };
+          return { 
+            ...item, 
+            quantity: validQuantity, 
+            updatedAt: Date.now(),
+            isUpdating: true 
+          };
         }
         return item;
       })
     );
+
+    // Remove updating flag after animation
+    setTimeout(() => {
+      setCart(prevCart =>
+        prevCart.map(item =>
+          item.id === productId ? { ...item, isUpdating: false } : item
+        )
+      );
+    }, 300);
   };
 
   const clearCart = () => {

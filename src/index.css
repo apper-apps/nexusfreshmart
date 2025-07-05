@@ -121,9 +121,44 @@ background-size: 200% 100%;
   @apply bg-gray-100;
 }
 
-::-webkit-scrollbar-thumb {
+:::-webkit-scrollbar-thumb {
   @apply bg-gray-300 rounded-full;
 }
+
 :::-webkit-scrollbar-thumb:hover {
   @apply bg-gray-400;
+}
+
+/* Quantity Change Animation */
+@keyframes quantity-pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.3);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.quantity-change {
+  animation: quantity-pulse 0.3s ease-in-out;
+}
+
+/* Button Hover Enhancements */
+.btn-quantity {
+  @apply transition-all duration-200 hover:scale-110;
+}
+
+/* Mobile Responsive Enhancements */
+@media (max-width: 640px) {
+  .cart-item {
+    @apply flex-col space-y-3;
+  }
+  
+  .cart-item-controls {
+@apply justify-between w-full;
+  }
 }

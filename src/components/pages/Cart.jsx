@@ -61,25 +61,34 @@ const Cart = () => {
         </div>
 
         {/* Order Summary */}
-        <div className="lg:col-span-1">
+<div className="lg:col-span-1">
           <div className="card p-6 sticky top-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Order Summary</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">Order Summary</h2>
             
-            <div className="space-y-3 mb-6">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Subtotal</span>
-                <span className="font-medium">Rs. {subtotal.toLocaleString()}</span>
+            <div className="space-y-4 mb-6">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Subtotal ({getCartCount()} items)</span>
+                <span className="font-medium transition-all duration-300">Rs. {subtotal.toLocaleString()}</span>
               </div>
               
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <span className="text-gray-600">Delivery Charge</span>
-                <span className="font-medium">Rs. {deliveryCharge.toLocaleString()}</span>
+                <span className="font-medium">
+                  {deliveryCharge > 0 ? `Rs. ${deliveryCharge.toLocaleString()}` : 'Free'}
+                </span>
               </div>
               
-              <div className="border-t border-gray-200 pt-3">
+              {subtotal >= 2000 && (
+                <div className="flex justify-between items-center text-green-600">
+                  <span className="text-sm">Free delivery bonus!</span>
+                  <span className="text-sm font-medium">-Rs. 150</span>
+                </div>
+              )}
+              
+              <div className="border-t border-gray-200 pt-4">
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-semibold text-gray-900">Total</span>
-                  <span className="text-2xl font-bold gradient-text">
+                  <span className="text-2xl font-bold gradient-text transition-all duration-300">
                     Rs. {total.toLocaleString()}
                   </span>
                 </div>
