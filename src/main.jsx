@@ -317,7 +317,7 @@ class ErrorBoundary extends React.Component {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error, errorInfo) {
+componentDidCatch(error, errorInfo) {
     console.error('Error caught by boundary:', error, errorInfo);
     
     // Categorize error for better handling
@@ -329,7 +329,6 @@ class ErrorBoundary extends React.Component {
       errorType
     });
   }
-}
 
   categorizeError(error) {
     if (!error) return 'unknown';
