@@ -11,224 +11,231 @@ import Category from "@/components/pages/Category";
 import { productService } from "@/services/api/productService";
 
 const ProductManagement = () => {
+  // State management with proper initialization
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-const [editingProduct, setEditingProduct] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [showBulkPriceModal, setShowBulkPriceModal] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    brand: '',
-    sku: '',
-    category: 'Groceries',
-    price: '',
-    previousPrice: '',
-    unit: 'kg',
-    stock: '',
-    minStock: '',
-    imageUrl: '',
-    barcode: '',
-    isActive: true
+    name: "",
+    price: "",
+    previousPrice: "",
+    category: "",
+    stock: "",
+    minStock: "",
+    unit: "",
+    description: "",
+    imageUrl: "",
+    barcode: ""
   });
 
-  const categories = ['Groceries', 'Meat', 'Fruits', 'Vegetables', 'Dairy', 'Beverages', 'Snacks'];
-  const units = ['kg', 'g', 'piece', 'pack', 'liter', 'ml', 'dozen', 'box'];
+  // Constants
+  const categories = ["Groceries", "Meat", "Fruits", "Vegetables", "Dairy", "Bakery", "Beverages"];
+  const units = ["kg", "g", "piece", "litre", "ml", "pack", "dozen", "box"];
 
-  useEffect(() => {
-    loadProducts();
-  }, []);
-
+  // Load products with comprehensive error handling
   const loadProducts = async () => {
     try {
       setLoading(true);
       setError(null);
       const data = await productService.getAll();
-      setProducts(data);
+      setProducts(Array.isArray(data) ? data : []);
     } catch (err) {
-      setError(err.message);
+      console.error("Error loading products:", err);
+      setError(err.message || "Failed to load products");
+      toast.error("Failed to load products. Please try again.");
+      setProducts([]);
     } finally {
       setLoading(false);
     }
   };
 
+  // Initialize component
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  // Handle form input changes with validation
   const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: value
     }));
   };
 
-const handleSubmit = async (e) => {
+  // Form submission with comprehensive validation
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Enhanced validation
-    if (!formData.name || !formData.price || !formData.stock) {
-      toast.error('Please fill in all required fields (Name, Price, Stock)');
-      return;
-    }
-
-    if (parseFloat(formData.price) <= 0) {
-      toast.error('Price must be greater than 0');
-      return;
-    }
-
-    if (parseInt(formData.stock) < 0) {
-      toast.error('Stock cannot be negative');
-      return;
-    }
-
-    if (formData.previousPrice && parseFloat(formData.previousPrice) <= 0) {
-      toast.error('Previous price must be greater than 0');
-      return;
-    }
-
-    if (formData.minStock && parseInt(formData.minStock) < 0) {
-      toast.error('Minimum stock cannot be negative');
-      return;
-    }
-
     try {
-      const productData = {
-        ...formData,
-        price: parseFloat(formData.price),
-        previousPrice: formData.previousPrice ? parseFloat(formData.previousPrice) : null,
-        stock: parseInt(formData.stock),
-        minStock: formData.minStock ? parseInt(formData.minStock) : 10,
-        imageUrl: formData.imageUrl || 'https://via.placeholder.com/300x200?text=Product+Image',
-        barcode: formData.barcode || `BC${Date.now()}${Math.random().toString(36).substr(2, 9)}`
-      };
-
-      if (editingProduct) {
-        await productService.update(editingProduct.id, productData);
-        toast.success('Product updated successfully!');
-      } else {
-        await productService.create(productData);
-        toast.success('Product added successfully!');
+      // Validate required fields
+      if (!formData.name?.trim()) {
+        toast.error("Product name is required");
+        return;
+      }
+      
+      if (!formData.price || parseFloat(formData.price) <= 0) {
+        toast.error("Valid price is required");
+        return;
+      }
+      
+      if (!formData.category) {
+        toast.error("Category is required");
+        return;
+      }
+      
+      if (!formData.stock || parseInt(formData.stock) < 0) {
+        toast.error("Valid stock quantity is required");
+        return;
       }
 
-      await loadProducts();
+      // Prepare product data with proper validation
+      const productData = {
+        ...formData,
+        price: parseFloat(formData.price) || 0,
+        previousPrice: formData.previousPrice ? parseFloat(formData.previousPrice) : null,
+        stock: parseInt(formData.stock) || 0,
+        minStock: formData.minStock ? parseInt(formData.minStock) : 5,
+        imageUrl: formData.imageUrl || "/api/placeholder/300/200",
+        barcode: formData.barcode || `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      };
+
+      let result;
+      if (editingProduct) {
+        result = await productService.update(editingProduct.id, productData);
+        toast.success("Product updated successfully!");
+      } else {
+        result = await productService.create(productData);
+        toast.success("Product created successfully!");
+      }
+
+      // Reset form and reload products
       resetForm();
+      await loadProducts();
+      
     } catch (err) {
-      toast.error(err.message || 'Failed to save product');
+      console.error("Error saving product:", err);
+      toast.error(err.message || "Failed to save product");
     }
   };
 
-const handleEdit = (product) => {
+  // Handle product editing
+  const handleEdit = (product) => {
+    if (!product) return;
+    
     setEditingProduct(product);
     setFormData({
-      name: product.name,
-      description: product.description || '',
-      brand: product.brand || '',
-      sku: product.sku || '',
-      category: product.category,
-      price: product.price.toString(),
-      previousPrice: product.previousPrice?.toString() || '',
-      unit: product.unit,
-      stock: product.stock.toString(),
-      minStock: product.minStock?.toString() || '',
-      imageUrl: product.imageUrl,
-      barcode: product.barcode || '',
-      isActive: product.isActive
+      name: product.name || "",
+      price: product.price?.toString() || "",
+      previousPrice: product.previousPrice?.toString() || "",
+      category: product.category || "",
+      stock: product.stock?.toString() || "",
+      minStock: product.minStock?.toString() || "",
+      unit: product.unit || "",
+      description: product.description || "",
+      imageUrl: product.imageUrl || "",
+      barcode: product.barcode || ""
     });
     setShowAddForm(true);
   };
 
+  // Handle product deletion with confirmation
   const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this product?')) return;
-
+    if (!id) return;
+    
     try {
+      const confirmed = window.confirm("Are you sure you want to delete this product?");
+      if (!confirmed) return;
+
       await productService.delete(id);
+      toast.success("Product deleted successfully!");
       await loadProducts();
-      toast.success('Product deleted successfully!');
     } catch (err) {
-      toast.error(err.message || 'Failed to delete product');
+      console.error("Error deleting product:", err);
+      toast.error(err.message || "Failed to delete product");
     }
   };
 
+  // Reset form state
   const resetForm = () => {
     setFormData({
-      name: '',
-      description: '',
-      brand: '',
-      sku: '',
-      category: 'Groceries',
-      price: '',
-      previousPrice: '',
-      unit: 'kg',
-      stock: '',
-      minStock: '',
-      imageUrl: '',
-      barcode: '',
-      isActive: true
+      name: "",
+      price: "",
+      previousPrice: "",
+      category: "",
+      stock: "",
+      minStock: "",
+      unit: "",
+      description: "",
+      imageUrl: "",
+      barcode: ""
     });
     setEditingProduct(null);
     setShowAddForm(false);
   };
 
-const [showBulkPriceModal, setShowBulkPriceModal] = useState(false);
-  const [bulkPriceData, setBulkPriceData] = useState({
-    strategy: 'percentage', // 'percentage', 'fixed', 'range'
-    value: '',
-    minPrice: '',
-    maxPrice: '',
-    category: 'all',
-    applyToLowStock: false,
-    stockThreshold: 10
-  });
-
+  // Handle bulk price update
   const handleBulkPriceUpdate = async (updateData) => {
     try {
-      const result = await productService.bulkUpdatePrices(updateData);
-      await loadProducts();
-      toast.success(`Successfully updated ${result.updatedCount} products!`);
+      if (!updateData) {
+        toast.error("Invalid update data");
+        return;
+      }
+
+      await productService.bulkUpdatePrices(updateData);
+      toast.success("Bulk price update completed successfully!");
       setShowBulkPriceModal(false);
+      await loadProducts();
     } catch (err) {
-      toast.error(err.message || 'Failed to update prices');
+      console.error("Error updating prices:", err);
+      toast.error(err.message || "Failed to update prices");
     }
   };
 
-  const resetBulkPriceData = () => {
-    setBulkPriceData({
-      strategy: 'percentage',
-      value: '',
-      minPrice: '',
-      maxPrice: '',
-      category: 'all',
-      applyToLowStock: false,
-      stockThreshold: 10
-    });
-  };
+  // Filter products with null safety
+  const filteredProducts = products.filter(product => {
+    if (!product) return false;
+    
+    const matchesSearch = !searchTerm || 
+      (product.name && product.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (product.barcode && product.barcode.includes(searchTerm));
+    
+    const matchesCategory = selectedCategory === "all" || product.category === selectedCategory;
+    
+    return matchesSearch && matchesCategory;
+  });
 
-  if (loading) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Loading type="table" />
-      </div>
-    );
+  // Error boundary component
+  if (error) {
+    return <Error message={error} onRetry={loadProducts} />;
   }
 
-  if (error) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Error message={error} onRetry={loadProducts} />
-      </div>
-    );
+  // Loading state
+  if (loading) {
+    return <Loading />;
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Product Management</h1>
-<div className="flex space-x-4">
+    <div className="max-w-7xl mx-auto p-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Product Management</h1>
+          <p className="text-gray-600">Manage your product inventory and pricing</p>
+        </div>
+        <div className="flex flex-wrap gap-3 mt-4 sm:mt-0">
           <Button
             variant="secondary"
             icon="DollarSign"
             onClick={() => setShowBulkPriceModal(true)}
-            disabled={products.length === 0}
+            disabled={!products.length}
           >
-            Bulk Price Tools
+            Bulk Price Update
           </Button>
           <Button
             variant="primary"
@@ -240,330 +247,318 @@ const [showBulkPriceModal, setShowBulkPriceModal] = useState(false);
         </div>
       </div>
 
-      {/* Add/Edit Form */}
+      {/* Search and Filter */}
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input
+            label="Search Products"
+            placeholder="Search by name or barcode..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            icon="Search"
+          />
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">Category</label>
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="input-field"
+            >
+              <option value="all">All Categories</option>
+              {categories.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Products Grid */}
+      <div className="bg-white rounded-lg shadow-md">
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-gray-900">
+              Products ({filteredProducts.length})
+            </h2>
+            <div className="flex items-center space-x-2">
+              <Badge variant="primary">
+                Total: {products.length}
+              </Badge>
+              <Badge variant="secondary">
+                Low Stock: {products.filter(p => p && p.stock <= (p.minStock || 5)).length}
+              </Badge>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6">
+          {filteredProducts.length === 0 ? (
+            <Empty 
+              title="No products found"
+              description="Try adjusting your search or filter criteria"
+            />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Product
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Category
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Price
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Stock
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredProducts.map((product) => (
+                    <tr key={product.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="h-10 w-10 flex-shrink-0">
+                            <img
+                              className="h-10 w-10 rounded-full object-cover"
+                              src={product.imageUrl || "/api/placeholder/40/40"}
+                              alt={product.name || "Product"}
+                              onError={(e) => {
+                                e.target.src = "/api/placeholder/40/40";
+                              }}
+                            />
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">
+                              {product.name || "Unnamed Product"}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {product.barcode || "No barcode"}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <Badge variant="secondary">
+                          {product.category || "No Category"}
+                        </Badge>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div className="flex flex-col">
+                          <span className="font-medium">Rs. {product.price || 0}</span>
+                          {product.previousPrice && (
+                            <span className="text-xs text-gray-500 line-through">
+                              Rs. {product.previousPrice}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <Badge 
+                          variant={product.stock <= (product.minStock || 5) ? "error" : "success"}
+                        >
+                          {product.stock || 0} {product.unit || "pcs"}
+                        </Badge>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            icon="Edit"
+                            onClick={() => handleEdit(product)}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            icon="Trash2"
+                            onClick={() => handleDelete(product.id)}
+                            className="text-red-600 hover:text-red-800"
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Add/Edit Product Modal */}
       {showAddForm && (
-        <div className="card p-6 mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            {editingProduct ? 'Edit Product' : 'Add New Product'}
-          </h2>
-          
-<form onSubmit={handleSubmit} className="space-y-6">
-            {/* Basic Information */}
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Basic Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-semibold text-gray-900">
+                  {editingProduct ? "Edit Product" : "Add New Product"}
+                </h2>
+                <button
+                  onClick={resetForm}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <ApperIcon name="X" size={24} />
+                </button>
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmit} className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
-                  label="Product Name"
+                  label="Product Name *"
                   name="name"
                   value={formData.name}
                   onChange={handleInputChange}
                   required
                   icon="Package"
-                  placeholder="Enter product name"
                 />
-                
-                <Input
-                  label="Description"
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  icon="FileText"
-                  placeholder="Brief product description"
-                />
-                
-                <Input
-                  label="Brand"
-                  name="brand"
-                  value={formData.brand}
-                  onChange={handleInputChange}
-                  icon="Award"
-                  placeholder="Product brand"
-                />
-                
-                <Input
-                  label="SKU"
-                  name="sku"
-                  value={formData.sku}
-                  onChange={handleInputChange}
-                  icon="Hash"
-                  placeholder="Stock Keeping Unit"
-                />
-                
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">
-                    Category <span className="text-red-500">*</span>
+                    Category *
                   </label>
                   <select
                     name="category"
                     value={formData.category}
                     onChange={handleInputChange}
-                    className="input-field"
                     required
+                    className="input-field"
                   >
+                    <option value="">Select Category</option>
                     {categories.map(cat => (
                       <option key={cat} value={cat}>{cat}</option>
                     ))}
                   </select>
                 </div>
-                
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="Price (Rs.) *"
+                  name="price"
+                  type="number"
+                  step="0.01"
+                  value={formData.price}
+                  onChange={handleInputChange}
+                  required
+                  icon="DollarSign"
+                />
+                <Input
+                  label="Previous Price (Rs.)"
+                  name="previousPrice"
+                  type="number"
+                  step="0.01"
+                  value={formData.previousPrice}
+                  onChange={handleInputChange}
+                  icon="TrendingDown"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Input
+                  label="Stock Quantity *"
+                  name="stock"
+                  type="number"
+                  value={formData.stock}
+                  onChange={handleInputChange}
+                  required
+                  icon="Archive"
+                />
+                <Input
+                  label="Min Stock Level"
+                  name="minStock"
+                  type="number"
+                  value={formData.minStock}
+                  onChange={handleInputChange}
+                  placeholder="5"
+                  icon="AlertTriangle"
+                />
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">
-                    Unit <span className="text-red-500">*</span>
+                    Unit
                   </label>
                   <select
                     name="unit"
                     value={formData.unit}
                     onChange={handleInputChange}
                     className="input-field"
-                    required
                   >
+                    <option value="">Select Unit</option>
                     {units.map(unit => (
                       <option key={unit} value={unit}>{unit}</option>
                     ))}
                   </select>
                 </div>
               </div>
-            </div>
 
-            {/* Pricing Information */}
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Pricing Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  label="Current Price (Rs.)"
-                  name="price"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.price}
-                  onChange={handleInputChange}
-                  required
-                  icon="DollarSign"
-                  placeholder="0.00"
-                />
-                
-                <Input
-                  label="Previous Price (Rs.)"
-                  name="previousPrice"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.previousPrice}
-                  onChange={handleInputChange}
-                  icon="TrendingDown"
-                  placeholder="0.00 (optional)"
-                />
+              <Input
+                label="Description"
+                name="description"
+                value={formData.description}
+                onChange={handleInputChange}
+                icon="FileText"
+              />
+
+              <Input
+                label="Image URL"
+                name="imageUrl"
+                value={formData.imageUrl}
+                onChange={handleInputChange}
+                icon="Image"
+              />
+
+              <Input
+                label="Barcode"
+                name="barcode"
+                value={formData.barcode}
+                onChange={handleInputChange}
+                icon="BarChart"
+              />
+
+              <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={resetForm}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  icon="Save"
+                >
+                  {editingProduct ? "Update Product" : "Add Product"}
+                </Button>
               </div>
-            </div>
-
-            {/* Inventory Information */}
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Inventory Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Input
-                  label="Stock Quantity"
-                  name="stock"
-                  type="number"
-                  min="0"
-                  value={formData.stock}
-                  onChange={handleInputChange}
-                  required
-                  icon="Archive"
-                  placeholder="0"
-                />
-                
-                <Input
-                  label="Minimum Stock Alert"
-                  name="minStock"
-                  type="number"
-                  min="0"
-                  value={formData.minStock}
-                  onChange={handleInputChange}
-                  icon="AlertTriangle"
-                  placeholder="10"
-                />
-                
-                <Input
-                  label="Barcode"
-                  name="barcode"
-                  value={formData.barcode}
-                  onChange={handleInputChange}
-                  icon="Scan"
-                  placeholder="Auto-generated if empty"
-                />
-              </div>
-            </div>
-
-            {/* Media & Settings */}
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Media & Settings</h3>
-              <div className="grid grid-cols-1 gap-4">
-                <Input
-                  label="Image URL"
-                  name="imageUrl"
-                  value={formData.imageUrl}
-                  onChange={handleInputChange}
-                  icon="Image"
-                  placeholder="https://example.com/image.jpg"
-                />
-                
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    name="isActive"
-                    checked={formData.isActive}
-                    onChange={handleInputChange}
-                    className="rounded border-gray-300 text-primary focus:ring-primary"
-                  />
-                  <label className="text-sm font-medium text-gray-700">
-                    Active Product (visible to customers)
-                  </label>
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex justify-end space-x-4">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={resetForm}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                variant="primary"
-                icon={editingProduct ? "Save" : "Plus"}
-              >
-                {editingProduct ? 'Update Product' : 'Add Product'}
-              </Button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* Products Table */}
-      {products.length === 0 ? (
-        <Empty
-          type="inventory"
-          onAction={() => setShowAddForm(true)}
-        />
-      ) : (
-        <div className="card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Product
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Category
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Price
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Stock
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {products.map((product) => (
-                  <tr key={product.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <img
-                          src={product.imageUrl}
-                          alt={product.name}
-                          className="w-10 h-10 rounded-lg object-cover"
-                        />
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">
-                            {product.name}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {product.unit}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <Badge variant="primary" size="small">
-                        {product.category}
-                      </Badge>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        Rs. {product.price.toLocaleString()}
-                      </div>
-                      {product.previousPrice && product.previousPrice !== product.price && (
-                        <div className="text-sm text-gray-500 line-through">
-                          Rs. {product.previousPrice.toLocaleString()}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <span className={`text-sm ${product.stock <= 10 ? 'text-red-600' : 'text-gray-900'}`}>
-                          {product.stock}
-                        </span>
-                        {product.stock <= 10 && (
-                          <ApperIcon name="AlertTriangle" size={16} className="text-red-500 ml-1" />
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <Badge variant={product.isActive ? 'success' : 'danger'} size="small">
-                        {product.isActive ? 'Active' : 'Inactive'}
-                      </Badge>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex items-center justify-end space-x-2">
-                        <button
-                          onClick={() => handleEdit(product)}
-                          className="text-primary hover:text-primary-dark"
-                        >
-                          <ApperIcon name="Edit" size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(product.id)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          <ApperIcon name="Trash2" size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-</table>
+            </form>
           </div>
         </div>
       )}
+
       {/* Bulk Price Update Modal */}
       {showBulkPriceModal && (
         <BulkPriceModal
           products={products}
           categories={categories}
           onUpdate={handleBulkPriceUpdate}
-          onClose={() => {
-            setShowBulkPriceModal(false);
-            resetBulkPriceData();
-          }}
+          onClose={() => setShowBulkPriceModal(false)}
         />
       )}
     </div>
-);
+  );
 };
-
-export default ProductManagement;
 
 // Bulk Price Update Modal Component
 const BulkPriceModal = ({ products, categories, onUpdate, onClose }) => {
@@ -589,73 +584,120 @@ const BulkPriceModal = ({ products, categories, onUpdate, onClose }) => {
   };
 
   const generatePreview = () => {
-    let filteredProducts = products;
-    
-    // Filter by category
-    if (updateData.category !== 'all') {
-      filteredProducts = filteredProducts.filter(p => p.category === updateData.category);
-    }
-    
-    // Filter by stock if enabled
-    if (updateData.applyToLowStock) {
-      filteredProducts = filteredProducts.filter(p => p.stock <= updateData.stockThreshold);
-    }
+    try {
+      if (!Array.isArray(products) || products.length === 0) {
+        toast.error('No products available for update');
+        return;
+      }
 
-    const previews = filteredProducts.map(product => {
-      let newPrice = product.price;
+      let filteredProducts = [...products];
       
-      switch (updateData.strategy) {
-        case 'percentage':
-          const percentage = parseFloat(updateData.value) || 0;
-          newPrice = product.price * (1 + percentage / 100);
-          break;
-        case 'fixed':
-          const fixedAmount = parseFloat(updateData.value) || 0;
-          newPrice = product.price + fixedAmount;
-          break;
-        case 'range':
-          // For range strategy, we'll set a proportional price within the range
-          const minPrice = parseFloat(updateData.minPrice) || 0;
-          const maxPrice = parseFloat(updateData.maxPrice) || product.price;
-          newPrice = Math.min(Math.max(product.price, minPrice), maxPrice);
-          break;
+      // Filter by category with null safety
+      if (updateData.category !== 'all') {
+        filteredProducts = filteredProducts.filter(p => p && p.category === updateData.category);
+      }
+      
+      // Filter by stock if enabled
+      if (updateData.applyToLowStock) {
+        const threshold = parseInt(updateData.stockThreshold) || 10;
+        filteredProducts = filteredProducts.filter(p => p && p.stock <= threshold);
       }
 
-      // Apply min/max constraints if specified
-      if (updateData.minPrice && newPrice < parseFloat(updateData.minPrice)) {
-        newPrice = parseFloat(updateData.minPrice);
-      }
-      if (updateData.maxPrice && newPrice > parseFloat(updateData.maxPrice)) {
-        newPrice = parseFloat(updateData.maxPrice);
+      if (filteredProducts.length === 0) {
+        toast.error('No products match the selected criteria');
+        return;
       }
 
-      return {
-        ...product,
-        newPrice: Math.round(newPrice * 100) / 100,
-        priceChange: Math.round((newPrice - product.price) * 100) / 100
-      };
-    });
+      const previews = filteredProducts.map(product => {
+        if (!product || typeof product.price !== 'number') {
+          return {
+            ...product,
+            newPrice: product?.price || 0,
+            priceChange: 0
+          };
+        }
 
-    setPreview(previews);
-    setShowPreview(true);
+        let newPrice = product.price;
+        
+        switch (updateData.strategy) {
+          case 'percentage':
+            const percentage = parseFloat(updateData.value) || 0;
+            newPrice = product.price * (1 + percentage / 100);
+            break;
+          case 'fixed':
+            const fixedAmount = parseFloat(updateData.value) || 0;
+            newPrice = product.price + fixedAmount;
+            break;
+          case 'range':
+            const minPrice = parseFloat(updateData.minPrice) || 0;
+            const maxPrice = parseFloat(updateData.maxPrice) || product.price;
+            newPrice = Math.min(Math.max(product.price, minPrice), maxPrice);
+            break;
+          default:
+            newPrice = product.price;
+        }
+
+        // Apply min/max constraints if specified
+        if (updateData.minPrice && newPrice < parseFloat(updateData.minPrice)) {
+          newPrice = parseFloat(updateData.minPrice);
+        }
+        if (updateData.maxPrice && newPrice > parseFloat(updateData.maxPrice)) {
+          newPrice = parseFloat(updateData.maxPrice);
+        }
+
+        // Ensure price is never negative
+        newPrice = Math.max(0, newPrice);
+
+        return {
+          ...product,
+          newPrice: Math.round(newPrice * 100) / 100,
+          priceChange: Math.round((newPrice - product.price) * 100) / 100
+        };
+      });
+
+      setPreview(previews);
+      setShowPreview(true);
+    } catch (error) {
+      console.error('Error generating preview:', error);
+      toast.error('Failed to generate preview. Please try again.');
+    }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    if (!updateData.value && updateData.strategy !== 'range') {
-      toast.error('Please enter a value for the price update');
-      return;
-    }
+    try {
+      if (!updateData.value && updateData.strategy !== 'range') {
+        toast.error('Please enter a value for the price update');
+        return;
+      }
 
-    if (updateData.strategy === 'range' && (!updateData.minPrice || !updateData.maxPrice)) {
-      toast.error('Please enter both minimum and maximum prices');
-      return;
-    }
+      if (updateData.strategy === 'range' && (!updateData.minPrice || !updateData.maxPrice)) {
+        toast.error('Please enter both minimum and maximum prices');
+        return;
+      }
 
-    const confirmMessage = `Are you sure you want to update prices for ${preview.length} products?`;
-    if (confirm(confirmMessage)) {
-      onUpdate(updateData);
+      if (updateData.strategy === 'range') {
+        const minPrice = parseFloat(updateData.minPrice);
+        const maxPrice = parseFloat(updateData.maxPrice);
+        if (minPrice >= maxPrice) {
+          toast.error('Maximum price must be greater than minimum price');
+          return;
+        }
+      }
+
+      if (!showPreview || preview.length === 0) {
+        toast.error('Please generate a preview first');
+        return;
+      }
+
+      const confirmMessage = `Are you sure you want to update prices for ${preview.length} products?`;
+      if (window.confirm(confirmMessage)) {
+        onUpdate(updateData);
+      }
+    } catch (error) {
+      console.error('Error submitting bulk price update:', error);
+      toast.error('Failed to process bulk price update');
     }
   };
 
@@ -808,7 +850,7 @@ const BulkPriceModal = ({ products, categories, onUpdate, onClose }) => {
                 className="input-field"
               >
                 <option value="all">All Categories</option>
-                {categories.map(cat => (
+                {Array.isArray(categories) && categories.map(cat => (
                   <option key={cat} value={cat}>{cat}</option>
                 ))}
               </select>
@@ -865,23 +907,26 @@ const BulkPriceModal = ({ products, categories, onUpdate, onClose }) => {
                     <div key={product.id} className="flex items-center justify-between p-2 bg-white rounded border">
                       <div className="flex items-center space-x-3">
                         <img
-                          src={product.imageUrl}
-                          alt={product.name}
+                          src={product.imageUrl || "/api/placeholder/32/32"}
+                          alt={product.name || "Product"}
                           className="w-8 h-8 rounded object-cover"
+                          onError={(e) => {
+                            e.target.src = "/api/placeholder/32/32";
+                          }}
                         />
                         <div>
-                          <p className="text-sm font-medium text-gray-900">{product.name}</p>
-                          <p className="text-xs text-gray-500">{product.category}</p>
+                          <p className="text-sm font-medium text-gray-900">{product.name || "Unnamed Product"}</p>
+                          <p className="text-xs text-gray-500">{product.category || "No Category"}</p>
                         </div>
                       </div>
                       <div className="text-right">
                         <div className="flex items-center space-x-2">
-                          <span className="text-sm text-gray-600">Rs. {product.price}</span>
+                          <span className="text-sm text-gray-600">Rs. {product.price || 0}</span>
                           <ApperIcon name="ArrowRight" size={12} className="text-gray-400" />
-                          <span className="text-sm font-medium text-gray-900">Rs. {product.newPrice}</span>
+                          <span className="text-sm font-medium text-gray-900">Rs. {product.newPrice || 0}</span>
                         </div>
-                        <p className={`text-xs ${product.priceChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {product.priceChange >= 0 ? '+' : ''}Rs. {product.priceChange}
+                        <p className={`text-xs ${(product.priceChange || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {(product.priceChange || 0) >= 0 ? '+' : ''}Rs. {product.priceChange || 0}
                         </p>
                       </div>
                     </div>
@@ -919,3 +964,5 @@ const BulkPriceModal = ({ products, categories, onUpdate, onClose }) => {
     </div>
   );
 };
+
+export default ProductManagement;
