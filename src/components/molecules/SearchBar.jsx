@@ -5,10 +5,10 @@ import Input from '@/components/atoms/Input';
 const SearchBar = ({ onSearch, placeholder = "Search products...", className = '' }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
+useEffect(() => {
     const debounceTimer = setTimeout(() => {
       onSearch(searchTerm);
-    }, 300);
+    }, 150); // Reduced debounce for faster perceived performance
 
     return () => clearTimeout(debounceTimer);
   }, [searchTerm, onSearch]);

@@ -1,34 +1,31 @@
-import React from 'react';
+import React, { memo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import ApperIcon from '@/components/ApperIcon';
 import Button from '@/components/atoms/Button';
 import Badge from '@/components/atoms/Badge';
 import { useCart } from '@/hooks/useCart';
-
-const ProductCard = ({ product }) => {
+const ProductCard = memo(({ product }) => {
   const navigate = useNavigate();
   const { addToCart, isLoading } = useCart();
 
-  const handleAddToCart = (e) => {
+  const handleAddToCart = useCallback((e) => {
     e.stopPropagation();
     addToCart(product);
-    toast.success(`${product.name} added to cart!`);
-  };
+    toast.success(`${product.name} added to cart!`, { autoClose: 2000 });
+  }, [addToCart, product]);
 
-  const handleCardClick = () => {
+  const handleCardClick = useCallback(() => {
     navigate(`/product/${product.id}`);
-  };
+  }, [navigate, product.id]);
 
-  const getPriceChange = () => {
+  // Memoized price change calculation for performance
+  const priceChange = React.useMemo(() => {
     if (product.previousPrice && product.previousPrice !== product.price) {
-      const change = ((product.price - product.previousPrice) / product.previousPrice) * 100;
-      return change;
+      return ((product.price - product.previousPrice) / product.previousPrice) * 100;
     }
     return null;
-  };
-
-  const priceChange = getPriceChange();
+  }, [product.price, product.previousPrice]);
 
   return (
     <div 
@@ -114,7 +111,9 @@ const ProductCard = ({ product }) => {
         </div>
       </div>
     </div>
-  );
-};
+);
+});
+
+ProductCard.displayName = 'ProductCard';
 
 export default ProductCard;

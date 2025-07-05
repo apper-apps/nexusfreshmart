@@ -203,7 +203,7 @@ async bulkUpdatePrices(updateData) {
     return { isValid: true };
   }
 
-  delay(ms = 300) {
+delay(ms = 150) { // Reduced delay for faster perceived performance
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 }

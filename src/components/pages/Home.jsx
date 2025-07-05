@@ -1,26 +1,46 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import ApperIcon from '@/components/ApperIcon';
-import Button from '@/components/atoms/Button';
-import ProductGrid from '@/components/organisms/ProductGrid';
-import { productService } from '@/services/api/productService';
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import ApperIcon from "@/components/ApperIcon";
+import ProductGrid from "@/components/organisms/ProductGrid";
+import Button from "@/components/atoms/Button";
+import Category from "@/components/pages/Category";
+import { productService } from "@/services/api/productService";
 
 const Home = () => {
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
+useEffect(() => {
     loadFeaturedProducts();
+    
+    // Preload likely next components
+    const preloadTimer = setTimeout(() => {
+      import('@/components/pages/Category').catch(() => {});
+      import('@/components/pages/ProductDetail').catch(() => {});
+    }, 1000);
+    
+    return () => clearTimeout(preloadTimer);
   }, []);
 
   const loadFeaturedProducts = async () => {
     try {
       setLoading(true);
       setError(null);
+      
+      // Optimize for perceived performance - show loading state immediately
       const products = await productService.getAll();
-      // Get first 8 products as featured
-      setFeaturedProducts(products.slice(0, 8));
+      
+      // Get first 8 products as featured, with intelligent caching
+      const featured = products.slice(0, 8);
+      setFeaturedProducts(featured);
+      
+// Cache products for faster subsequent loads
+      if ('caches' in window && window.caches) {
+        window.caches.open('products-v1').then(cache => {
+          cache.put('featured-products', new window.Response(JSON.stringify(featured)));
+        }).catch(() => {}); // Fail silently if caching not available
+      }
     } catch (err) {
       setError(err.message);
     } finally {
