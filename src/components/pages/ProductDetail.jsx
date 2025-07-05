@@ -97,16 +97,22 @@ const ProductDetail = () => {
         </button>
       </nav>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+<div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
         {/* Product Image */}
         <div className="space-y-4">
           <div className="relative">
-            <img
-              src={product.imageUrl}
-              alt={product.name}
-              className="w-full h-96 object-cover rounded-2xl bg-gray-100"
-            />
-            
+            <picture className="block w-full h-96 rounded-2xl overflow-hidden bg-gray-100">
+              <source
+                srcSet={`${product.imageUrl}&fm=webp&w=600 1x, ${product.imageUrl}&fm=webp&w=1200&dpr=2 2x`}
+                type="image/webp"
+              />
+              <img
+                src={`${product.imageUrl}&w=600`}
+                alt={product.name}
+                className="w-full h-96 object-cover transition-all duration-500 hover:scale-105"
+                style={{ backgroundColor: '#f3f4f6' }}
+              />
+            </picture>
             {product.stock <= 10 && product.stock > 0 && (
               <Badge 
                 variant="warning" 

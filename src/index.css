@@ -71,7 +71,7 @@
   position: relative;
   overflow: hidden;
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
+background-size: 200% 100%;
   animation: shimmer 2s infinite;
 }
 
@@ -81,6 +81,35 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+/* Progressive Image Loading */
+.image-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.image-loading {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.image-loaded {
+  transition: opacity 0.3s ease-in-out;
+}
+
+/* Responsive Images */
+.responsive-image {
+  width: 100%;
+  height: auto;
+  -o-object-fit: cover;
+     object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.responsive-image:hover {
+  transform: scale(1.02);
 }
 
 /* Custom Scrollbar */
@@ -95,7 +124,6 @@
 ::-webkit-scrollbar-thumb {
   @apply bg-gray-300 rounded-full;
 }
-
-::-webkit-scrollbar-thumb:hover {
+:::-webkit-scrollbar-thumb:hover {
   @apply bg-gray-400;
 }

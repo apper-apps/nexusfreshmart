@@ -7,7 +7,7 @@
     "previousPrice": 175,
     "unit": "kg",
     "stock": 50,
-    "imageUrl": "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=300&h=200&fit=crop",
+    "imageUrl": "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&h=300&fit=crop&auto=format,compress&q=80",
     "barcode": "1234567890123",
     "isActive": true
   },
@@ -19,7 +19,7 @@
     "previousPrice": 1150,
     "unit": "kg",
     "stock": 15,
-    "imageUrl": "https://images.unsplash.com/photo-1558030006-450675393462?w=300&h=200&fit=crop",
+    "imageUrl": "https://images.unsplash.com/photo-1558030006-450675393462?w=400&h=300&fit=crop&auto=format,compress&q=80",
     "barcode": "1234567890124",
     "isActive": true
   },
@@ -31,7 +31,7 @@
     "previousPrice": 290,
     "unit": "kg",
     "stock": 30,
-    "imageUrl": "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=300&h=200&fit=crop",
+    "imageUrl": "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=400&h=300&fit=crop&auto=format,compress&q=80",
     "barcode": "1234567890125",
     "isActive": true
   },
@@ -43,7 +43,7 @@
     "previousPrice": 65,
     "unit": "kg",
     "stock": 25,
-    "imageUrl": "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=300&h=200&fit=crop",
+    "imageUrl": "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400&h=300&fit=crop&auto=format,compress&q=80",
     "barcode": "1234567890126",
     "isActive": true
   },
@@ -55,7 +55,7 @@
     "previousPrice": 440,
     "unit": "kg",
     "stock": 20,
-    "imageUrl": "https://images.unsplash.com/photo-1604503468506-a8da13d82791?w=300&h=200&fit=crop",
+    "imageUrl": "https://images.unsplash.com/photo-1604503468506-a8da13d82791?w=400&h=300&fit=crop&auto=format,compress&q=80",
     "barcode": "1234567890127",
     "isActive": true
   },
@@ -67,7 +67,7 @@
     "previousPrice": 115,
     "unit": "dozen",
     "stock": 40,
-    "imageUrl": "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=300&h=200&fit=crop",
+    "imageUrl": "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=400&h=300&fit=crop&auto=format,compress&q=80",
     "barcode": "1234567890128",
     "isActive": true
   },
@@ -79,7 +79,7 @@
     "previousPrice": 80,
     "unit": "kg",
     "stock": 100,
-    "imageUrl": "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=300&h=200&fit=crop",
+    "imageUrl": "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=400&h=300&fit=crop&auto=format,compress&q=80",
     "barcode": "1234567890129",
     "isActive": true
   },
@@ -91,7 +91,7 @@
     "previousPrice": 45,
     "unit": "kg",
     "stock": 60,
-    "imageUrl": "https://images.unsplash.com/photo-1508747703725-719777637510?w=300&h=200&fit=crop",
+    "imageUrl": "https://images.unsplash.com/photo-1508747703725-719777637510?w=400&h=300&fit=crop&auto=format,compress&q=80",
     "barcode": "1234567890130",
     "isActive": true
   },
@@ -103,7 +103,7 @@
     "previousPrice": 220,
     "unit": "kg",
     "stock": 35,
-    "imageUrl": "https://images.unsplash.com/photo-1553279768-865429fa0078?w=300&h=200&fit=crop",
+    "imageUrl": "https://images.unsplash.com/photo-1553279768-865429fa0078?w=400&h=300&fit=crop&auto=format,compress&q=80",
     "barcode": "1234567890131",
     "isActive": true
   },
@@ -115,7 +115,7 @@
     "previousPrice": 30,
     "unit": "kg",
     "stock": 80,
-    "imageUrl": "https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=300&h=200&fit=crop",
+    "imageUrl": "https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=400&h=300&fit=crop&auto=format,compress&q=80",
     "barcode": "1234567890132",
     "isActive": true
   },
@@ -127,7 +127,7 @@
     "previousPrice": 310,
     "unit": "liter",
     "stock": 25,
-    "imageUrl": "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=300&h=200&fit=crop",
+    "imageUrl": "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=400&h=300&fit=crop&auto=format,compress&q=80",
     "barcode": "1234567890133",
     "isActive": true
   },
@@ -139,7 +139,7 @@
     "previousPrice": 780,
     "unit": "kg",
     "stock": 8,
-    "imageUrl": "https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=300&h=200&fit=crop",
+    "imageUrl": "https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=400&h=300&fit=crop&auto=format,compress&q=80",
     "barcode": "1234567890134",
     "isActive": true
   },
@@ -151,7 +151,7 @@
     "previousPrice": 160,
     "unit": "kg",
     "stock": 45,
-    "imageUrl": "https://images.unsplash.com/photo-1582979512210-99b6a53386f9?w=300&h=200&fit=crop",
+    "imageUrl": "https://images.unsplash.com/photo-1582979512210-99b6a53386f9?w=400&h=300&fit=crop&auto=format,compress&q=80",
     "barcode": "1234567890135",
     "isActive": true
   },
@@ -163,7 +163,7 @@
     "previousPrice": 75,
     "unit": "kg",
     "stock": 30,
-    "imageUrl": "https://images.unsplash.com/photo-1445282768818-728615cc910a?w=300&h=200&fit=crop",
+    "imageUrl": "https://images.unsplash.com/photo-1445282768818-728615cc910a?w=400&h=300&fit=crop&auto=format,compress&q=80",
     "barcode": "1234567890136",
     "isActive": true
   },
@@ -175,7 +175,7 @@
     "previousPrice": 90,
     "unit": "kg",
     "stock": 70,
-    "imageUrl": "https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=300&h=200&fit=crop",
+    "imageUrl": "https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=400&h=300&fit=crop&auto=format,compress&q=80",
     "barcode": "1234567890137",
     "isActive": true
   },
@@ -187,7 +187,7 @@
     "previousPrice": 880,
     "unit": "kg",
     "stock": 12,
-    "imageUrl": "https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?w=300&h=200&fit=crop",
+    "imageUrl": "https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?w=400&h=300&fit=crop&auto=format,compress&q=80",
     "barcode": "1234567890138",
     "isActive": true
   },
@@ -199,7 +199,7 @@
     "previousPrice": 140,
     "unit": "kg",
     "stock": 20,
-    "imageUrl": "https://images.unsplash.com/photo-1583097267049-c7d7a4799d40?w=300&h=200&fit=crop",
+    "imageUrl": "https://images.unsplash.com/photo-1583097267049-c7d7a4799d40?w=400&h=300&fit=crop&auto=format,compress&q=80",
     "barcode": "1234567890139",
     "isActive": true
   },
@@ -211,7 +211,7 @@
     "previousPrice": 320,
     "unit": "kg",
     "stock": 25,
-    "imageUrl": "https://images.unsplash.com/photo-1537640538966-79f369143f8f?w=300&h=200&fit=crop",
+    "imageUrl": "https://images.unsplash.com/photo-1537640538966-79f369143f8f?w=400&h=300&fit=crop&auto=format,compress&q=80",
     "barcode": "1234567890140",
     "isActive": true
   },
@@ -223,7 +223,7 @@
     "previousPrice": 105,
     "unit": "liter",
     "stock": 50,
-    "imageUrl": "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=300&h=200&fit=crop",
+    "imageUrl": "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=400&h=300&fit=crop&auto=format,compress&q=80",
     "barcode": "1234567890141",
     "isActive": true
   },
@@ -235,7 +235,7 @@
     "previousPrice": 230,
     "unit": "kg",
     "stock": 15,
-    "imageUrl": "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&h=200&fit=crop",
+    "imageUrl": "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop&auto=format,compress&q=80",
     "barcode": "1234567890142",
     "isActive": true
   }

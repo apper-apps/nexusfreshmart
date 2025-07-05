@@ -27,18 +27,25 @@ const ProductCard = memo(({ product }) => {
     return null;
   }, [product.price, product.previousPrice]);
 
-  return (
+return (
     <div 
       className="card p-4 cursor-pointer hover:shadow-premium transform hover:scale-102 transition-all duration-300"
       onClick={handleCardClick}
     >
       <div className="relative mb-4">
-        <img
-          src={product.imageUrl}
-          alt={product.name}
-          className="w-full h-48 object-cover rounded-lg bg-gray-100"
-        />
-        
+        <picture className="block w-full h-48 rounded-lg overflow-hidden bg-gray-100">
+          <source
+            srcSet={`${product.imageUrl}&fm=webp 1x, ${product.imageUrl}&fm=webp&dpr=2 2x`}
+            type="image/webp"
+          />
+          <img
+            src={product.imageUrl}
+            alt={product.name}
+            loading="lazy"
+            className="w-full h-48 object-cover transition-opacity duration-300 hover:opacity-95"
+            style={{ backgroundColor: '#f3f4f6' }}
+          />
+        </picture>
         {product.stock <= 10 && product.stock > 0 && (
           <Badge 
             variant="warning" 
