@@ -12,47 +12,5 @@
   <body>
 <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
-    <script>
-      // Load external script asynchronously after React initialization
-      window.addEventListener('load', function() {
-        setTimeout(function() {
-          const script = document.createElement('script');
-          script.src = 'https://cdn.apper.io/apper-dev-script/index.umd.js';
-          script.async = true;
-          script.defer = true;
-          
-          script.onload = function() {
-            console.log('Apper script loaded successfully');
-          };
-          
-          script.onerror = function() {
-            console.warn('Failed to load Apper script - continuing without it');
-          };
-          
-          // Add error handling for postMessage conflicts
-          const originalPostMessage = window.postMessage;
-          window.postMessage = function(message, targetOrigin, transfer) {
-            try {
-              // Serialize objects that might contain URL instances
-              if (typeof message === 'object' && message !== null) {
-                const serializedMessage = JSON.parse(JSON.stringify(message, function(key, value) {
-                  if (value instanceof URL) {
-                    return value.href;
-                  }
-                  return value;
-                }));
-                return originalPostMessage.call(this, serializedMessage, targetOrigin, transfer);
-              }
-              return originalPostMessage.call(this, message, targetOrigin, transfer);
-            } catch (error) {
-              console.warn('PostMessage error prevented:', error);
-              return false;
-            }
-          };
-          
-          document.head.appendChild(script);
-        }, 100);
-      });
-    </script>
   </body>
 </html>

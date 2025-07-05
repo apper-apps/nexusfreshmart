@@ -9,9 +9,9 @@ class ApperSDK {
   constructor() {
     this.isLoaded = false;
     this.isInitialized = false;
-    this.projectId = import.meta.env.VITE_APPER_PROJECT_ID;
+this.projectId = import.meta.env.VITE_APPER_PROJECT_ID;
     this.publicKey = import.meta.env.VITE_APPER_PUBLIC_KEY;
-    this.cdnUrl = import.meta.env.VITE_APPER_SDK_CDN_URL;
+    this.cdnUrl = import.meta.env.VITE_APPER_SDK_CDN_URL || 'https://cdn.apper.io/apper-dev-script/index.umd.js';
     this.maxRetries = 3;
     this.retryDelay = 1000;
     this.loadPromise = null;
@@ -64,8 +64,14 @@ class ApperSDK {
         return;
       }
 
-      // Check if script already exists
-      const existingScript = document.querySelector(`script[src="${this.cdnUrl}"]`);
+// Check if script already exists (check multiple possible URLs)
+      const possibleUrls = [
+        this.cdnUrl,
+        'https://cdn.apper.io/apper-dev-script/index.umd.js',
+        'https://cdn.apper.io/v1/apper-sdk.v1.js'
+      ];
+      
+      const existingScript = possibleUrls.find(url => document.querySelector(`script[src="${url}"]`));
       if (existingScript) {
         // Script exists, check if SDK is available
         if (typeof window.Apper !== 'undefined' && typeof window.Apper.init === 'function') {
@@ -73,19 +79,41 @@ class ApperSDK {
           return;
         }
       } else {
-        // Create and load script
+// Create and load script
         try {
           const script = document.createElement('script');
           script.src = this.cdnUrl;
           script.async = true;
           script.crossOrigin = 'anonymous';
+          
+          // Add error handling for postMessage conflicts
+          const originalPostMessage = window.postMessage;
+          window.postMessage = function(message, targetOrigin, transfer) {
+            try {
+              if (typeof message === 'object' && message !== null) {
+                const serializedMessage = JSON.parse(JSON.stringify(message, function(key, value) {
+                  if (value instanceof URL) {
+                    return value.href;
+                  }
+                  return value;
+                }));
+                return originalPostMessage.call(this, serializedMessage, targetOrigin, transfer);
+              }
+              return originalPostMessage.call(this, message, targetOrigin, transfer);
+            } catch (error) {
+              console.warn('PostMessage error prevented:', error);
+              return false;
+            }
+          };
 
           script.onload = () => {
+            console.log('Apper script loaded successfully');
             // Script loaded, but SDK might not be immediately available
             this.checkSDKAvailability(resolveSuccess, rejectError);
           };
 
-          script.onerror = () => {
+          script.onerror = (error) => {
+            console.error('Failed to load Apper SDK script:', error);
             rejectError(new Error('Failed to load Apper SDK script'));
           };
 
@@ -148,12 +176,20 @@ class ApperSDK {
     }, 100); // Check every 100ms
   }
 
-  getSDKStatus() {
+getSDKStatus() {
+    const possibleUrls = [
+      this.cdnUrl,
+      'https://cdn.apper.io/apper-dev-script/index.umd.js',
+      'https://cdn.apper.io/v1/apper-sdk.v1.js'
+    ];
+    
     return {
-      scriptLoaded: !!document.querySelector(`script[src="${this.cdnUrl}"]`),
+      scriptLoaded: possibleUrls.some(url => !!document.querySelector(`script[src="${url}"]`)),
       sdkAvailable: typeof window.Apper !== 'undefined',
       initAvailable: typeof window.Apper?.init === 'function',
-      ready: typeof window.Apper !== 'undefined' && typeof window.Apper.init === 'function'
+      ready: typeof window.Apper !== 'undefined' && typeof window.Apper.init === 'function',
+      windowApperType: typeof window.Apper,
+      windowApperKeys: window.Apper ? Object.keys(window.Apper) : []
     };
   }
 
@@ -183,11 +219,12 @@ class ApperSDK {
         publicKey: this.publicKey
       });
 
-      // Add timeout to init call
+// Add timeout to init call
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error('SDK initialization timeout')), 15000);
       });
-await Promise.race([initPromise, timeoutPromise]);
+      
+      await Promise.race([initPromise, timeoutPromise]);
 
       this.isInitialized = true;
       console.log('Apper SDK initialized successfully');
