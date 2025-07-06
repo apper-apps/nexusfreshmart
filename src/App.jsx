@@ -1,17 +1,18 @@
 import 'react-toastify/dist/ReactToastify.css'
-import React, { Suspense, useCallback, useEffect, useMemo, useState, createContext, useContext } from 'react'
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
-import { ToastContainer } from 'react-toastify'
-import { Provider } from 'react-redux'
+import React, { Suspense, createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { ToastContainer } from "react-toastify";
+import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import { persistor, store } from "@/store/index";
 import Layout from "@/components/organisms/Layout";
+import Error from "@/components/ui/Error";
 import Loading from "@/components/ui/Loading";
-// Direct imports for core components
 import ProductDetail from "@/components/pages/ProductDetail";
 import Cart from "@/components/pages/Cart";
 import Checkout from "@/components/pages/Checkout";
 import Home from "@/components/pages/Home";
+// Direct imports for core components
 
 // Lazy load heavy components for better performance
 const AdminDashboard = React.lazy(() => import('@/components/pages/AdminDashboard'));
@@ -173,15 +174,17 @@ return (
       <PersistGate loading={<Loading type="page" />} persistor={persistor}>
         <RBACContext.Provider value={rbacValue}>
           <BrowserRouter>
-            <div className="min-h-screen bg-background">
+<div className="min-h-screen bg-background">
+              <div data-testid="app-loaded" style={{ display: 'none' }}>App Loaded</div>
               {/* Role Switcher (Development Only) */}
               {import.meta.env.DEV && (
-                <div className="fixed top-0 left-0 z-50 p-2 text-xs">
-                  <select 
+<select 
+                    data-testid="role-selector"
                     value={user.role} 
                     onChange={(e) => setUserRole(e.target.value)}
                     className="px-2 py-1 rounded bg-gray-800 text-white text-xs"
                   >
+                    <option value="customer">Customer</option>
                     <option value="customer">Customer</option>
                     <option value="admin">Admin</option>
                     <option value="finance_manager">Finance Manager</option>
@@ -192,12 +195,13 @@ return (
               
               {/* Minimal SDK Status Indicator (only in development) */}
               {import.meta.env.DEV && sdkError && (
-                <div className="fixed top-0 right-0 z-50 p-2 text-xs">
-                  <div className="px-2 py-1 rounded bg-orange-500 text-white">
-                  SDK: Background Loading
+<div className="px-2 py-1 rounded bg-orange-500 text-white">
+                    SDK: Background Loading
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+              
+              <Suspense fallback={<Loading type="page" />}>
 <Suspense fallback={<Loading type="page" />}>
               <Routes>
                 <Route path="/" element={<Layout />}>

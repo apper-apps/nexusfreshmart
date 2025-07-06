@@ -577,12 +577,12 @@ const [selectedView, setSelectedView] = useState('overview');
         <>
           {/* Key Financial Metrics */}
           {/* Key Financial Metrics - Enhanced with Real-time Updates */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
             <div className="card p-6 bg-gradient-to-r from-green-500 to-emerald-500 text-white">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-green-100 text-sm font-medium">Total Revenue</p>
-                  <p className="text-3xl font-bold">Rs. {metrics.totalRevenue.toLocaleString()}</p>
+                  <p className="text-3xl font-bold" data-testid="total-revenue">Rs. {metrics.totalRevenue.toLocaleString()}</p>
                   <div className="flex items-center mt-2">
                     <ApperIcon name="TrendingUp" size={12} className="mr-1" />
                     <span className="text-xs text-green-100">Real-time</span>
@@ -594,11 +594,11 @@ const [selectedView, setSelectedView] = useState('overview');
               </div>
             </div>
 
-            <div className="card p-6 bg-gradient-to-r from-blue-500 to-cyan-500 text-white">
+<div className="card p-6 bg-gradient-to-r from-blue-500 to-cyan-500 text-white">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-blue-100 text-sm font-medium">Net Profit</p>
-                  <p className="text-3xl font-bold">Rs. {metrics.totalProfit.toLocaleString()}</p>
+                  <p className="text-3xl font-bold" data-testid="total-profit">Rs. {metrics.totalProfit.toLocaleString()}</p>
                   <div className="flex items-center mt-2">
                     <div className={`w-2 h-2 rounded-full mr-2 ${metrics.totalProfit > 0 ? 'bg-green-300' : 'bg-red-300'}`}></div>
                     <span className="text-xs text-blue-100">Live</span>
@@ -610,11 +610,11 @@ const [selectedView, setSelectedView] = useState('overview');
               </div>
             </div>
 
-            <div className="card p-6 bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+<div className="card p-6 bg-gradient-to-r from-purple-500 to-pink-500 text-white">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-purple-100 text-sm font-medium">Profit Margin</p>
-                  <p className="text-3xl font-bold">{metrics.profitMargin.toFixed(1)}%</p>
+                  <p className="text-3xl font-bold" data-testid="profit-margin">{metrics.profitMargin.toFixed(1)}%</p>
                   <div className="flex items-center mt-2">
                     <ApperIcon name={metrics.profitMargin > 15 ? "ArrowUp" : metrics.profitMargin > 5 ? "Minus" : "ArrowDown"} size={12} className="mr-1" />
                     <span className="text-xs text-purple-100">
@@ -628,11 +628,11 @@ const [selectedView, setSelectedView] = useState('overview');
               </div>
             </div>
 
-            <div className="card p-6 bg-gradient-to-r from-orange-500 to-red-500 text-white">
+<div className="card p-6 bg-gradient-to-r from-orange-500 to-red-500 text-white">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-orange-100 text-sm font-medium">Return on Investment</p>
-                  <p className="text-3xl font-bold">{metrics.roi.toFixed(1)}%</p>
+                  <p className="text-3xl font-bold" data-testid="roi">{metrics.roi.toFixed(1)}%</p>
                   <div className="flex items-center mt-2">
                     <ApperIcon name="Target" size={12} className="mr-1" />
                     <span className="text-xs text-orange-100">
@@ -1843,9 +1843,9 @@ const [selectedView, setSelectedView] = useState('overview');
         </>
       )}
 
-      {/* Expense Form Modal */}
+{/* Expense Form Modal */}
       {showExpenseForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" data-testid="expense-modal">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">
@@ -1959,9 +1959,9 @@ const [selectedView, setSelectedView] = useState('overview');
           </div>
         </div>
       )}
-      {/* Vendor Form Modal */}
+{/* Vendor Form Modal */}
       {showVendorForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" data-testid="vendor-modal">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">

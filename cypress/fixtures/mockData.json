@@ -1,0 +1,103 @@
+{
+  "adminUser": {
+    "role": "admin",
+    "permissions": ["read_basic", "read_financial", "write_financial", "manage_users"],
+    "id": 1,
+    "name": "Admin User",
+    "email": "admin@freshmart.com"
+  },
+  "customerUser": {
+    "role": "customer",
+    "permissions": ["read_basic"],
+    "id": 2,
+    "name": "Customer User",
+    "email": "customer@freshmart.com"
+  },
+  "financeManagerUser": {
+    "role": "finance_manager",
+    "permissions": ["read_basic", "read_financial", "write_financial"],
+    "id": 3,
+    "name": "Finance Manager",
+    "email": "finance@freshmart.com"
+  },
+  "employeeUser": {
+    "role": "employee",
+    "permissions": ["read_basic", "read_limited"],
+    "id": 4,
+    "name": "Employee User",
+    "email": "employee@freshmart.com"
+  },
+  "fullFinancialData": {
+    "summary": {
+      "totalRevenue": 150000,
+      "totalCost": 90000,
+      "totalProfit": 60000,
+      "profitMargin": 40.0,
+      "roi": 66.7,
+      "averageOrderValue": 1250,
+      "totalOrders": 120,
+      "totalItems": 450
+    },
+    "productMetrics": [
+      {
+        "Id": 1,
+        "name": "Premium Apples",
+        "category": "Fruits",
+        "totalSold": 50,
+        "revenue": 5000,
+        "cost": 3000,
+        "profit": 2000,
+        "profitMargin": 40.0
+      }
+    ],
+    "categoryMetrics": [
+      {
+        "Id": "Fruits",
+        "name": "Fruits",
+        "revenue": 25000,
+        "cost": 15000,
+        "profit": 10000,
+        "profitMargin": 40.0,
+        "productCount": 5
+      }
+    ]
+  },
+  "restrictedFinancialData": {
+    "summary": {
+      "totalRevenue": null,
+      "totalCost": null,
+      "totalProfit": null,
+      "profitMargin": null,
+      "roi": null,
+      "averageOrderValue": 0,
+      "totalOrders": 120,
+      "totalItems": 450
+    },
+    "productMetrics": [],
+    "categoryMetrics": []
+  },
+  "expenses": [
+    {
+      "Id": 1,
+      "amount": 25000,
+      "vendor": "City Landlord",
+      "category": "Rent",
+      "description": "Monthly office rent",
+      "date": "2024-01-15",
+      "receiptUrl": null,
+      "createdAt": "2024-01-15T10:00:00Z"
+    }
+  ],
+  "vendors": [
+    {
+      "Id": 1,
+      "name": "ABC Suppliers Ltd",
+      "email": "billing@abcsuppliers.com",
+      "phone": "+92-300-1234567",
+      "category": "Supplier",
+      "paymentTerms": 30,
+      "address": "123 Industrial Area, Karachi",
+      "createdAt": "2024-01-01T00:00:00Z"
+    }
+  ]
+}

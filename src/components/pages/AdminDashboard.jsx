@@ -211,51 +211,51 @@ const handleWalletAction = async (action, amount = 0) => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-6 rounded-xl">
+<div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-6 rounded-xl">
 <div className="flex items-center justify-between">
 <div>
               <p className="text-green-100 text-sm">Wallet Balance</p>
-              <p className="text-2xl font-bold">Rs. {(stats?.walletBalance || 0).toLocaleString()}</p>
+              <p className="text-2xl font-bold" data-testid="wallet-balance">Rs. {(stats?.walletBalance || 0).toLocaleString()}</p>
             </div>
             <ApperIcon name="Wallet" size={32} className="text-green-100" />
           </div>
         </div>
 
-        <div className="bg-gradient-to-r from-blue-500 to-cyan-600 text-white p-6 rounded-xl">
+<div className="bg-gradient-to-r from-blue-500 to-cyan-600 text-white p-6 rounded-xl">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-blue-100 text-sm">Total Transactions</p>
-              <p className="text-2xl font-bold">{(stats?.totalTransactions || 0).toLocaleString()}</p>
+              <p className="text-2xl font-bold" data-testid="total-transactions">{(stats?.totalTransactions || 0).toLocaleString()}</p>
             </div>
             <ApperIcon name="CreditCard" size={32} className="text-blue-100" />
           </div>
         </div>
 
-        <div className="bg-gradient-to-r from-purple-500 to-pink-600 text-white p-6 rounded-xl">
+<div className="bg-gradient-to-r from-purple-500 to-pink-600 text-white p-6 rounded-xl">
           <div className="flex items-center justify-between">
 <div>
               <p className="text-purple-100 text-sm">Monthly Revenue</p>
-              <p className="text-2xl font-bold">Rs. {(stats?.monthlyRevenue || 0).toLocaleString()}</p>
+              <p className="text-2xl font-bold" data-testid="monthly-revenue">Rs. {(stats?.monthlyRevenue || 0).toLocaleString()}</p>
             </div>
             <ApperIcon name="TrendingUp" size={32} className="text-purple-100" />
           </div>
         </div>
 
-        <div className="bg-gradient-to-r from-orange-500 to-red-600 text-white p-6 rounded-xl">
+<div className="bg-gradient-to-r from-orange-500 to-red-600 text-white p-6 rounded-xl">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-orange-100 text-sm">Pending Verifications</p>
-              <p className="text-2xl font-bold">{(stats?.pendingVerifications || 0).toLocaleString()}</p>
+              <p className="text-2xl font-bold" data-testid="pending-verifications">{(stats?.pendingVerifications || 0).toLocaleString()}</p>
             </div>
             <ApperIcon name="Clock" size={32} className="text-orange-100" />
           </div>
         </div>
 
-        <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-6 rounded-xl">
+<div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-6 rounded-xl">
           <div className="flex items-center justify-between">
 <div>
               <p className="text-emerald-100 text-sm">Today's Revenue</p>
-              <p className="text-2xl font-bold">Rs. {(stats?.todayRevenue || 0).toLocaleString()}</p>
+              <p className="text-2xl font-bold" data-testid="today-revenue">Rs. {(stats?.todayRevenue || 0).toLocaleString()}</p>
             </div>
             <ApperIcon name="DollarSign" size={32} className="text-emerald-100" />
           </div>
