@@ -774,24 +774,24 @@ setFormData({
                     onChange={handleInputChange}
                     className="input-field"
                   >
-                    <option value="">Select Unit</option>
+<option value="">Select Unit</option>
                     {units.map(unit => (
                       <option key={unit} value={unit}>{unit}</option>
                     ))}
                   </select>
                 </div>
               </div>
-/>
-
-              <Input
+<Input
                 label="Description"
                 name="description"
+                type="textarea"
+                placeholder="Product description..."
                 value={formData.description}
                 onChange={handleInputChange}
                 icon="FileText"
               />
 
-{/* Intelligent Image Integration System */}
+              {/* Intelligent Image Integration System */}
               <ImageUploadSystem
                 imageData={imageData}
                 setImageData={setImageData}
@@ -801,7 +801,6 @@ setFormData({
                 onAIImageGenerate={handleAIImageGenerate}
                 formData={formData}
               />
-
               <Input
                 label="Barcode"
                 name="barcode"
@@ -1568,16 +1567,13 @@ const ImageUploadSystem = ({
           setSearchQuery={setSearchQuery}
         />
       )}
-
-{/* AI Generate Tab */}
+{/* AI Image Generator */}
       {imageData.activeTab === 'ai-generate' && (
         <AIImageGenerator
           imageData={imageData}
           setImageData={setImageData}
           onImageGenerate={handleAIImageGenerate}
           onImageSelect={handleImageSelect}
-          formData={formData}
-onImageSelect={handleImageSelect}
           formData={formData}
         />
       )}
@@ -2036,9 +2032,9 @@ const UnsplashImageSearch = ({
           <span className="font-medium">License Information</span>
         </div>
         <p>All images from Unsplash are free to use for commercial purposes. Attribution is appreciated but not required. Please review individual image licenses when available.</p>
+<p>All images from Unsplash are free to use for commercial purposes. Attribution is appreciated but not required. Please review individual image licenses when available.</p>
       </div>
-</div>
+    </div>
   );
-};
 
 export default ProductManagement;
