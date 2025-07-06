@@ -8,8 +8,7 @@ import Empty from "@/components/ui/Empty";
 import Error from "@/components/ui/Error";
 import Loading from "@/components/ui/Loading";
 import Category from "@/components/pages/Category";
-import { productService } from "@/services/api/productService";
-
+import productService from "@/services/api/productService";
 const ProductManagement = () => {
   // State management with proper initialization
   const [products, setProducts] = useState([]);
@@ -301,8 +300,8 @@ const [formData, setFormData] = useState({
   const handleEdit = (product) => {
     if (!product) return;
     
-    setEditingProduct(product);
-setFormData({
+setEditingProduct(product);
+    setFormData({
       name: product.name || "",
       price: product.price?.toString() || "",
       previousPrice: product.previousPrice?.toString() || "",
@@ -340,8 +339,8 @@ setFormData({
   };
 
   // Reset form state
-  const resetForm = () => {
-setFormData({
+const resetForm = () => {
+    setFormData({
       name: "",
       price: "",
       previousPrice: "",
@@ -1896,7 +1895,7 @@ const UnsplashImageSearch = ({
     const searchTerm = category.id ? category.name.toLowerCase() : (category === 'all' ? 'food' : category.toLowerCase());
     setSearchQuery(searchTerm);
     onImageSearch(searchTerm, { category: category.id || category, orientation });
-  };
+};
   return (
     <div className="space-y-6">
       {/* Search Form */}
