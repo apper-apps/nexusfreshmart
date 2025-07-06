@@ -1261,6 +1261,58 @@ const ImageUploadSystem = ({
   const [cropData, setCropData] = useState({ x: 0, y: 0, width: 100, height: 100 });
   const fileInputRef = useRef(null);
 
+  // Handle image selection from search results or AI generation
+  const handleImageSelect = (imageUrl, attribution = null) => {
+    try {
+      if (!imageUrl) {
+        toast.error('Invalid image URL');
+        return;
+      }
+      
+      setImageData(prev => ({ 
+        ...prev, 
+        selectedImage: imageUrl, 
+        attribution,
+        isProcessing: false 
+      }));
+      
+      if (onImageSelect) {
+        onImageSelect(imageUrl, attribution);
+      }
+      
+      toast.success('Image selected successfully!');
+    } catch (error) {
+      console.error('Error selecting image:', error);
+      toast.error('Failed to select image');
+    }
+  };
+
+  // Handle AI image generation
+  const handleAIImageGenerate = async (prompt, style = 'realistic') => {
+    try {
+      if (!prompt?.trim()) {
+        toast.error('Please provide a prompt for AI generation');
+        return;
+      }
+      
+      setImageData(prev => ({ ...prev, isProcessing: true }));
+      
+      // Simulate AI generation process
+      const generatedImage = await new Promise((resolve) => {
+        setTimeout(() => {
+          resolve(`https://picsum.photos/600/600?random=${Date.now()}`);
+        }, 2000);
+      });
+      
+      handleImageSelect(generatedImage, 'AI Generated');
+      
+    } catch (error) {
+      console.error('Error generating AI image:', error);
+      toast.error('Failed to generate AI image');
+      setImageData(prev => ({ ...prev, isProcessing: false }));
+    }
+  };
+
   // Handle drag events
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -1295,11 +1347,13 @@ const ImageUploadSystem = ({
       return;
     }
     
-    onImageUpload(file);
+    if (onImageUpload) {
+      onImageUpload(file);
+    }
   };
 
   const handleFileInputChange = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (file) {
       handleFileSelect(file);
     }
@@ -1307,7 +1361,7 @@ const ImageUploadSystem = ({
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
+    if (searchQuery.trim() && onImageSearch) {
       onImageSearch(searchQuery.trim());
     }
   };
@@ -1400,18 +1454,18 @@ const ImageUploadSystem = ({
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Processing image...</span>
-                <span className="text-gray-600">{imageData.uploadProgress}%</span>
+                <span className="text-gray-600">{imageData.uploadProgress || 0}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div
                   className="bg-primary h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${imageData.uploadProgress}%` }}
+                  style={{ width: `${imageData.uploadProgress || 0}%` }}
                 />
               </div>
             </div>
           )}
 
-{/* Image Preview & Cropping */}
+          {/* Image Preview & Cropping */}
           {imageData.selectedImage && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -1467,7 +1521,7 @@ const ImageUploadSystem = ({
                 </div>
               </div>
               
-{/* Enhanced Image Optimization Settings */}
+              {/* Enhanced Image Optimization Settings */}
               <div className="bg-gradient-to-br from-gray-50 to-blue-50 p-4 rounded-lg space-y-4 border border-gray-200">
                 <div className="flex items-center justify-between">
                   <h5 className="font-medium text-gray-900 flex items-center space-x-2">
@@ -1556,8 +1610,8 @@ const ImageUploadSystem = ({
         </div>
       )}
 
-{/* AI Search Tab */}
-{imageData.activeTab === 'search' && (
+      {/* AI Search Tab */}
+      {imageData.activeTab === 'search' && (
         <UnsplashImageSearch
           imageData={imageData}
           setImageData={setImageData}
@@ -1567,7 +1621,8 @@ const ImageUploadSystem = ({
           setSearchQuery={setSearchQuery}
         />
       )}
-{/* AI Image Generator */}
+
+      {/* AI Image Generator */}
       {imageData.activeTab === 'ai-generate' && (
         <AIImageGenerator
           imageData={imageData}
