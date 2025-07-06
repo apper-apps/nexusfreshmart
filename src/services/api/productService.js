@@ -320,6 +320,7 @@ return {
 }
 
   // Image validation and processing methods
+// Enhanced image validation with watermark/text detection and quality assessment
   async validateImage(file) {
     try {
       // Basic file validation
@@ -332,33 +333,59 @@ return {
         return { isValid: false, error: 'Image file size must be less than 10MB' };
       }
       
-      // Create image element for quality analysis
+      // Create image element for comprehensive quality analysis
       const img = new Image();
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       
       return new Promise((resolve) => {
-        img.onload = () => {
+        img.onload = async () => {
           canvas.width = img.width;
           canvas.height = img.height;
           ctx.drawImage(img, 0, 0);
           
-          // Basic quality checks
+          // Resolution validation
           if (img.width < 200 || img.height < 200) {
             resolve({ isValid: false, error: 'Image resolution too low. Minimum 200x200px required' });
             return;
           }
           
-          // Check for excessive blur (simplified)
+          // Get image data for analysis
           const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          const variance = this.calculateImageVariance(imageData.data);
           
-          if (variance < 100) {
-            resolve({ isValid: false, error: 'Image appears to be too blurry or low quality' });
+          // Enhanced blur detection using image variance
+          const variance = this.calculateImageVariance(imageData.data);
+          if (variance < 150) {
+            resolve({ isValid: false, error: 'Image appears to be too blurry or low quality. Please use a sharper image' });
             return;
           }
           
-          resolve({ isValid: true });
+          // Text/watermark detection using edge density analysis
+          const textDetection = this.detectTextWatermarks(imageData.data, canvas.width, canvas.height);
+          if (textDetection.hasText) {
+            resolve({ 
+              isValid: false, 
+              error: `Watermarks or text detected in image. Confidence: ${textDetection.confidence}%. Please use a clean product image without text overlays` 
+            });
+            return;
+          }
+          
+          // Additional quality checks
+          const qualityAssessment = this.assessImageQuality(imageData.data, canvas.width, canvas.height);
+          if (qualityAssessment.score < 0.6) {
+            resolve({ 
+              isValid: false, 
+              error: `Image quality too low (Score: ${Math.round(qualityAssessment.score * 100)}%). Please use a higher quality image` 
+            });
+            return;
+          }
+          
+          resolve({ 
+            isValid: true, 
+            qualityScore: qualityAssessment.score,
+            variance: variance,
+            textConfidence: textDetection.confidence
+          });
         };
         
         img.onerror = () => {
@@ -370,25 +397,137 @@ return {
       
     } catch (error) {
       console.error('Error validating image:', error);
+console.error('Error validating image:', error);
       return { isValid: false, error: 'Failed to validate image' };
     }
   }
 
-  // Calculate image variance for quality assessment
+  // Enhanced image variance calculation for blur detection
   calculateImageVariance(imageData) {
-    let sum = 0;
     let sumSquared = 0;
+    let edgeSum = 0;
     const length = imageData.length;
+    const pixelCount = length / 4;
     
+    // Convert to grayscale and calculate variance with edge detection
     for (let i = 0; i < length; i += 4) {
       const gray = 0.299 * imageData[i] + 0.587 * imageData[i + 1] + 0.114 * imageData[i + 2];
       sum += gray;
       sumSquared += gray * gray;
+      
+      // Simple edge detection for sharpness assessment
+      if (i >= 4 && i < length - 4) {
+        const prevGray = 0.299 * imageData[i - 4] + 0.587 * imageData[i - 3] + 0.114 * imageData[i - 2];
+        const nextGray = 0.299 * imageData[i + 4] + 0.587 * imageData[i + 5] + 0.114 * imageData[i + 6];
+        edgeSum += Math.abs(gray - prevGray) + Math.abs(gray - nextGray);
+      }
     }
     
-    const mean = sum / (length / 4);
-    const variance = (sumSquared / (length / 4)) - (mean * mean);
-    return variance;
+    const mean = sum / pixelCount;
+    const variance = (sumSquared / pixelCount) - (mean * mean);
+    const edgeIntensity = edgeSum / pixelCount;
+    
+    // Combine variance and edge intensity for better blur detection
+    return variance + (edgeIntensity * 0.5);
+  }
+
+  // Detect text/watermarks using edge density and pattern analysis
+  detectTextWatermarks(imageData, width, height) {
+    try {
+      const pixelCount = width * height;
+      let textFeatures = 0;
+      let horizontalLines = 0;
+      let verticalLines = 0;
+      
+      // Analyze image for text-like patterns
+      for (let y = 1; y < height - 1; y++) {
+        for (let x = 1; x < width - 1; x++) {
+          const idx = (y * width + x) * 4;
+          const gray = 0.299 * imageData[idx] + 0.587 * imageData[idx + 1] + 0.114 * imageData[idx + 2];
+          
+          // Check for high contrast edges (typical of text)
+          const neighbors = [
+            0.299 * imageData[idx - 4] + 0.587 * imageData[idx - 3] + 0.114 * imageData[idx - 2], // left
+            0.299 * imageData[idx + 4] + 0.587 * imageData[idx + 5] + 0.114 * imageData[idx + 6], // right
+            0.299 * imageData[idx - width * 4] + 0.587 * imageData[idx - width * 4 + 1] + 0.114 * imageData[idx - width * 4 + 2], // top
+            0.299 * imageData[idx + width * 4] + 0.587 * imageData[idx + width * 4 + 1] + 0.114 * imageData[idx + width * 4 + 2]  // bottom
+          ];
+          
+          const maxDiff = Math.max(...neighbors.map(n => Math.abs(gray - n)));
+          
+          // High contrast edges suggest text
+          if (maxDiff > 80) {
+            textFeatures++;
+            
+            // Check for horizontal/vertical line patterns
+            if (Math.abs(neighbors[0] - neighbors[1]) < 20) horizontalLines++;
+            if (Math.abs(neighbors[2] - neighbors[3]) < 20) verticalLines++;
+          }
+        }
+      }
+      
+      const textDensity = textFeatures / pixelCount;
+      const lineDensity = (horizontalLines + verticalLines) / pixelCount;
+      const confidence = Math.min((textDensity * 1000 + lineDensity * 500), 100);
+      
+      // Threshold for text detection (adjust based on testing)
+      const hasText = confidence > 25 || textDensity > 0.15;
+      
+      return {
+        hasText,
+        confidence: Math.round(confidence),
+        textDensity,
+        lineDensity
+      };
+    } catch (error) {
+      console.error('Error in text detection:', error);
+      return { hasText: false, confidence: 0 };
+    }
+  }
+
+  // Comprehensive image quality assessment
+  assessImageQuality(imageData, width, height) {
+    try {
+      const pixelCount = width * height;
+      let colorVariety = new Set();
+      let contrastSum = 0;
+      let brightnessSum = 0;
+      
+      for (let i = 0; i < imageData.length; i += 4) {
+        const r = imageData[i];
+        const g = imageData[i + 1];
+        const b = imageData[i + 2];
+        
+        // Color variety assessment
+        const colorKey = `${Math.floor(r/32)}-${Math.floor(g/32)}-${Math.floor(b/32)}`;
+        colorVariety.add(colorKey);
+        
+        // Brightness and contrast
+        const brightness = (r + g + b) / 3;
+        brightnessSum += brightness;
+        
+        if (i >= 4) {
+          const prevBrightness = (imageData[i-4] + imageData[i-3] + imageData[i-2]) / 3;
+          contrastSum += Math.abs(brightness - prevBrightness);
+        }
+      }
+      
+      const colorScore = Math.min(colorVariety.size / 100, 1); // More colors = better
+      const contrastScore = Math.min(contrastSum / pixelCount / 50, 1); // Good contrast
+      const brightnessScore = 1 - Math.abs(brightnessSum / pixelCount - 128) / 128; // Not too dark/bright
+      
+      const overallScore = (colorScore * 0.3 + contrastScore * 0.4 + brightnessScore * 0.3);
+      
+      return {
+        score: overallScore,
+        colorVariety: colorVariety.size,
+        contrast: contrastSum / pixelCount,
+        averageBrightness: brightnessSum / pixelCount
+      };
+    } catch (error) {
+      console.error('Error assessing image quality:', error);
+      return { score: 0.5 };
+    }
   }
 
   // Process and optimize image

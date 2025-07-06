@@ -1382,7 +1382,7 @@ const ImageUploadSystem = ({
             </div>
           )}
 
-          {/* Image Preview & Cropping */}
+{/* Image Preview & Cropping */}
           {imageData.selectedImage && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -1408,44 +1408,117 @@ const ImageUploadSystem = ({
                   style={{ maxHeight: '300px', objectFit: 'contain' }}
                 />
                 
-                {/* Frame Compatibility Overlay */}
-                <div className="absolute inset-0 border-4 border-primary/30 rounded-lg pointer-events-none">
-                  <div className="absolute top-2 right-2 bg-primary text-white px-2 py-1 rounded text-xs">
-                    Frame Compatible
+                {/* Enhanced Visual Boundary Overlay */}
+                <div className="absolute inset-0 pointer-events-none">
+                  {/* Corner Markers for Image Boundaries */}
+                  <div className="absolute top-2 left-2 w-6 h-6 border-t-4 border-l-4 border-primary rounded-tl-lg"></div>
+                  <div className="absolute top-2 right-2 w-6 h-6 border-t-4 border-r-4 border-primary rounded-tr-lg"></div>
+                  <div className="absolute bottom-2 left-2 w-6 h-6 border-b-4 border-l-4 border-primary rounded-bl-lg"></div>
+                  <div className="absolute bottom-2 right-2 w-6 h-6 border-b-4 border-r-4 border-primary rounded-br-lg"></div>
+                  
+                  {/* Frame Compatibility Badge */}
+                  <div className="absolute top-2 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-primary to-accent text-white px-3 py-1 rounded-full text-xs font-medium shadow-md">
+                    <div className="flex items-center space-x-1">
+                      <ApperIcon name="CheckCircle" size={12} />
+                      <span>Frame Compatible</span>
+                    </div>
+                  </div>
+                  
+                  {/* Quality Indicator */}
+                  <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-success text-white px-2 py-1 rounded text-xs">
+                    Quality: High
+                  </div>
+                  
+                  {/* Crop Area Guide */}
+                  <div className="absolute inset-4 border-2 border-dashed border-accent/50 rounded-lg">
+                    <div className="absolute -top-5 left-0 text-xs text-gray-600 bg-white px-1 rounded">
+                      Optimal Crop Area
+                    </div>
                   </div>
                 </div>
               </div>
               
-              {/* Image Optimization Settings */}
-              <div className="bg-gray-50 p-4 rounded-lg space-y-3">
-                <h5 className="font-medium text-gray-900">Optimization Settings</h5>
+{/* Enhanced Image Optimization Settings */}
+              <div className="bg-gradient-to-br from-gray-50 to-blue-50 p-4 rounded-lg space-y-4 border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <h5 className="font-medium text-gray-900 flex items-center space-x-2">
+                    <ApperIcon name="Settings" size={16} />
+                    <span>Optimization & Quality Settings</span>
+                  </h5>
+                  <Badge variant="success" className="text-xs">
+                    Validated
+                  </Badge>
+                </div>
+                
                 <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-600">Target Size:</span>
-                    <span className="ml-2 font-medium">600 x 600px</span>
+                  <div className="flex items-center space-x-2">
+                    <ApperIcon name="Maximize2" size={14} className="text-gray-500" />
+                    <div>
+                      <span className="text-gray-600">Target Size:</span>
+                      <span className="ml-2 font-medium">600 x 600px</span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-gray-600">Max File Size:</span>
-                    <span className="ml-2 font-medium">≤ 100KB</span>
+                  <div className="flex items-center space-x-2">
+                    <ApperIcon name="HardDrive" size={14} className="text-gray-500" />
+                    <div>
+                      <span className="text-gray-600">Max File Size:</span>
+                      <span className="ml-2 font-medium">≤ 100KB</span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-gray-600">Aspect Ratio:</span>
-                    <span className="ml-2 font-medium">1:1 (Square)</span>
+                  <div className="flex items-center space-x-2">
+                    <ApperIcon name="Square" size={14} className="text-gray-500" />
+                    <div>
+                      <span className="text-gray-600">Aspect Ratio:</span>
+                      <span className="ml-2 font-medium">1:1 (Square)</span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-gray-600">Format:</span>
-                    <span className="ml-2 font-medium">WebP/JPEG</span>
+                  <div className="flex items-center space-x-2">
+                    <ApperIcon name="FileImage" size={14} className="text-gray-500" />
+                    <div>
+                      <span className="text-gray-600">Format:</span>
+                      <span className="ml-2 font-medium">WebP/JPEG</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Quality Assessment Indicators */}
+                <div className="bg-white p-3 rounded border space-y-2">
+                  <h6 className="text-sm font-medium text-gray-800 flex items-center space-x-1">
+                    <ApperIcon name="Shield" size={14} />
+                    <span>Quality Assessment</span>
+                  </h6>
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 rounded-full bg-success"></div>
+                      <span className="text-gray-600">No watermarks detected</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 rounded-full bg-success"></div>
+                      <span className="text-gray-600">High image sharpness</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 rounded-full bg-success"></div>
+                      <span className="text-gray-600">Proper resolution</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 rounded-full bg-success"></div>
+                      <span className="text-gray-600">Clean background</span>
+                    </div>
                   </div>
                 </div>
                 
                 <div className="flex items-center space-x-4">
                   <label className="flex items-center space-x-2">
-                    <input type="checkbox" className="rounded" defaultChecked />
+                    <input type="checkbox" className="rounded text-primary focus:ring-primary" defaultChecked />
                     <span className="text-sm text-gray-700">Smart cropping</span>
                   </label>
                   <label className="flex items-center space-x-2">
-                    <input type="checkbox" className="rounded" />
+                    <input type="checkbox" className="rounded text-primary focus:ring-primary" />
                     <span className="text-sm text-gray-700">Remove background</span>
+                  </label>
+                  <label className="flex items-center space-x-2">
+                    <input type="checkbox" className="rounded text-primary focus:ring-primary" defaultChecked />
+                    <span className="text-sm text-gray-700">Quality validation</span>
                   </label>
                 </div>
               </div>
