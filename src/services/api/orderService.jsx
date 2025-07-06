@@ -1,4 +1,6 @@
 import axios from "axios";
+import React from "react";
+import Error from "@/components/ui/Error";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
@@ -347,6 +349,7 @@ this.orders.forEach(order => {
     return revenueByMethod;
   }
   // Payment Verification Methods
+// Payment Verification Methods
 async getPendingVerifications() {
     await this.delay();
     return this.orders
@@ -358,7 +361,6 @@ async getPendingVerifications() {
                                      (order.paymentMethod === 'jazzcash' || order.paymentMethod === 'easypaisa' || order.paymentMethod === 'bank'));
         return hasPaymentProof && isPendingVerification;
       })
-})
       .map(order => ({
         orderId: order?.id,
         transactionId: order?.transactionId || `TXN${order?.id}${Date.now().toString().slice(-4)}`,
