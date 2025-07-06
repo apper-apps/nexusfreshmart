@@ -317,6 +317,55 @@
       },
       "instructions": "Please call before arriving"
 },
-    "createdAt": "2024-01-21T09:30:00Z"
+"createdAt": "2024-01-21T09:30:00Z"
+  },
+  {
+    "id": 8,
+    "customerId": "user505",
+    "items": [
+      {
+        "productId": 14,
+        "name": "Premium Chicken",
+        "price": 500,
+        "quantity": 2,
+        "unit": "kg"
+      },
+      {
+        "productId": 15,
+        "name": "Fresh Vegetables",
+        "price": 200,
+        "quantity": 1,
+        "unit": "kg"
+      }
+    ],
+    "total": 1200,
+    "deliveryCharge": 150,
+    "paymentMethod": "jazzcash",
+    "transactionId": "JC2024012200001234",
+    "paymentProof": {
+      "fileName": "jazzcash_payment_order8.jpg",
+      "fileSize": 2048,
+      "uploadedAt": "2024-01-22T14:30:00Z"
+    },
+    "status": "payment_pending",
+    "verificationStatus": "pending",
+    "deliveryPersonId": null,
+    "deliveryStatus": "pending_assignment",
+    "estimatedDelivery": "2024-01-23T16:00:00Z",
+    "actualDelivery": null,
+    "deliveryAddress": {
+      "name": "Hassan Ali",
+      "phone": "+92 307 4444555",
+      "email": "hassan.ali@example.com",
+      "address": "123 DHA Phase 5, Block L",
+      "city": "Lahore",
+      "postalCode": "54792",
+      "coordinates": {
+        "lat": 31.4697,
+        "lng": 74.4072
+      },
+      "instructions": "Please call before delivery"
+    },
+    "createdAt": "2024-01-22T14:00:00Z"
   }
 ]
