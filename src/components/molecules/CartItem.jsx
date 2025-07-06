@@ -61,28 +61,38 @@ return (
         )}
       </div>
       
-      <div className="flex items-center space-x-1 sm:space-x-2">
-        <Button
-          variant="ghost"
-          size="small"
-          icon="Minus"
+<div className="flex items-center space-x-1 sm:space-x-2">
+        <button
           onClick={() => handleQuantityChange(item.quantity - 1)}
           disabled={item.quantity <= 1}
-          className="hover:bg-red-50 hover:text-red-600 transition-colors duration-200 w-8 h-8 p-1"
-        />
+          className={`
+            w-9 h-9 rounded-lg border-2 shadow-sm transition-all duration-200 flex items-center justify-center
+            ${item.quantity <= 1 
+              ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed' 
+              : 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100 hover:border-red-300 hover:scale-110 hover:shadow-md active:scale-95'
+            }
+          `}
+        >
+          <ApperIcon name="Minus" size={16} />
+        </button>
         
-        <span className={`w-8 text-center font-medium transition-all duration-300 ${item.isUpdating ? 'scale-110 text-primary' : ''}`}>
+        <span className={`w-10 text-center font-semibold text-lg transition-all duration-300 ${item.isUpdating ? 'scale-110 text-primary' : ''}`}>
           {item.quantity}
         </span>
         
-        <Button
-          variant="ghost"
-          size="small"
-          icon="Plus"
+        <button
           onClick={() => handleQuantityChange(item.quantity + 1)}
           disabled={item.quantity >= item.stock || item.stock === 0}
-          className="hover:bg-green-50 hover:text-green-600 transition-colors duration-200 w-8 h-8 p-1"
-        />
+          className={`
+            w-9 h-9 rounded-lg border-2 shadow-sm transition-all duration-200 flex items-center justify-center
+            ${item.quantity >= item.stock || item.stock === 0
+              ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed' 
+              : 'bg-green-50 border-green-200 text-green-600 hover:bg-green-100 hover:border-green-300 hover:scale-110 hover:shadow-md active:scale-95'
+            }
+          `}
+        >
+          <ApperIcon name="Plus" size={16} />
+        </button>
       </div>
       
       <div className="text-right min-w-0">
