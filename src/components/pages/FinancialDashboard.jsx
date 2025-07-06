@@ -576,7 +576,7 @@ const [selectedView, setSelectedView] = useState('overview');
 {selectedView === 'overview' && (
         <>
           {/* Key Financial Metrics */}
-{/* Key Financial Metrics - Enhanced with Real-time Updates */}
+          {/* Key Financial Metrics - Enhanced with Real-time Updates */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
             <div className="card p-6 bg-gradient-to-r from-green-500 to-emerald-500 text-white">
               <div className="flex items-center justify-between">
@@ -661,6 +661,7 @@ const [selectedView, setSelectedView] = useState('overview');
                 </div>
               </div>
             </div>
+          </div>
 
           {/* Charts Section */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
@@ -932,8 +933,6 @@ const [selectedView, setSelectedView] = useState('overview');
                       <p className="font-medium text-gray-900">Generate Report</p>
                       <p className="text-sm text-gray-600">Export financial summary</p>
                     </div>
-<p className="text-sm text-gray-600">Export financial summary</p>
-                    </div>
                   </div>
                 </button>
               </div>
@@ -941,6 +940,9 @@ const [selectedView, setSelectedView] = useState('overview');
           </div>
         </>
       )}
+
+      {selectedView === 'cashflow' && (
+        <>
           {/* Cash Flow Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div className="card p-6 bg-gradient-to-r from-emerald-500 to-green-500 text-white">
