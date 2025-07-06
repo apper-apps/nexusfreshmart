@@ -105,11 +105,11 @@ return (
               Placed on {format(new Date(order.createdAt), 'MMMM dd, yyyy • hh:mm a')}
             </p>
           </div>
-          <div className="text-right">
+<div className="text-right">
             <p className="text-2xl font-bold gradient-text">
-              Rs. {order.total.toLocaleString()}
+              Rs. {(order?.total || 0).toLocaleString()}
             </p>
-            <p className="text-gray-600">{order.items.length} items</p>
+            <p className="text-gray-600">{(order?.items || []).length} items</p>
           </div>
         </div>
       </div>
@@ -157,34 +157,34 @@ return (
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Order Items</h2>
           
           <div className="space-y-4">
-            {order.items.map((item, index) => (
+{(order?.items || []).map((item, index) => (
               <div key={index} className="flex items-center justify-between">
                 <div className="flex-1">
-                  <p className="font-medium text-gray-900">{item.name}</p>
+                  <p className="font-medium text-gray-900">{item?.name || 'Unknown Item'}</p>
                   <p className="text-sm text-gray-600">
-                    {item.quantity} x Rs. {item.price.toLocaleString()}
+                    {item?.quantity || 0} x Rs. {(item?.price || 0).toLocaleString()}
                   </p>
                 </div>
                 <p className="font-medium">
-                  Rs. {(item.quantity * item.price).toLocaleString()}
+                  Rs. {((item?.quantity || 0) * (item?.price || 0)).toLocaleString()}
                 </p>
               </div>
             ))}
           </div>
           
-          <div className="border-t border-gray-200 pt-4 mt-4">
+<div className="border-t border-gray-200 pt-4 mt-4">
             <div className="flex justify-between mb-2">
               <span className="text-gray-600">Subtotal</span>
-              <span className="font-medium">Rs. {(order.total - order.deliveryCharge).toLocaleString()}</span>
+              <span className="font-medium">Rs. {((order?.total || 0) - (order?.deliveryCharge || 0)).toLocaleString()}</span>
             </div>
             <div className="flex justify-between mb-2">
               <span className="text-gray-600">Delivery Charge</span>
-              <span className="font-medium">Rs. {order.deliveryCharge.toLocaleString()}</span>
+              <span className="font-medium">Rs. {(order?.deliveryCharge || 0).toLocaleString()}</span>
             </div>
             <div className="flex justify-between items-center border-t border-gray-200 pt-2">
               <span className="text-lg font-semibold text-gray-900">Total</span>
               <span className="text-lg font-bold gradient-text">
-                Rs. {order.total.toLocaleString()}
+                Rs. {(order?.total || 0).toLocaleString()}
               </span>
             </div>
           </div>
