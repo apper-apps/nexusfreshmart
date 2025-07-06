@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useCart } from "@/hooks/useCart";
+import { paymentService } from "@/services/api/paymentService.jsx";
 import ApperIcon from "@/components/ApperIcon";
 import Button from "@/components/atoms/Button";
 import Input from "@/components/atoms/Input";
@@ -11,10 +12,10 @@ import Account from "@/components/pages/Account";
 import PaymentMethod from "@/components/molecules/PaymentMethod";
 import { orderService } from "@/services/api/orderService";
 import { productService } from "@/services/api/productService";
-import { paymentService } from "@/services/api/paymentService";
+
 function Checkout() {
   const navigate = useNavigate()
-const { cart, clearCart } = useCart()
+  const { cart, clearCart } = useCart()
   const [loading, setLoading] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState('cash')
   const [availablePaymentMethods, setAvailablePaymentMethods] = useState([])

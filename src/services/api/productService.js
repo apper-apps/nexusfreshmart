@@ -1,10 +1,136 @@
+import axios from "axios";
 import React from "react";
 import Error from "@/components/ui/Error";
-import productsData from "@/services/mockData/products.json";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+
+export const productService = {
+  // Get all products
+  async getProducts() {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/products`);
+      return {
+        success: true,
+        data: response.data || []
+      };
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Failed to fetch products'
+      };
+    }
+  },
+
+  // Get product by ID
+  async getProductById(productId) {
+    try {
+      if (!productId) {
+        throw new Error('Product ID is required');
+      }
+
+      const response = await axios.get(`${API_BASE_URL}/products/${productId}`);
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error) {
+      console.error('Error fetching product:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Failed to fetch product'
+      };
+    }
+  },
+
+  // Create new product
+  async createProduct(productData) {
+    try {
+      if (!productData || !productData.name) {
+        throw new Error('Invalid product data');
+      }
+
+      const response = await axios.post(`${API_BASE_URL}/products`, productData);
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error) {
+      console.error('Error creating product:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Failed to create product'
+      };
+    }
+  },
+
+  // Update product
+  async updateProduct(productId, productData) {
+    try {
+      if (!productId || !productData) {
+        throw new Error('Product ID and data are required');
+      }
+
+      const response = await axios.put(`${API_BASE_URL}/products/${productId}`, productData);
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error) {
+      console.error('Error updating product:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Failed to update product'
+      };
+    }
+  },
+
+  // Delete product
+  async deleteProduct(productId) {
+    try {
+      if (!productId) {
+        throw new Error('Product ID is required');
+      }
+
+      const response = await axios.delete(`${API_BASE_URL}/products/${productId}`);
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Failed to delete product'
+      };
+    }
+  }
+};
 
 class ProductService {
   constructor() {
-    this.products = [...productsData];
+    this.products = [
+      {
+        id: 1,
+        name: 'Fresh Apples',
+        price: 2.99,
+        category: 'Fruits',
+        stock: 100,
+        isActive: true
+      },
+      {
+        id: 2,
+        name: 'Organic Bananas',
+        price: 1.49,
+        category: 'Fruits',
+        stock: 150,
+        isActive: true
+      }
+    ];
+  }
+
+  async delay(ms = 150) {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 
   async getAll() {
@@ -985,7 +1111,10 @@ width = targetHeight * aspectRatio;
       y: Math.max(0, mainRegion.y - 50),
       width: Math.min(targetDimensions.width, mainRegion.width + 100),
       height: Math.min(targetDimensions.height, mainRegion.height + 100)
-    };
+};
   }
 }
-export const productService = new ProductService();
+
+const productServiceInstance = new ProductService();
+export { productServiceInstance };
+export default productService;

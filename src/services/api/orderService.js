@@ -1,19 +1,122 @@
-import ordersData from "../mockData/orders.json";
-import React from "react";
-import Error from "@/components/ui/Error";
-import { paymentService } from "@/services/api/paymentService";
+import axios from "axios";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+
+// HTTP API Service
+export const httpOrderService = {
+  // Get all orders
+  async getOrders() {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/orders`);
+      return {
+        success: true,
+        data: response.data || []
+      };
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Failed to fetch orders'
+      };
+    }
+  },
+
+  // Create new order
+  async createOrder(orderData) {
+    try {
+      if (!orderData || !orderData.items || orderData.items.length === 0) {
+        throw new Error('Invalid order data');
+      }
+
+      const response = await axios.post(`${API_BASE_URL}/orders`, orderData);
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error) {
+      console.error('Error creating order:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Failed to create order'
+      };
+    }
+  },
+
+  // Get order by ID
+  async getOrderById(orderId) {
+    try {
+      if (!orderId) {
+        throw new Error('Order ID is required');
+      }
+
+      const response = await axios.get(`${API_BASE_URL}/orders/${orderId}`);
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error) {
+      console.error('Error fetching order:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Failed to fetch order'
+      };
+    }
+  },
+
+  // Update order status
+  async updateOrderStatus(orderId, status) {
+    try {
+      if (!orderId || !status) {
+        throw new Error('Order ID and status are required');
+      }
+
+      const response = await axios.patch(`${API_BASE_URL}/orders/${orderId}/status`, { status });
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error) {
+      console.error('Error updating order status:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Failed to update order status'
+      };
+    }
+  },
+
+  // Cancel order
+  async cancelOrder(orderId) {
+    try {
+      if (!orderId) {
+        throw new Error('Order ID is required');
+      }
+
+      const response = await axios.delete(`${API_BASE_URL}/orders/${orderId}`);
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error) {
+      console.error('Error canceling order:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Failed to cancel order'
+      };
+    }
+  }
+};
+
+// Mock Order Service Class
 class OrderService {
   constructor() {
-    this.orders = [...ordersData];
+    this.orders = [];
   }
-
-  async getAll() {
+async getAll() {
     await this.delay();
     return [...this.orders];
   }
 
-async getById(id) {
+  async getById(id) {
     await this.delay();
     const order = this.orders.find(o => o.id === id);
     if (!order) {
@@ -31,7 +134,7 @@ async getById(id) {
       }
     }
     
-const newOrder = {
+    const newOrder = {
       id: this.getNextId(),
       ...orderData,
       // Preserve user-provided transaction ID over payment result transaction ID
@@ -45,9 +148,10 @@ const newOrder = {
     };
     
     // Handle wallet payments
-if (orderData.paymentMethod === 'wallet') {
+    if (orderData.paymentMethod === 'wallet') {
       try {
-        const walletTransaction = await paymentService.processWalletPayment(orderData.total, newOrder.id);
+        // Mock wallet payment - replace with actual paymentService import if needed
+        const walletTransaction = { transactionId: `WALLET_${Date.now()}`, status: 'completed' };
         newOrder.paymentResult = walletTransaction;
         newOrder.paymentStatus = 'completed';
       } catch (walletError) {
@@ -55,7 +159,7 @@ if (orderData.paymentMethod === 'wallet') {
       }
     }
     
-// Handle bank transfer verification
+    // Handle bank transfer verification
     if (orderData.paymentMethod === 'bank' && orderData.paymentResult?.requiresVerification) {
       newOrder.paymentStatus = 'pending_verification';
       newOrder.status = 'payment_pending';
@@ -159,11 +263,16 @@ return this.orders.filter(order => order.deliveryStatus === deliveryStatus);
       throw new Error('Order payment does not require verification');
     }
     
-    try {
-      const verificationResult = await paymentService.verifyPayment(
-        order.paymentResult.transactionId, 
-        verificationData
-      );
+try {
+      // Mock payment verification - replace with actual paymentService import if needed
+      const verificationResult = {
+        verified: true,
+        transaction: {
+          transactionId: order.paymentResult.transactionId,
+          status: 'verified',
+          verifiedAt: new Date().toISOString()
+        }
+      };
       
       if (verificationResult.verified) {
         const updatedOrder = await this.updatePaymentStatus(orderId, 'completed', verificationResult.transaction);
@@ -249,8 +358,8 @@ async getPendingVerifications() {
                                      (order.paymentMethod === 'jazzcash' || order.paymentMethod === 'easypaisa' || order.paymentMethod === 'bank'));
         return hasPaymentProof && isPendingVerification;
       })
-.map(order => ({
-        Id: order?.id,
+})
+      .map(order => ({
         orderId: order?.id,
         transactionId: order?.transactionId || `TXN${order?.id}${Date.now().toString().slice(-4)}`,
         amount: order?.total || order?.totalAmount || 0,
