@@ -1,5 +1,7 @@
-import { productService } from "@/services/api/productService";
+import React from "react";
+import Error from "@/components/ui/Error";
 import { orderService } from "@/services/api/orderService";
+import { productService } from "@/services/api/productService";
 
 // Mock expense data with proper Id structure
 const mockExpenses = [
@@ -585,8 +587,9 @@ class FinancialService {
     }
     
     return recommendations;
-  }
-// Expense Management Methods
+}
+
+  // Expense Management Methods
   async getExpenses(days = 30) {
     await this.delay();
     
@@ -778,9 +781,9 @@ class FinancialService {
         trendData,
         expenseCount: expenses.length,
         averageExpense: expenses.length > 0 ? totalExpenses / expenses.length : 0
-      };
+};
     } catch (error) {
-throw new Error('Failed to get expense analytics: ' + error.message);
+      throw new Error('Failed to get expense analytics: ' + error.message);
     }
   }
 
@@ -1020,16 +1023,13 @@ throw new Error('Failed to get expense analytics: ' + error.message);
           p.status === 'overdue' || (p.status === 'pending' && new Date(p.dueDate) < new Date())
         ).length
       };
-    } catch (error) {
+} catch (error) {
       throw new Error('Failed to get vendor payment analytics: ' + error.message);
-throw new Error('Failed to get vendor payment analytics: ' + error.message);
     }
   }
-
-  delay(ms = 300) {
-return new Promise(resolve => setTimeout(resolve, ms));
+delay(ms = 300) {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
-
   // Cash Flow Analysis Methods
   async getCashFlowAnalytics(days = 30) {
     await this.delay();
@@ -1408,14 +1408,15 @@ return new Promise(resolve => setTimeout(resolve, ms));
           scheduledPayments: scheduledPayments.length > 0 ? scheduledPayments : null
         });
       }
-
-      return projections;
+return projections;
     } catch (error) {
       throw new Error('Failed to get cash flow projections: ' + error.message);
     }
   }
-
-  delay(ms = 300) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
 }
+
+// Create and export service instance
+const financialService = new FinancialService();
+
+export default financialService;
+export { financialService };
