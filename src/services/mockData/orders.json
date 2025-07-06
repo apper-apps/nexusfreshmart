@@ -221,9 +221,9 @@
       "email": "usman@example.com",
       "address": "654 Model Town, Block C",
       "city": "Lahore",
-      "postalCode": "54700",
+"postalCode": "54700",
       "coordinates": {
-"lat": 31.5497,
+        "lat": 31.5497,
         "lng": 74.3436
       },
       "instructions": "Call 30 minutes before delivery"
@@ -264,11 +264,10 @@
       "city": "Lahore",
       "postalCode": "54660",
       "coordinates": {
-        "lat": 31.5497,
+"lat": 31.5497,
         "lng": 74.3586
       },
       "instructions": "Ring bell at main gate"
-"instructions": "Ring bell at main gate"
     },
     "createdAt": "2024-01-20T08:45:00Z"
   },
@@ -317,6 +316,7 @@
         "lng": 74.2728
       },
       "instructions": "Please call before arriving"
-    },
+},
     "createdAt": "2024-01-21T09:30:00Z"
   }
+]
