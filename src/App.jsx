@@ -17,6 +17,7 @@ import Home from "@/components/pages/Home";
 const AdminDashboard = React.lazy(() => import("@/components/pages/AdminDashboard"));
 const ProductManagement = React.lazy(() => import("@/components/pages/ProductManagement"));
 const Analytics = React.lazy(() => import("@/components/pages/Analytics"));
+const FinancialDashboard = React.lazy(() => import("@/components/pages/FinancialDashboard"));
 const POS = React.lazy(() => import("@/components/pages/POS"));
 const PaymentManagement = React.lazy(() => import("@/components/pages/PaymentManagement"));
 const DeliveryTracking = React.lazy(() => import("@/components/pages/DeliveryTracking"));
@@ -141,12 +142,13 @@ return (
                   <Route path="orders/:orderId" element={<OrderTracking />} />
                   <Route path="account" element={<Account />} />
                   
-                  {/* Heavy admin routes - lazy loaded */}
+{/* Heavy admin routes - lazy loaded */}
                   <Route path="admin" element={<AdminDashboard />} />
                   <Route path="admin/products" element={<ProductManagement />} />
                   <Route path="admin/pos" element={<POS />} />
                   <Route path="admin/delivery-dashboard" element={<DeliveryTracking />} />
                   <Route path="admin/analytics" element={<Analytics />} />
+                  <Route path="admin/financial-dashboard" element={<FinancialDashboard />} />
                   <Route path="admin/payments" element={<PaymentManagement />} />
                 </Route>
               </Routes>

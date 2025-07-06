@@ -3,19 +3,21 @@ import ApperIcon from '@/components/ApperIcon';
 
 const Error = ({ message = "Something went wrong", onRetry, type = 'general' }) => {
   const getErrorIcon = () => {
-    switch (type) {
+switch (type) {
       case 'network':
         return 'WifiOff';
       case 'not-found':
         return 'SearchX';
       case 'payment':
         return 'CreditCard';
+      case 'financial':
+        return 'TrendingDown';
       default:
         return 'AlertCircle';
     }
   };
 
-  const getErrorTitle = () => {
+const getErrorTitle = () => {
     switch (type) {
       case 'network':
         return 'Connection Problem';
@@ -23,11 +25,12 @@ const Error = ({ message = "Something went wrong", onRetry, type = 'general' }) 
         return 'Not Found';
       case 'payment':
         return 'Payment Issue';
+      case 'financial':
+        return 'Financial Data Error';
       default:
         return 'Oops! Something went wrong';
     }
   };
-
   return (
     <div className="flex flex-col items-center justify-center min-h-[400px] p-8 text-center">
       <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-full p-6 mb-6">

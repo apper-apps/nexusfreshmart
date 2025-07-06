@@ -20,11 +20,13 @@ const Analytics = () => {
   const [dateRange, setDateRange] = useState('30'); // days
   const [selectedMetric, setSelectedMetric] = useState('revenue');
 
-  const metrics = [
+const metrics = [
     { key: 'revenue', label: 'Revenue', icon: 'DollarSign', color: 'green' },
     { key: 'orders', label: 'Orders', icon: 'ShoppingCart', color: 'blue' },
     { key: 'products', label: 'Products Sold', icon: 'Package', color: 'purple' },
-    { key: 'customers', label: 'Customers', icon: 'Users', color: 'orange' }
+    { key: 'customers', label: 'Customers', icon: 'Users', color: 'orange' },
+    { key: 'profit', label: 'Profit Margin', icon: 'TrendingUp', color: 'emerald' },
+    { key: 'roi', label: 'ROI', icon: 'Target', color: 'indigo' }
   ];
 
   useEffect(() => {
@@ -61,7 +63,7 @@ const Analytics = () => {
     });
   };
 
-  const calculateMetrics = () => {
+const calculateMetrics = () => {
     const filteredOrders = getDateRangeData();
     
     const totalRevenue = filteredOrders.reduce((sum, order) => sum + (order.total || 0), 0);
@@ -72,12 +74,30 @@ const Analytics = () => {
     const uniqueCustomers = new Set(filteredOrders.map(order => order.customerId || order.customerName)).size;
     const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
     
+    // Calculate profit metrics
+    const totalProfit = filteredOrders.reduce((sum, order) => {
+      const orderProfit = order.items?.reduce((itemSum, item) => {
+        const product = data.products.find(p => p.id === item.productId);
+        if (product && product.purchasePrice) {
+          const profit = (product.price - product.purchasePrice) * item.quantity;
+          return itemSum + profit;
+        }
+        return itemSum;
+      }, 0) || 0;
+      return sum + orderProfit;
+    }, 0);
+    
+    const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
+    const roi = totalRevenue > 0 ? ((totalProfit / (totalRevenue - totalProfit)) * 100) : 0;
+    
     return {
       revenue: totalRevenue,
       orders: totalOrders,
       products: totalProducts,
       customers: uniqueCustomers,
-      averageOrderValue
+      averageOrderValue,
+      profit: profitMargin,
+      roi: roi
     };
   };
 
@@ -238,11 +258,14 @@ const Analytics = () => {
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {metrics.map((metric) => {
+{metrics.map((metric) => {
           const value = calculatedMetrics[metric.key];
           const formatValue = (key, val) => {
             if (key === 'revenue' || key === 'averageOrderValue') {
               return `Rs. ${val.toLocaleString()}`;
+            }
+            if (key === 'profit' || key === 'roi') {
+              return `${val.toFixed(1)}%`;
             }
             return val.toLocaleString();
           };

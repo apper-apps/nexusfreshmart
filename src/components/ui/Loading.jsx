@@ -63,6 +63,42 @@ const Loading = ({ type = 'products' }) => {
         </div>
       </div>
     </div>
+);
+
+  const FinancialSkeleton = () => (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="card p-6 animate-pulse">
+            <div className="bg-gray-200 h-4 rounded w-24 mb-2"></div>
+            <div className="bg-gray-200 h-8 rounded w-32 mb-2"></div>
+            <div className="bg-gray-200 h-3 rounded w-16"></div>
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="card p-6 animate-pulse">
+          <div className="bg-gray-200 h-6 rounded w-40 mb-4"></div>
+          <div className="bg-gray-200 h-80 rounded"></div>
+        </div>
+        <div className="card p-6 animate-pulse">
+          <div className="bg-gray-200 h-6 rounded w-36 mb-4"></div>
+          <div className="bg-gray-200 h-80 rounded"></div>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="card p-6 animate-pulse">
+            <div className="bg-gray-200 h-6 rounded w-32 mb-4"></div>
+            <div className="space-y-3">
+              {[...Array(5)].map((_, j) => (
+                <div key={j} className="bg-gray-200 h-4 rounded w-full"></div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 
   const renderSkeletons = () => {
@@ -83,10 +119,12 @@ const Loading = ({ type = 'products' }) => {
             ))}
           </div>
         );
-      case 'table':
+case 'table':
         return <TableSkeleton />;
       case 'dashboard':
         return <DashboardSkeleton />;
+      case 'financial':
+        return <FinancialSkeleton />;
       default:
         return (
           <div className="flex items-center justify-center h-64">
