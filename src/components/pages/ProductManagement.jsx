@@ -2031,10 +2031,10 @@ const UnsplashImageSearch = ({
           <ApperIcon name="Shield" size={12} />
           <span className="font-medium">License Information</span>
         </div>
-        <p>All images from Unsplash are free to use for commercial purposes. Attribution is appreciated but not required. Please review individual image licenses when available.</p>
 <p>All images from Unsplash are free to use for commercial purposes. Attribution is appreciated but not required. Please review individual image licenses when available.</p>
       </div>
     </div>
   );
+};
 
 export default ProductManagement;
