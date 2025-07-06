@@ -1,181 +1,158 @@
 import '@/index.css';
-import React from "react";
+import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
+import App from "@/App";
+import Error from "@/components/ui/Error";
 
 // Performance monitoring
 const performanceMonitor = {
   start: performance.now(),
-  marks: {},
-  
-  mark(name) {
-    this.marks[name] = performance.now();
-    console.log(`Performance Mark [${name}]: ${(this.marks[name] - this.start).toFixed(2)}ms`);
-  },
-  
-  measure(name, startMark) {
-    const duration = this.marks[name] - (startMark ? this.marks[startMark] : this.start);
-    console.log(`Performance Measure [${name}]: ${duration.toFixed(2)}ms`);
-    return duration;
-  }
+  marks: {}
 };
 
-// Background SDK loader - non-blocking
+// Background SDK Loader - non-blocking
 class BackgroundSDKLoader {
-  constructor() {
-    this.loadPromise = null;
-    this.isLoaded = false;
-    this.isInitialized = false;
-  }
-
-  async loadInBackground() {
-    if (this.loadPromise) return this.loadPromise;
-    
-    this.loadPromise = new Promise((resolve) => {
-      // Always resolve to prevent blocking
-      const script = document.createElement('script');
-      script.src = import.meta.env.VITE_APPER_SDK_CDN_URL || 'https://cdn.apper.io/apper-dev-script/index.umd.js';
-      script.async = true;
-      script.onload = () => {
-        this.isLoaded = true;
-        this.initializeWhenReady();
-        resolve(true);
-      };
-      script.onerror = () => {
-        console.warn('SDK failed to load - continuing without it');
-        resolve(false);
-      };
-      document.head.appendChild(script);
-    });
-    
-    return this.loadPromise;
-  }
-
-  async initializeWhenReady() {
-    if (this.isInitialized) return;
-    
+  static async loadInBackground() {
     try {
-      if (typeof window.Apper?.init === 'function') {
-        await window.Apper.init({
-          projectId: import.meta.env.VITE_APPER_PROJECT_ID,
-          publicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
-        });
-        this.isInitialized = true;
-        window.apperSDK = window.Apper;
-        console.log('SDK initialized in background');
+      // Check if Apper SDK is available
+      if (typeof window !== 'undefined' && !window.Apper) {
+        console.log('Apper SDK not detected - continuing without it');
+        return false;
       }
+      return true;
+    } catch (error) {
+      console.warn('SDK loading failed:', error);
+      return false;
+    }
+  }
+
+  static async initializeWhenReady() {
+    try {
+      if (window.apperSDK?.isInitialized) {
+        return true;
+      }
+      
+      // Try to initialize if available
+      if (window.apperSDK?.initialize) {
+        await window.apperSDK.initialize();
+        return true;
+      }
+      
+      return false;
     } catch (error) {
       console.warn('SDK initialization failed:', error);
+      return false;
     }
   }
 }
 
-// Lightweight error boundary for critical path
-class FastErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
+// Fast Error Boundary
+function FastErrorBoundary({ children, fallback }) {
+  const [hasError, setHasError] = React.useState(false);
+  const [error, setError] = React.useState(null);
 
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error };
-  }
+  React.useEffect(() => {
+    const handleError = (event) => {
+      setHasError(true);
+      setError(event.error);
+    };
 
-  componentDidCatch(error, errorInfo) {
-    console.error('Critical path error:', error, errorInfo);
-  }
+    const handleUnhandledRejection = (event) => {
+      setHasError(true);
+      setError(event.reason);
+    };
 
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-          <div className="text-center">
-            <h1 className="text-xl font-bold text-gray-900 mb-4">Something went wrong</h1>
-            <button
-              onClick={() => window.location.reload()}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-            >
-              Reload Page
-            </button>
-          </div>
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
+    return () => {
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    };
+  }, []);
+
+  if (hasError) {
+    return fallback || (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <div className="text-center p-8 bg-white rounded-lg shadow-lg max-w-md">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Something went wrong</h2>
+          <p className="text-gray-600 mb-4">
+            We're sorry, but there was an error loading the application.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
+          >
+            Reload Page
+          </button>
         </div>
-      );
-    }
-    return this.props.children;
+      </div>
+    );
   }
+
+  return children;
 }
 
-// Fast app initialization - critical path only
+// Initialize app
 async function initializeApp() {
   try {
-    performanceMonitor.mark('app-start');
+    // Mark initialization start
+    performanceMonitor.marks.initStart = performance.now();
     
-    // Start SDK loading in background (non-blocking)
-    const sdkLoader = new BackgroundSDKLoader();
-    sdkLoader.loadInBackground().catch(() => {}); // Fire and forget
-    
-    performanceMonitor.mark('sdk-started');
-    
+    // Load SDK in background (non-blocking)
+    BackgroundSDKLoader.loadInBackground().then(loaded => {
+      if (loaded) {
+        BackgroundSDKLoader.initializeWhenReady();
+      }
+    });
+
     // Get root element
     const rootElement = document.getElementById('root');
     if (!rootElement) {
       throw new Error('Root element not found');
     }
-    
-    performanceMonitor.mark('root-found');
-    
-    // Dynamic import for App component
-    const { default: App } = await import('@/App');
-    
-    performanceMonitor.mark('app-loaded');
-    
-    // Render immediately - don't wait for SDK
+
+    // Create React root
     const root = ReactDOM.createRoot(rootElement);
+    
+    // Mark render start
+    performanceMonitor.marks.renderStart = performance.now();
+
+    // Render app with error boundary
     root.render(
-      <FastErrorBoundary>
-        <App />
-      </FastErrorBoundary>
+      <React.StrictMode>
+        <FastErrorBoundary>
+          <App />
+        </FastErrorBoundary>
+      </React.StrictMode>
     );
+
+    // Mark initialization complete
+    performanceMonitor.marks.initComplete = performance.now();
     
-    performanceMonitor.mark('app-rendered');
-    
-    const totalTime = performanceMonitor.measure('app-rendered', 'app-start');
-    console.log(`🚀 App loaded in ${totalTime.toFixed(2)}ms`);
-    
-    // Performance check
-    if (totalTime > 1000) {
-      console.warn('⚠️ App load time exceeds 1 second target');
-    } else {
-      console.log('✅ App load time within 1 second target');
+    // Log performance metrics in development
+    if (import.meta.env.DEV) {
+      const initTime = performanceMonitor.marks.initComplete - performanceMonitor.marks.initStart;
+      console.log(`App initialized in ${initTime.toFixed(2)}ms`);
     }
-    
+
   } catch (error) {
-    console.error('App initialization failed:', error);
+    console.error('Failed to initialize app:', error);
     
     // Fallback render
-    const rootElement = document.getElementById('root');
-    if (rootElement) {
-      const root = ReactDOM.createRoot(rootElement);
-      root.render(
-        <div className="min-h-screen bg-red-50 flex items-center justify-center p-4">
-          <div className="text-center">
-            <h1 className="text-xl font-bold text-red-900 mb-4">Failed to load application</h1>
-            <p className="text-red-700 mb-4">{error.message}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
-            >
-              Retry
-            </button>
-          </div>
+    document.getElementById('root').innerHTML = `
+      <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background-color: #f5f5f5;">
+        <div style="text-align: center; padding: 2rem; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+          <h2 style="color: #dc2626; margin-bottom: 1rem;">Application Error</h2>
+          <p style="color: #6b7280; margin-bottom: 1rem;">Unable to load the application. Please refresh the page.</p>
+          <button onclick="window.location.reload()" style="background: #3b82f6; color: white; padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer;">
+            Refresh Page
+          </button>
         </div>
-      );
-    }
+      </div>
+    `;
   }
 }
 
-// Initialize immediately if DOM is ready, otherwise wait
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeApp);
-} else {
-  initializeApp();
-}
+// Start the application
+initializeApp();
