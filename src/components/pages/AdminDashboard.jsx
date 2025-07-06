@@ -32,53 +32,100 @@ const AdminDashboard = () => {
   const [recentOrders, setRecentOrders] = useState([]);
   const [revenueBreakdown, setRevenueBreakdown] = useState([]);
 
-  const loadDashboardData = async () => {
+const loadDashboardData = async () => {
     setLoading(true);
     try {
-      // Load products and check for low stock
-      const products = await productService.getAll()
-      const orders = await orderService.getAll()
+      // Load products and check for low stock with error handling
+      let products = [];
+      let orders = [];
+      
+      try {
+        products = await productService.getAll();
+        if (!Array.isArray(products)) {
+          console.warn('Products data is not an array:', products);
+          products = [];
+        }
+      } catch (productError) {
+        console.error('Error loading products:', productError);
+        products = [];
+      }
+      
+      try {
+        orders = await orderService.getAll();
+        if (!Array.isArray(orders)) {
+          console.warn('Orders data is not an array:', orders);
+          orders = [];
+        }
+      } catch (orderError) {
+        console.error('Error loading orders:', orderError);
+        orders = [];
+      }
       
       // Calculate low stock products (stock < 10)
-      const lowStock = products.filter(product => (product?.stock || 0) < 10)
-      setLowStockProducts(lowStock || [])
+      const lowStock = products.filter(product => (product?.stock || 0) < 10);
+      setLowStockProducts(lowStock || []);
 
       // Get today's orders
-      const today = new Date()
+      const today = new Date();
       const todayOrdersData = orders.filter(order => {
-        const orderDate = new Date(order.createdAt)
-        return orderDate.toDateString() === today.toDateString()
-      })
-      setTodayOrders(todayOrdersData || [])
+        try {
+          const orderDate = new Date(order.createdAt);
+          return orderDate.toDateString() === today.toDateString();
+        } catch (dateError) {
+          console.warn('Invalid order date:', order.createdAt);
+          return false;
+        }
+      });
+      setTodayOrders(todayOrdersData || []);
 
       // Calculate today's revenue with safe defaults
       const todayRevenueAmount = todayOrdersData.reduce((sum, order) => {
-        return sum + (order?.totalAmount || 0)
-      }, 0)
-      setTodayRevenue(todayRevenueAmount || 0)
+        return sum + (order?.totalAmount || 0);
+      }, 0);
+      setTodayRevenue(todayRevenueAmount || 0);
 
-      // Get wallet data with safe defaults
-      const walletBalance = await paymentService.getWalletBalance()
-      const walletTransactionsData = await paymentService.getWalletTransactions()
-      setWalletTransactions(walletTransactionsData || [])
+      // Get wallet data with safe defaults and error handling
+      let walletBalance = 0;
+      let walletTransactionsData = [];
+      try {
+        walletBalance = await paymentService.getWalletBalance();
+        walletTransactionsData = await paymentService.getWalletTransactions();
+      } catch (walletError) {
+        console.error('Error loading wallet data:', walletError);
+      }
+      setWalletTransactions(walletTransactionsData || []);
 
-      // Get monthly revenue with safe defaults
-      const monthlyRevenue = await orderService.getMonthlyRevenue()
-      const pendingVerifications = await orderService.getPendingVerifications()
-      const revenueByMethodData = await orderService.getRevenueByPaymentMethod()
-      setRevenueByMethod(revenueByMethodData || {})
+      // Get monthly revenue with safe defaults and error handling
+      let monthlyRevenue = 0;
+      let pendingVerifications = [];
+      let revenueByMethodData = {};
+      try {
+        monthlyRevenue = await orderService.getMonthlyRevenue();
+        pendingVerifications = await orderService.getPendingVerifications();
+        revenueByMethodData = await orderService.getRevenueByPaymentMethod();
+      } catch (revenueError) {
+        console.error('Error loading revenue data:', revenueError);
+      }
+      setRevenueByMethod(revenueByMethodData || {});
 
       // Calculate revenue breakdown with safe defaults
       const breakdown = Object.entries(revenueByMethodData || {}).map(([method, amount]) => ({
         method,
         amount: amount || 0
-      }))
-      setRevenueBreakdown(breakdown || [])
+      }));
+      setRevenueBreakdown(breakdown || []);
 
       // Sort orders by date (newest first)
-      const sortedOrdersData = [...(orders || [])].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      setSortedOrders(sortedOrdersData || [])
-      setRecentOrders(sortedOrdersData.slice(0, 5) || [])
+      const sortedOrdersData = [...(orders || [])].sort((a, b) => {
+        try {
+          return new Date(b.createdAt) - new Date(a.createdAt);
+        } catch (sortError) {
+          console.warn('Error sorting orders by date:', sortError);
+          return 0;
+        }
+      });
+      setSortedOrders(sortedOrdersData || []);
+      setRecentOrders(sortedOrdersData.slice(0, 5) || []);
 
       setStats({
         walletBalance: walletBalance || 0,
@@ -90,7 +137,7 @@ const AdminDashboard = () => {
 
     } catch (error) {
       console.error('Error loading dashboard data:', error);
-      setError('Failed to load dashboard data');
+      setError('Failed to load dashboard data. Please try refreshing the page.');
     } finally {
       setLoading(false);
     }

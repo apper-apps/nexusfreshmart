@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios from "axios";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
 export const productService = {
@@ -455,9 +455,7 @@ console.error('Error calculating financial health:', error);
       
       return new Promise((resolve) => {
         img.onload = async () => {
-          canvas.width = img.width;
-          canvas.height = img.height;
-          ctx.drawImage(img, 0, 0);
+ctx.drawImage(img, 0, 0);
           
           // Resolution validation
           if (img.width < 200 || img.height < 200) {
@@ -503,11 +501,13 @@ console.error('Error calculating financial health:', error);
           });
         };
         
-img.onerror = () => {
+        img.onerror = () => {
           resolve({ isValid: false, error: 'Invalid or corrupted image file' });
         };
         img.src = URL.createObjectURL(file);
       });
+      
+    } catch (error) {
       
     } catch (error) {
       return { isValid: false, error: 'Failed to validate image' };
@@ -765,9 +765,16 @@ width = targetHeight * aspectRatio;
       return {
         width: 600,
         height: 600,
+aspectRatio: '1:1'
+      };
+    } catch (error) {
+      console.error('Error calculating dynamic image dimensions:', error);
+      return {
+        width: 600,
+        height: 600,
         aspectRatio: '1:1'
       };
-}
+    }
   }
 
   // Enhanced image search from multiple sources with category filtering and attribution
@@ -902,12 +909,11 @@ width = targetHeight * aspectRatio;
       'spices': ['aromatic', 'flavorful', 'fragrant', 'exotic', 'pungent', 'culinary', 'seasoning'],
       'organic': ['certified', 'sustainable', 'eco-friendly', 'chemical-free', 'natural', 'wholesome'],
       'snacks': ['crunchy', 'satisfying', 'portable', 'tasty', 'convenient', 'wholesome', 'guilt-free'],
+'snacks': ['crunchy', 'satisfying', 'portable', 'tasty', 'convenient', 'wholesome', 'guilt-free'],
       
       // Legacy support
       'Fresh Vegetables': ['organic', 'healthy', 'green', 'fresh', 'natural'],
-'Fresh Vegetables': ['organic', 'healthy', 'green', 'fresh', 'natural'],
       'Tropical Fruits': ['colorful', 'exotic', 'sweet', 'vitamin', 'tropical'],
-      'Dairy Products': ['creamy', 'calcium', 'protein', 'fresh', 'natural'],
       'Premium Meat': ['protein', 'quality', 'fresh', 'gourmet', 'butcher'],
       'Artisan Bakery': ['handmade', 'artisan', 'golden', 'crispy', 'traditional'],
       'Beverages': ['refreshing', 'cold', 'thirst', 'natural', 'healthy']
@@ -1101,11 +1107,12 @@ width = targetHeight * aspectRatio;
     return {
       x: Math.max(0, mainRegion.x - 50),
       y: Math.max(0, mainRegion.y - 50),
-      width: Math.min(targetDimensions.width, mainRegion.width + 100),
+width: Math.min(targetDimensions.width, mainRegion.width + 100),
       height: Math.min(targetDimensions.height, mainRegion.height + 100)
-};
+    };
   }
 }
+
 const productServiceInstance = new ProductService();
 export { productServiceInstance };
 export default productServiceInstance;
