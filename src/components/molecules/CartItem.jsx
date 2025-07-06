@@ -3,21 +3,26 @@ import { useDispatch } from 'react-redux';
 import { toast } from 'react-toastify';
 import ApperIcon from '@/components/ApperIcon';
 import Button from '@/components/atoms/Button';
-import { updateQuantity, removeFromCart } from '@/store/cartSlice';
+import { updateQuantity, removeFromCart, updateQuantityWithValidation } from '@/store/cartSlice';
 
 const CartItem = ({ item }) => {
   const dispatch = useDispatch();
 
-const handleQuantityChange = (newQuantity) => {
+const handleQuantityChange = async (newQuantity) => {
     if (newQuantity === 0) {
       dispatch(removeFromCart(item.id));
       toast.success(`${item.name} removed from cart`);
-    } else if (newQuantity > item.stock) {
-      toast.warning(`Only ${item.stock} ${item.unit || 'pieces'} available in stock`);
-      return;
     } else if (newQuantity > 0) {
-      dispatch(updateQuantity({ productId: item.id, quantity: newQuantity }));
-      toast.info(`${item.name} quantity updated to ${newQuantity}`);
+      // Use validation thunk for real-time stock checking
+      try {
+        await dispatch(updateQuantityWithValidation({ 
+          productId: item.id, 
+          quantity: newQuantity 
+        })).unwrap();
+        toast.info(`${item.name} quantity updated to ${newQuantity}`);
+      } catch (error) {
+        // Error already handled by the thunk with toast notification
+      }
     }
   };
 

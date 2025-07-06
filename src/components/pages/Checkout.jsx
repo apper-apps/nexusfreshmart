@@ -10,6 +10,7 @@ import Loading from "@/components/ui/Loading";
 import Account from "@/components/pages/Account";
 import PaymentMethod from "@/components/molecules/PaymentMethod";
 import { orderService } from "@/services/api/orderService";
+import { productService } from "@/services/api/productService";
 import { paymentService } from "@/services/api/paymentService";
 function Checkout() {
   const navigate = useNavigate()
@@ -31,8 +32,9 @@ const { cart, clearCart } = useCart()
   const [transactionId, setTransactionId] = useState('')
   const [errors, setErrors] = useState({})
 
+// Calculate totals with validated pricing
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-  const deliveryCharge = 150
+  const deliveryCharge = subtotal >= 2000 ? 0 : 150 // Free delivery over Rs. 2000
   const gatewayFee = calculateGatewayFee()
   const total = subtotal + deliveryCharge + gatewayFee
 
@@ -201,15 +203,56 @@ function handleFileUpload(e) {
         }
       }
 
-const orderData = {
-        items: cart.map(item => ({
-          id: item.id,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          image: item.image
-        })),
-        deliveryCharge,
+// Validate cart items before order creation
+      const validatedItems = [];
+      let hasValidationErrors = false;
+      
+      for (const item of cart) {
+        try {
+          const currentProduct = await productService.getById(item.id);
+          
+          if (!currentProduct.isActive) {
+            toast.error(`${item.name} is no longer available`);
+            hasValidationErrors = true;
+            continue;
+          }
+          
+          if (currentProduct.stock < item.quantity) {
+            toast.error(`${item.name} has insufficient stock. Available: ${currentProduct.stock}`);
+            hasValidationErrors = true;
+            continue;
+          }
+          
+          // Use current validated price
+          validatedItems.push({
+            id: item.id,
+            name: item.name,
+            price: currentProduct.price, // Use validated current price
+            quantity: item.quantity,
+            image: item.image,
+            validatedAt: new Date().toISOString()
+          });
+        } catch (error) {
+          toast.error(`Failed to validate ${item.name}`);
+          hasValidationErrors = true;
+        }
+      }
+      
+      if (hasValidationErrors) {
+        throw new Error('Please review cart items and try again');
+      }
+
+      // Recalculate totals with validated prices
+      const validatedSubtotal = validatedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const validatedDeliveryCharge = validatedSubtotal >= 2000 ? 0 : 150;
+      const validatedTotal = validatedSubtotal + validatedDeliveryCharge + gatewayFee;
+
+      const orderData = {
+        items: validatedItems,
+        subtotal: validatedSubtotal,
+        deliveryCharge: validatedDeliveryCharge,
+        gatewayFee,
+        total: validatedTotal,
         paymentMethod,
         paymentResult,
         paymentStatus: paymentMethod === 'cash' ? 'pending' : 'pending_verification',
@@ -229,7 +272,8 @@ const orderData = {
           instructions: formData.instructions
         },
         status: paymentMethod === 'cash' ? 'confirmed' : 'payment_pending',
-        verificationStatus: paymentMethod === 'cash' ? null : 'pending'
+        verificationStatus: paymentMethod === 'cash' ? null : 'pending',
+        priceValidatedAt: new Date().toISOString()
       }
 
       const order = await orderService.create(orderData)

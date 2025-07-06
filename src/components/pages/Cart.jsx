@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import ApperIcon from '@/components/ApperIcon';
 import Button from '@/components/atoms/Button';
 import CartItem from '@/components/molecules/CartItem';
 import Empty from '@/components/ui/Empty';
-import { selectCartItems, selectCartTotal, selectCartItemCount, clearCart } from '@/store/cartSlice';
+import { selectCartItems, selectCartTotal, selectCartItemCount, clearCart, validateCartPrices } from '@/store/cartSlice';
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -14,6 +14,12 @@ const Cart = () => {
   const cartTotal = useSelector(selectCartTotal);
   const cartCount = useSelector(selectCartItemCount);
 
+  // Validate cart prices on component mount
+  useEffect(() => {
+    if (cart.length > 0) {
+      dispatch(validateCartPrices());
+    }
+  }, [dispatch, cart.length]);
   if (cart.length === 0) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -25,8 +31,9 @@ const Cart = () => {
     );
   }
 
-const subtotal = cartTotal;
-  const deliveryCharge = 150; // Fixed delivery charge
+// Use validated cart total for accurate calculations
+  const subtotal = cartTotal;
+  const deliveryCharge = subtotal >= 2000 ? 0 : 150; // Free delivery over Rs. 2000
   const total = subtotal + deliveryCharge;
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -81,10 +88,17 @@ const subtotal = cartTotal;
                 </span>
               </div>
               
-              {subtotal >= 2000 && (
+{subtotal >= 2000 && deliveryCharge === 150 && (
                 <div className="flex justify-between items-center text-green-600">
                   <span className="text-sm">Free delivery bonus!</span>
                   <span className="text-sm font-medium">-Rs. 150</span>
+                </div>
+              )}
+              
+              {subtotal >= 2000 && deliveryCharge === 0 && (
+                <div className="flex justify-between items-center text-green-600">
+                  <span className="text-sm">🎉 Free delivery applied!</span>
+                  <span className="text-sm font-medium">Rs. 0</span>
                 </div>
               )}
               
