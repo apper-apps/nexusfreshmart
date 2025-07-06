@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { endOfMonth, format, startOfMonth, subDays } from "date-fns";
 import Chart from "react-apexcharts";
+import { financialService } from "@/services/api/financialService";
 import ApperIcon from "@/components/ApperIcon";
 import Badge from "@/components/atoms/Badge";
 import Button from "@/components/atoms/Button";
@@ -11,7 +12,6 @@ import Loading from "@/components/ui/Loading";
 import Analytics from "@/components/pages/Analytics";
 import Category from "@/components/pages/Category";
 import { orderService } from "@/services/api/orderService";
-import { financialService } from "@/services/api/financialService";
 import { productService } from "@/services/api/productService";
 
 const FinancialDashboard = () => {
@@ -1405,13 +1405,11 @@ const [error, setError] = useState(null);
                 >
                   Cancel
                 </Button>
-              </div>
+</div>
             </form>
-</form>
           </div>
         </div>
       )}
-
       {/* Vendor Form Modal */}
       {showVendorForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -1743,6 +1741,7 @@ const [error, setError] = useState(null);
         </div>
       )}
     </div>
-  );
+);
+};
 
 export default FinancialDashboard;
