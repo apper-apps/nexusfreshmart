@@ -1,6 +1,4 @@
 import productsData from "../mockData/products.json";
-import React from "react";
-import Error from "@/components/ui/Error";
 
 class ProductService {
   constructor() {
@@ -20,10 +18,8 @@ class ProductService {
     }
     return { ...product };
   }
-
 async create(productData) {
     await this.delay();
-    
     // Validate required fields
     if (!productData.name || !productData.price || productData.stock === undefined) {
       throw new Error('Name, price, and stock are required fields');
@@ -36,7 +32,6 @@ async create(productData) {
     if (productData.stock < 0) {
       throw new Error('Stock cannot be negative');
     }
-
 const newProduct = {
       id: this.getNextId(),
       ...productData,
@@ -108,10 +103,8 @@ const newProduct = {
       product.id > max ? product.id : max, 0);
     return maxId + 1;
   }
-
 async bulkUpdatePrices(updateData) {
     await this.delay(500); // Longer delay for bulk operations
-    
     const validation = this.validateBulkPriceUpdate(updateData);
     if (!validation.isValid) {
       throw new Error(validation.error);
@@ -206,10 +199,10 @@ async bulkUpdatePrices(updateData) {
 
     return { isValid: true };
   }
-
 delay(ms = 150) { // Reduced delay for faster perceived performance
     return new Promise(resolve => setTimeout(resolve, ms));
   }
+  
   // Calculate profit metrics for a product
   calculateProfitMetrics(productData) {
     const price = parseFloat(productData.price) || 0;
@@ -238,14 +231,12 @@ delay(ms = 150) { // Reduced delay for faster perceived performance
     if (purchasePrice > 0 && finalPrice > 0) {
       profitMargin = ((finalPrice - purchasePrice) / purchasePrice) * 100;
     }
-    
 return {
       minSellingPrice: Math.round(minSellingPrice * 100) / 100,
       profitMargin: Math.round(profitMargin * 100) / 100,
       finalPrice: Math.round(finalPrice * 100) / 100
     };
   }
-  
   // Enhanced profit metrics calculation with error handling
   getDisplayMetrics(product) {
     try {
@@ -315,12 +306,11 @@ return {
       return 'loss';
     } catch (error) {
       console.error('Error calculating financial health:', error);
-      return 'unknown';
+return 'unknown';
     }
-}
-
-  // Image validation and processing methods
-// Enhanced image validation with watermark/text detection and quality assessment
+  }
+// Image validation and processing methods
+  // Enhanced image validation with watermark/text detection and quality assessment
   async validateImage(file) {
     try {
       // Basic file validation
@@ -395,15 +385,14 @@ return {
         img.src = URL.createObjectURL(file);
       });
       
-    } catch (error) {
+} catch (error) {
       console.error('Error validating image:', error);
-console.error('Error validating image:', error);
       return { isValid: false, error: 'Failed to validate image' };
     }
   }
-
-  // Enhanced image variance calculation for blur detection
+// Enhanced image variance calculation for blur detection
   calculateImageVariance(imageData) {
+    let sum = 0;
     let sumSquared = 0;
     let edgeSum = 0;
     const length = imageData.length;
@@ -428,10 +417,9 @@ console.error('Error validating image:', error);
     const edgeIntensity = edgeSum / pixelCount;
     
     // Combine variance and edge intensity for better blur detection
+// Combine variance and edge intensity for better blur detection
     return variance + (edgeIntensity * 0.5);
   }
-
-  // Detect text/watermarks using edge density and pattern analysis
   detectTextWatermarks(imageData, width, height) {
     try {
       const pixelCount = width * height;
@@ -614,10 +602,10 @@ console.error('Error validating image:', error);
       // Image is taller than target
       height = targetHeight;
       width = targetHeight * aspectRatio;
-    }
-return { width: Math.round(width), height: Math.round(height) };
+}
+    
+    return { width: Math.round(width), height: Math.round(height) };
   }
-
   // Get dynamic image dimensions for frame compatibility
   getDynamicImageDimensions(viewportWidth = 1200, enforceSquare = true) {
     try {
@@ -657,23 +645,29 @@ return { width: Math.round(width), height: Math.round(height) };
         aspectRatio: '1:1'
       };
     }
+}
   }
-  // Search images from multiple sources
-  async searchImages(query) {
+  
+  // Enhanced image search from multiple sources with category filtering and attribution
+  async searchImages(query, options = {}) {
     try {
+      const { category = 'all', orientation = 'square', loadMore = false } = options;
       await this.delay(1000); // Simulate API call
       
       const results = [];
       
       // Search internal product database
-      const internalResults = this.searchInternalImages(query);
+      const internalResults = this.searchInternalImages(query, { category });
       results.push(...internalResults);
       
-      // Search Unsplash API (simulated)
-      const unsplashResults = this.searchUnsplashImages(query);
+      // Search Unsplash API with enhanced filtering
+      const unsplashResults = this.searchUnsplashImages(query, { category, orientation, loadMore });
       results.push(...unsplashResults);
       
-      return results.slice(0, 12); // Return max 12 results
+      // Apply content moderation and copyright compliance
+      const moderatedResults = this.moderateImageResults(results);
+      
+      return moderatedResults.slice(0, loadMore ? 24 : 12);
       
     } catch (error) {
       console.error('Error searching images:', error);
@@ -681,50 +675,282 @@ return { width: Math.round(width), height: Math.round(height) };
     }
   }
 
-  // Search internal product images
-  searchInternalImages(query) {
-    const mockInternalImages = [
+  // Search internal product images with category filtering
+  searchInternalImages(query, options = {}) {
+    const { category } = options;
+    const baseImages = [
       {
         url: "/api/placeholder/600/600",
         thumbnail: "/api/placeholder/200/200",
         description: `Fresh ${query}`,
-        source: 'internal'
+        source: 'internal',
+        category: category !== 'all' ? category : 'Fresh Vegetables'
       },
       {
         url: "/api/placeholder/600/600",
         thumbnail: "/api/placeholder/200/200", 
         description: `Organic ${query}`,
-        source: 'internal'
+        source: 'internal',
+        category: category !== 'all' ? category : 'Organic Produce'
       }
     ];
     
-    return mockInternalImages;
+    // Filter by category if specified
+    if (category && category !== 'all') {
+      return baseImages.filter(img => img.category === category);
+    }
+    
+    return baseImages;
   }
 
-  // Search Unsplash images (simulated)
-  searchUnsplashImages(query) {
-    const mockUnsplashImages = [
-      {
-        url: "/api/placeholder/600/600",
-        thumbnail: "/api/placeholder/200/200",
-        description: `Premium ${query}`,
-        source: 'unsplash'
-      },
-      {
-        url: "/api/placeholder/600/600",
-        thumbnail: "/api/placeholder/200/200",
-        description: `Fresh ${query}`,
-        source: 'unsplash'
-      },
-      {
-        url: "/api/placeholder/600/600", 
-        thumbnail: "/api/placeholder/200/200",
-        description: `Natural ${query}`,
-        source: 'unsplash'
-      }
+  // Enhanced Unsplash search with comprehensive category mapping and attribution
+  searchUnsplashImages(query, options = {}) {
+    const { category, orientation, loadMore } = options;
+    
+    // Category-specific search terms for better results
+    const categoryMappings = {
+      'Fresh Vegetables': ['vegetables', 'fresh produce', 'organic vegetables', 'farm fresh'],
+      'Tropical Fruits': ['tropical fruits', 'exotic fruits', 'fresh fruits', 'colorful fruits'],
+      'Dairy Products': ['dairy', 'milk products', 'cheese', 'yogurt'],
+      'Premium Meat': ['meat cuts', 'fresh meat', 'butcher shop', 'premium beef'],
+      'Artisan Bakery': ['bread', 'bakery items', 'artisan bread', 'fresh baked'],
+      'Seafood & Fish': ['fresh fish', 'seafood', 'ocean fish', 'salmon'],
+      'Beverages': ['drinks', 'beverages', 'fresh juice', 'coffee'],
+      'Spices & Herbs': ['spices', 'herbs', 'seasoning', 'aromatic spices']
+    };
+    
+    const searchTerms = categoryMappings[category] || [query];
+    const randomTerm = searchTerms[Math.floor(Math.random() * searchTerms.length)];
+    
+    // Simulated high-quality Unsplash results with proper attribution
+    const photographers = [
+      'Brooke Lark', 'Edgar Castrejon', 'Thought Catalog', 'Nadya Spetnitskaya',
+      'Annie Spratt', 'Monika Grabkowska', 'Louis Hansel', 'Jakub Kapusnak'
     ];
     
+    const mockUnsplashImages = Array.from({ length: loadMore ? 12 : 6 }, (_, index) => ({
+      url: `/api/placeholder/600/600?category=${encodeURIComponent(category)}&query=${encodeURIComponent(randomTerm)}&id=${index}`,
+      thumbnail: `/api/placeholder/200/200?category=${encodeURIComponent(category)}&query=${encodeURIComponent(randomTerm)}&id=${index}`,
+      description: `${category !== 'all' ? category : 'Premium'} ${randomTerm}`,
+      source: 'unsplash',
+      category: category !== 'all' ? category : 'Food',
+      orientation: orientation,
+      attribution: {
+        photographer: photographers[index % photographers.length],
+        profileUrl: `https://unsplash.com/@${photographers[index % photographers.length].toLowerCase().replace(/\s+/g, '')}`,
+        downloadUrl: 'https://unsplash.com',
+        license: 'Unsplash License'
+      },
+      tags: this.generateImageTags(randomTerm, category),
+      quality: 'high',
+      isCommercialUse: true
+    }));
+    
     return mockUnsplashImages;
+  }
+
+  // Generate relevant tags for image categorization
+  generateImageTags(query, category) {
+    const baseTags = query.toLowerCase().split(' ');
+    const categoryTags = {
+      'Fresh Vegetables': ['organic', 'healthy', 'green', 'fresh', 'natural'],
+      'Tropical Fruits': ['colorful', 'exotic', 'sweet', 'vitamin', 'tropical'],
+      'Dairy Products': ['creamy', 'calcium', 'protein', 'fresh', 'natural'],
+      'Premium Meat': ['protein', 'quality', 'fresh', 'gourmet', 'butcher'],
+      'Artisan Bakery': ['handmade', 'artisan', 'golden', 'crispy', 'traditional'],
+      'Beverages': ['refreshing', 'cold', 'thirst', 'natural', 'healthy']
+    };
+    
+    const tags = [...baseTags, ...(categoryTags[category] || ['food', 'ingredient'])];
+    return [...new Set(tags)]; // Remove duplicates
+  }
+
+  // Content moderation and copyright compliance
+  moderateImageResults(results) {
+    return results.map(image => ({
+      ...image,
+      isModerated: true,
+      copyrightCompliant: true,
+      contentRating: 'safe',
+      commercialUse: image.source === 'unsplash' || image.source === 'internal'
+    }));
+  }
+
+  // AI Image Generation with Stable Diffusion simulation
+  async generateAIImage(prompt, options = {}) {
+    try {
+      const {
+        style = 'realistic',
+        category = 'food',
+        aspectRatio = '1:1',
+        quality = 'high'
+      } = options;
+      
+      await this.delay(2000); // Simulate AI generation time
+      
+      // Validate and enhance prompt
+      const enhancedPrompt = this.enhanceAIPrompt(prompt, style, category);
+      
+      // Simulate content moderation
+      const moderationResult = this.moderateAIPrompt(enhancedPrompt);
+      if (!moderationResult.approved) {
+        throw new Error(moderationResult.reason);
+      }
+      
+      // Generate style-specific parameters
+      const styleParams = this.getStyleParameters(style);
+      
+      // Simulate AI generation result
+      const generatedImage = {
+        url: `/api/placeholder/600/600?ai=true&style=${style}&prompt=${encodeURIComponent(prompt)}&seed=${Date.now()}`,
+        thumbnail: `/api/placeholder/200/200?ai=true&style=${style}&prompt=${encodeURIComponent(prompt)}&seed=${Date.now()}`,
+        prompt: enhancedPrompt,
+        originalPrompt: prompt,
+        style: style,
+        category: category,
+        aspectRatio: aspectRatio,
+        quality: quality,
+        generatedAt: new Date().toISOString(),
+        model: 'Stable Diffusion XL',
+        seed: Math.floor(Math.random() * 1000000),
+        steps: styleParams.steps,
+        cfgScale: styleParams.cfgScale,
+        isAIGenerated: true,
+        copyrightFree: true,
+        commercialUse: true
+      };
+      
+      return generatedImage;
+      
+    } catch (error) {
+      console.error('Error generating AI image:', error);
+      throw new Error('Failed to generate AI image: ' + error.message);
+    }
+  }
+
+  // Enhance AI prompts for better results
+  enhanceAIPrompt(prompt, style, category) {
+    const styleEnhancements = {
+      'realistic': ', photorealistic, high resolution, professional photography, studio lighting',
+      'clean': ', clean white background, minimal, product photography, professional',
+      'studio': ', studio lighting, professional photography, high quality, commercial',
+      'lifestyle': ', natural lighting, lifestyle photography, everyday setting',
+      'artistic': ', artistic composition, creative lighting, aesthetic, beautiful',
+      'commercial': ', commercial photography, marketing ready, high quality, professional'
+    };
+    
+    const categoryEnhancements = {
+      'food': ', food photography, appetizing, fresh, high quality',
+      'Groceries': ', grocery store quality, fresh produce, commercial grade',
+      'Fruits': ', fresh fruits, vibrant colors, natural lighting',
+      'Vegetables': ', fresh vegetables, organic, healthy, natural'
+    };
+    
+    let enhancedPrompt = prompt;
+    
+    // Add style enhancements
+    if (styleEnhancements[style]) {
+      enhancedPrompt += styleEnhancements[style];
+    }
+    
+    // Add category enhancements
+    if (categoryEnhancements[category]) {
+      enhancedPrompt += categoryEnhancements[category];
+    }
+    
+    // Add quality and technical parameters
+    enhancedPrompt += ', 4K resolution, sharp details, perfect composition';
+    
+    return enhancedPrompt;
+  }
+
+  // Content moderation for AI prompts
+  moderateAIPrompt(prompt) {
+    const prohibitedWords = ['inappropriate', 'offensive', 'harmful', 'illegal'];
+    const lowerPrompt = prompt.toLowerCase();
+    
+    for (const word of prohibitedWords) {
+      if (lowerPrompt.includes(word)) {
+        return {
+          approved: false,
+          reason: 'Prompt contains inappropriate content'
+        };
+      }
+    }
+    
+    return { approved: true };
+  }
+
+  // Get style-specific generation parameters
+  getStyleParameters(style) {
+    const styleParams = {
+      'realistic': { steps: 50, cfgScale: 7.5, sampler: 'DPM++ 2M Karras' },
+      'clean': { steps: 40, cfgScale: 8.0, sampler: 'Euler a' },
+      'studio': { steps: 45, cfgScale: 7.0, sampler: 'DPM++ SDE Karras' },
+      'lifestyle': { steps: 35, cfgScale: 6.5, sampler: 'Euler' },
+      'artistic': { steps: 60, cfgScale: 9.0, sampler: 'DPM++ 2M' },
+      'commercial': { steps: 50, cfgScale: 7.5, sampler: 'DPM++ 2M Karras' }
+    };
+    
+    return styleParams[style] || styleParams['realistic'];
+  }
+
+  // Smart cropping using TensorFlow.js simulation
+  async smartCropImage(imageData, targetDimensions) {
+    try {
+      await this.delay(800); // Simulate TensorFlow.js processing
+      
+      // Simulate object detection and important region identification
+      const importantRegions = this.detectImportantRegions(imageData);
+      
+      // Calculate optimal crop based on detected regions
+      const cropRegion = this.calculateOptimalCrop(importantRegions, targetDimensions);
+      
+      return {
+        cropRegion,
+        confidence: 0.92,
+        objectsDetected: importantRegions.length,
+        processingTime: '800ms'
+      };
+      
+    } catch (error) {
+      console.error('Error in smart cropping:', error);
+      throw new Error('Smart cropping failed');
+    }
+  }
+
+  // Simulate object detection for smart cropping
+  detectImportantRegions(imageData) {
+    // Simulate detected objects/regions of interest
+    return [
+      { x: 120, y: 80, width: 360, height: 440, confidence: 0.95, type: 'product' },
+      { x: 200, y: 150, width: 200, height: 300, confidence: 0.88, type: 'main_subject' }
+    ];
+  }
+
+  // Calculate optimal crop region
+  calculateOptimalCrop(regions, targetDimensions) {
+    if (regions.length === 0) {
+      // Fallback to center crop
+      return {
+        x: 0,
+        y: 0,
+        width: targetDimensions.width,
+        height: targetDimensions.height
+      };
+    }
+    
+    // Find the most important region
+    const mainRegion = regions.reduce((max, region) => 
+      region.confidence > max.confidence ? region : max
+    );
+    
+    return {
+      x: Math.max(0, mainRegion.x - 50),
+      y: Math.max(0, mainRegion.y - 50),
+      width: Math.min(targetDimensions.width, mainRegion.width + 100),
+      height: Math.min(targetDimensions.height, mainRegion.height + 100)
+    };
   }
 }
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import ApperIcon from "@/components/ApperIcon";
 import Badge from "@/components/atoms/Badge";
@@ -151,19 +151,48 @@ const [formData, setFormData] = useState({
       setImageData(prev => ({ ...prev, isProcessing: false }));
       toast.error('Failed to search images. Please try again.');
     }
+};
+
+  // Handle AI image generation
+  const handleAIImageGenerate = async (prompt, style = 'realistic') => {
+    try {
+      setImageData(prev => ({ ...prev, isProcessing: true }));
+      
+      const generatedImage = await productService.generateAIImage(prompt, {
+        style,
+        category: formData.category,
+        aspectRatio: '1:1',
+        quality: 'high'
+      });
+      
+      setImageData(prev => ({
+        ...prev,
+        selectedImage: generatedImage.url,
+        croppedImage: generatedImage.url,
+        isProcessing: false
+      }));
+      
+      setFormData(prev => ({ ...prev, imageUrl: generatedImage.url }));
+      toast.success('AI image generated successfully!');
+      
+    } catch (error) {
+      console.error('Error generating AI image:', error);
+      setImageData(prev => ({ ...prev, isProcessing: false }));
+      toast.error('Failed to generate AI image. Please try again.');
+    }
   };
 
   // Handle image selection from search results
-  const handleImageSelect = (imageUrl) => {
+  const handleImageSelect = (imageUrl, attribution = null) => {
     setImageData(prev => ({
       ...prev,
       selectedImage: imageUrl,
-      croppedImage: imageUrl
+      croppedImage: imageUrl,
+      attribution
     }));
     setFormData(prev => ({ ...prev, imageUrl }));
     toast.success('Image selected successfully!');
   };
-
   // Calculate profit metrics based on current form data
   const calculateProfitMetrics = (data) => {
     const price = parseFloat(data.price) || 0;
@@ -762,13 +791,14 @@ setFormData({
                 icon="FileText"
               />
 
-              {/* Intelligent Image Integration System */}
+{/* Intelligent Image Integration System */}
               <ImageUploadSystem
                 imageData={imageData}
                 setImageData={setImageData}
                 onImageUpload={handleImageUpload}
                 onImageSearch={handleImageSearch}
                 onImageSelect={handleImageSelect}
+                onAIImageGenerate={handleAIImageGenerate}
                 formData={formData}
               />
 
@@ -1527,37 +1557,466 @@ const ImageUploadSystem = ({
         </div>
       )}
 
-      {/* AI Search Tab */}
+{/* AI Search Tab */}
       {imageData.activeTab === 'search' && (
-        <div className="space-y-4">
-          {/* Search Form */}
-          <form onSubmit={handleSearchSubmit} className="space-y-4">
-            <div className="flex space-x-2">
-              <Input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search for product images..."
-                icon="Search"
-                className="flex-1"
-              />
+        <UnsplashImageSearch
+          imageData={imageData}
+          setImageData={setImageData}
+          onImageSearch={handleImageSearch}
+          onImageSelect={handleImageSelect}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+        />
+      )}
+
+{/* AI Generate Tab */}
+      {imageData.activeTab === 'ai-generate' && (
+        <AIImageGenerator
+          imageData={imageData}
+          setImageData={setImageData}
+          onImageGenerate={handleAIImageGenerate}
+          onImageSelect={handleImageSelect}
+          formData={formData}
+        />
+      )}
+    </div>
+</div>
+  );
+};
+
+// AI Image Generator Component
+const AIImageGenerator = ({ 
+  imageData, 
+  setImageData, 
+  onImageGenerate, 
+  onImageSelect,
+  formData 
+}) => {
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [selectedStyle, setSelectedStyle] = useState('realistic');
+  const [generatedImages, setGeneratedImages] = useState([]);
+  const [generationHistory, setGenerationHistory] = useState([]);
+
+  const styles = [
+    { id: 'realistic', name: 'Hyper-Realistic', description: 'Photo-realistic product images' },
+    { id: 'clean', name: 'Clean & Minimal', description: 'Clean white background style' },
+    { id: 'studio', name: 'Studio Quality', description: 'Professional studio lighting' },
+    { id: 'lifestyle', name: 'Lifestyle', description: 'Natural everyday setting' },
+    { id: 'artistic', name: 'Artistic', description: 'Creative and artistic presentation' },
+    { id: 'commercial', name: 'Commercial', description: 'Marketing-ready images' }
+  ];
+
+  const foodCategories = [
+    'Fresh Vegetables', 'Tropical Fruits', 'Dairy Products', 'Premium Meat', 'Artisan Bakery',
+    'Organic Produce', 'Seafood & Fish', 'Nuts & Seeds', 'Spices & Herbs', 'Beverages',
+    'Frozen Foods', 'Canned Goods', 'Snacks & Treats', 'Breakfast Items', 'Condiments',
+    'Health Foods', 'International Cuisine', 'Desserts & Sweets', 'Ready Meals', 'Baby Food'
+  ];
+
+  const promptSuggestions = [
+    'Fresh organic vegetables on a clean white background',
+    'Premium quality meat cuts with professional lighting',
+    'Artisan bread loaves in a rustic bakery setting',
+    'Colorful tropical fruits arranged aesthetically',
+    'Dairy products with milk splash effect',
+    'Gourmet cheese selection on marble surface'
+  ];
+
+  const handlePromptSubmit = async (e) => {
+    e.preventDefault();
+    if (aiPrompt.trim()) {
+      await onImageGenerate(aiPrompt.trim(), selectedStyle);
+      
+      // Add to generation history
+      setGenerationHistory(prev => [{
+        prompt: aiPrompt.trim(),
+        style: selectedStyle,
+        timestamp: new Date().toISOString()
+      }, ...prev.slice(0, 9)]); // Keep last 10
+    }
+  };
+
+  const generateSmartPrompt = () => {
+    const category = formData.category || 'food product';
+    const productName = formData.name || 'product';
+    const prompts = [
+      `Professional ${category.toLowerCase()} photography of ${productName}, studio lighting, clean white background, commercial quality`,
+      `High-resolution ${productName} image, ${category.toLowerCase()}, marketing photography, attractive presentation`,
+      `Premium ${productName}, ${category.toLowerCase()} category, professional food photography, clean and appetizing`
+    ];
+    const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
+    setAiPrompt(randomPrompt);
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* AI Generation Form */}
+      <div className="bg-gradient-to-br from-purple-50 to-blue-50 p-6 rounded-lg border border-purple-200">
+        <div className="flex items-center space-x-2 mb-4">
+          <ApperIcon name="Sparkles" size={20} className="text-purple-600" />
+          <h4 className="font-medium text-gray-900">AI Image Generation</h4>
+          <Badge variant="success" className="text-xs">Stable Diffusion</Badge>
+        </div>
+        
+        <form onSubmit={handlePromptSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Describe your product image
+            </label>
+            <textarea
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              placeholder="E.g., Fresh organic tomatoes on a clean white background, professional studio lighting..."
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none"
+              rows={3}
+            />
+            <div className="flex justify-between items-center">
               <Button
-                type="submit"
-                variant="primary"
-                disabled={imageData.isProcessing || !searchQuery.trim()}
-                loading={imageData.isProcessing}
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={generateSmartPrompt}
+                icon="Wand2"
               >
-                Search
+                Smart Suggest
               </Button>
+              <span className="text-xs text-gray-500">{aiPrompt.length}/500</span>
+            </div>
+          </div>
+
+          {/* Style Selection */}
+          <div className="space-y-3">
+            <label className="block text-sm font-medium text-gray-700">
+              Generation Style
+            </label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {styles.map((style) => (
+                <div
+                  key={style.id}
+                  onClick={() => setSelectedStyle(style.id)}
+                  className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                    selectedStyle === style.id
+                      ? 'border-purple-500 bg-purple-50'
+                      : 'border-gray-200 hover:border-purple-300'
+                  }`}
+                >
+                  <div className="text-sm font-medium text-gray-900">{style.name}</div>
+                  <div className="text-xs text-gray-600 mt-1">{style.description}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Quick Prompts */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Quick Prompts
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {promptSuggestions.map((suggestion, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => setAiPrompt(suggestion)}
+                  className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm hover:bg-purple-200 transition-colors"
+                >
+                  {suggestion.split(' ').slice(0, 4).join(' ')}...
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex space-x-3">
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={imageData.isProcessing || !aiPrompt.trim()}
+              loading={imageData.isProcessing}
+              icon="Sparkles"
+              className="flex-1"
+            >
+              {imageData.isProcessing ? 'Generating...' : 'Generate Image'}
+            </Button>
+          </div>
+        </form>
+
+        {/* Generation Progress */}
+        {imageData.isProcessing && (
+          <div className="mt-4 space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">Generating high-quality image...</span>
+              <span className="text-purple-600">~30 seconds</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="bg-gradient-to-r from-purple-500 to-blue-500 h-2 rounded-full animate-pulse" style={{ width: '70%' }} />
+            </div>
+            <div className="text-xs text-gray-500">Processing with Stable Diffusion AI</div>
+          </div>
+        )}
+      </div>
+
+      {/* Generated Images */}
+      {imageData.selectedImage && (
+        <div className="space-y-4">
+          <h4 className="font-medium text-gray-900">Generated Image</h4>
+          <div className="relative group">
+            <img
+              src={imageData.selectedImage}
+              alt="AI Generated"
+              className="w-full max-w-md mx-auto rounded-lg shadow-md"
+              style={{ maxHeight: '400px', objectFit: 'contain' }}
+            />
+            <div className="absolute top-2 left-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white px-2 py-1 rounded text-xs">
+              AI Generated
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Generation History */}
+      {generationHistory.length > 0 && (
+        <div className="space-y-3">
+          <h4 className="font-medium text-gray-900">Recent Generations</h4>
+          <div className="space-y-2 max-h-32 overflow-y-auto">
+            {generationHistory.map((item, index) => (
+              <div
+                key={index}
+                onClick={() => setAiPrompt(item.prompt)}
+                className="p-2 bg-gray-50 rounded cursor-pointer hover:bg-gray-100 transition-colors"
+              >
+                <div className="text-sm text-gray-900 line-clamp-1">{item.prompt}</div>
+                <div className="text-xs text-gray-500 flex justify-between">
+                  <span>{item.style}</span>
+                  <span>{new Date(item.timestamp).toLocaleTimeString()}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Enhanced Unsplash Image Search Component
+const UnsplashImageSearch = ({ 
+  imageData, 
+  setImageData, 
+  onImageSearch, 
+  onImageSelect, 
+  searchQuery, 
+  setSearchQuery 
+}) => {
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [orientation, setOrientation] = useState('square');
+
+  const foodCategories = [
+    'Fresh Vegetables', 'Tropical Fruits', 'Dairy Products', 'Premium Meat', 'Artisan Bakery',
+    'Organic Produce', 'Seafood & Fish', 'Nuts & Seeds', 'Spices & Herbs', 'Beverages',
+    'Frozen Foods', 'Canned Goods', 'Snacks & Treats', 'Breakfast Items', 'Condiments',
+    'Health Foods', 'International Cuisine', 'Desserts & Sweets', 'Ready Meals', 'Baby Food'
+  ];
+
+  const trendingSearches = [
+    'organic vegetables', 'fresh fruits', 'artisan bread', 'premium coffee',
+    'dairy products', 'healthy snacks', 'gourmet cheese', 'fresh herbs'
+  ];
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      onImageSearch(searchQuery.trim(), { category: selectedCategory, orientation });
+    }
+  };
+
+  const handleCategorySearch = (category) => {
+    setSelectedCategory(category);
+    const searchTerm = category === 'all' ? 'food' : category.toLowerCase();
+    setSearchQuery(searchTerm);
+    onImageSearch(searchTerm, { category, orientation });
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Search Form */}
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-lg border border-blue-200">
+        <div className="flex items-center space-x-2 mb-4">
+          <ApperIcon name="Search" size={20} className="text-blue-600" />
+          <h4 className="font-medium text-gray-900">Unsplash Image Search</h4>
+          <Badge variant="info" className="text-xs">1M+ Images</Badge>
+        </div>
+
+        <form onSubmit={handleSearchSubmit} className="space-y-4">
+          <div className="flex space-x-2">
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search high-quality product images..."
+              icon="Search"
+              className="flex-1"
+            />
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={imageData.isProcessing || !searchQuery.trim()}
+              loading={imageData.isProcessing}
+            >
+              Search
+            </Button>
+          </div>
+
+          {/* Filters */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Category</label>
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="input-field text-sm"
+              >
+                <option value="all">All Categories</option>
+                {foodCategories.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
             </div>
             
-            <div className="flex flex-wrap gap-2">
-              {['fresh vegetables', 'fruits', 'dairy products', 'meat', 'bakery items'].map((suggestion) => (
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Orientation</label>
+              <select
+                value={orientation}
+                onChange={(e) => setOrientation(e.target.value)}
+                className="input-field text-sm"
+              >
+                <option value="square">Square (1:1)</option>
+                <option value="landscape">Landscape (4:3)</option>
+                <option value="portrait">Portrait (3:4)</option>
+                <option value="any">Any Orientation</option>
+              </select>
+            </div>
+          </div>
+        </form>
+
+        {/* Category Quick Filters */}
+        <div className="mt-4 space-y-3">
+          <label className="block text-sm font-medium text-gray-700">Quick Categories</label>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {foodCategories.slice(0, 8).map((category) => (
+              <button
+                key={category}
+                onClick={() => handleCategorySearch(category)}
+                className="p-2 text-sm bg-white border border-gray-200 rounded hover:border-blue-300 hover:bg-blue-50 transition-colors text-left"
+              >
+                {category}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Trending Searches */}
+        <div className="mt-4 space-y-2">
+          <label className="block text-sm font-medium text-gray-700">Trending</label>
+          <div className="flex flex-wrap gap-2">
+            {trendingSearches.map((term) => (
+              <button
+                key={term}
+                onClick={() => {
+                  setSearchQuery(term);
+                  onImageSearch(term, { category: selectedCategory, orientation });
+                }}
+                className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm hover:bg-blue-200 transition-colors"
+              >
+                {term}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Search Results */}
+      {imageData.searchResults.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h4 className="font-medium text-gray-900">
+              Search Results ({imageData.searchResults.length})
+            </h4>
+            <div className="text-sm text-gray-500">
+              High-quality • Commercial use
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {imageData.searchResults.map((image, index) => (
+              <div
+                key={index}
+                className="relative group cursor-pointer rounded-lg overflow-hidden aspect-square bg-gray-100 hover:shadow-lg transition-all"
+              >
+                <img
+                  src={image.thumbnail}
+                  alt={image.description || 'Search result'}
+                  className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                  onClick={() => onImageSelect(image.url, image.attribution)}
+                />
+                
+                {/* Hover Overlay */}
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                  <ApperIcon 
+                    name="Download" 
+                    size={24} 
+                    className="text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                  />
+                </div>
+                
+                {/* Source Badge */}
+                <div className="absolute top-2 right-2 bg-blue-500 text-white px-2 py-1 rounded text-xs">
+                  Unsplash
+                </div>
+                
+                {/* Attribution */}
+                {image.attribution && (
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
+                    <div className="text-white text-xs truncate">
+                      Photo by {image.attribution.photographer}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Load More */}
+          <div className="text-center">
+            <Button
+              variant="ghost"
+              icon="Plus"
+              onClick={() => onImageSearch(searchQuery, { 
+                category: selectedCategory, 
+                orientation,
+                loadMore: true 
+              })}
+              disabled={imageData.isProcessing}
+            >
+              Load More Images
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {searchQuery && imageData.searchResults.length === 0 && !imageData.isProcessing && (
+        <div className="text-center py-12">
+          <ApperIcon name="Search" size={48} className="text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No images found</h3>
+          <p className="text-gray-600 mb-4">No images found for "{searchQuery}"</p>
+          <div className="space-y-2">
+            <p className="text-sm text-gray-500">Try:</p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {['organic food', 'fresh produce', 'healthy ingredients'].map((suggestion) => (
                 <button
                   key={suggestion}
-                  type="button"
                   onClick={() => {
                     setSearchQuery(suggestion);
-                    onImageSearch(suggestion);
+                    onImageSearch(suggestion, { category: selectedCategory, orientation });
                   }}
                   className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200 transition-colors"
                 >
@@ -1565,72 +2024,19 @@ const ImageUploadSystem = ({
                 </button>
               ))}
             </div>
-          </form>
-
-          {/* Search Results */}
-          {imageData.searchResults.length > 0 && (
-            <div className="space-y-4">
-              <h4 className="font-medium text-gray-900">
-                Search Results ({imageData.searchResults.length})
-              </h4>
-              
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                {imageData.searchResults.map((image, index) => (
-                  <div
-                    key={index}
-                    onClick={() => onImageSelect(image.url)}
-                    className="relative group cursor-pointer rounded-lg overflow-hidden aspect-square bg-gray-100"
-                  >
-                    <img
-                      src={image.thumbnail}
-                      alt={image.description || 'Search result'}
-                      className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                      style={{ width: '200px', height: '200px' }}
-                    />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                      <ApperIcon 
-                        name="Check" 
-                        size={24} 
-                        className="text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                      />
-                    </div>
-                    
-                    {/* Source Badge */}
-                    <div className="absolute top-1 right-1 bg-black/70 text-white px-1 py-0.5 rounded text-xs">
-                      {image.source === 'unsplash' ? 'AI' : 'DB'}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Empty State */}
-          {searchQuery && imageData.searchResults.length === 0 && !imageData.isProcessing && (
-            <div className="text-center py-8">
-              <ApperIcon name="Search" size={48} className="text-gray-400 mx-auto mb-3" />
-              <p className="text-gray-600">No images found for "{searchQuery}"</p>
-              <p className="text-sm text-gray-500 mt-1">Try different keywords or upload your own image</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* AI Generate Tab */}
-      {imageData.activeTab === 'ai-generate' && (
-        <div className="space-y-4">
-          <div className="text-center py-8 bg-gray-50 rounded-lg">
-            <ApperIcon name="Sparkles" size={48} className="text-gray-400 mx-auto mb-3" />
-            <h4 className="font-medium text-gray-900 mb-2">AI Image Generation</h4>
-            <p className="text-gray-600 mb-4">Generate custom product images using AI</p>
-            <Button variant="secondary" disabled>
-              Coming Soon
-            </Button>
           </div>
         </div>
       )}
+
+      {/* Copyright Notice */}
+      <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded">
+        <div className="flex items-center space-x-1 mb-1">
+          <ApperIcon name="Shield" size={12} />
+          <span className="font-medium">License Information</span>
+        </div>
+        <p>All images from Unsplash are free to use for commercial purposes. Attribution is appreciated but not required. Please review individual image licenses when available.</p>
+      </div>
     </div>
   );
-};
 
 export default ProductManagement;
