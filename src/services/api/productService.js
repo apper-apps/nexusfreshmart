@@ -1,6 +1,4 @@
 import axios from "axios";
-import React from "react";
-import Error from "@/components/ui/Error";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
 export const productService = {
@@ -325,9 +323,8 @@ async bulkUpdatePrices(updateData) {
       }
     }
 
-    return { isValid: true };
-}
-  
+return { isValid: true };
+  }
   // Calculate profit metrics for a product
   calculateProfitMetrics(productData) {
     const price = parseFloat(productData.price) || 0;
@@ -351,8 +348,8 @@ async bulkUpdatePrices(updateData) {
     // Calculate minimum selling price (purchase price + 10% margin)
     const minSellingPrice = purchasePrice > 0 ? purchasePrice * 1.1 : 0;
     
-    // Calculate profit margin percentage
-let profitMargin = 0;
+// Calculate profit margin percentage
+    let profitMargin = 0;
     if (purchasePrice > 0 && finalPrice > 0) {
       profitMargin = ((finalPrice - purchasePrice) / purchasePrice) * 100;
     }
@@ -430,8 +427,8 @@ let profitMargin = 0;
       if (margin >= 5) return 'fair';
       if (margin > 0) return 'poor';
       return 'loss';
-    } catch (error) {
-console.error('Error calculating financial health:', error);
+} catch (error) {
+      console.error('Error calculating financial health:', error);
       return 'unknown';
     }
   }
@@ -455,9 +452,11 @@ console.error('Error calculating financial health:', error);
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       
-      return new Promise((resolve) => {
+return new Promise((resolve) => {
         img.onload = async () => {
-ctx.drawImage(img, 0, 0);
+          canvas.width = img.width;
+          canvas.height = img.height;
+          ctx.drawImage(img, 0, 0);
           
           // Resolution validation
           if (img.width < 200 || img.height < 200) {
@@ -507,8 +506,8 @@ ctx.drawImage(img, 0, 0);
           resolve({ isValid: false, error: 'Invalid or corrupted image file' });
         };
         img.src = URL.createObjectURL(file);
-      });
-} catch (error) {
+});
+    } catch (error) {
       console.error('Error validating image:', error);
       return { isValid: false, error: 'Failed to validate image' };
     }
@@ -539,9 +538,9 @@ ctx.drawImage(img, 0, 0);
     const mean = sum / pixelCount;
     const variance = (sumSquared / pixelCount) - (mean * mean);
     const edgeIntensity = edgeSum / pixelCount;
+const edgeIntensity = edgeSum / pixelCount;
     
-// Combine variance and edge intensity for better blur detection
-    return variance + (edgeIntensity * 0.5);
+    // Combine variance and edge intensity for better blur detection
   }
 
   detectTextWatermarks(imageData, width, height) {
@@ -701,7 +700,6 @@ ctx.drawImage(img, 0, 0);
 
 // Calculate optimal dimensions for image resizing with aspect ratio enforcement
   calculateOptimalDimensions(originalWidth, originalHeight, targetWidth, targetHeight, enforceSquare = false) {
-    const aspectRatio = originalWidth / originalHeight;
     const targetAspectRatio = targetWidth / targetHeight;
     
     let width, height;
@@ -724,11 +722,12 @@ ctx.drawImage(img, 0, 0);
       height = targetWidth / aspectRatio;
     } else {
       // Image is taller than target
-      height = targetHeight;
-width = targetHeight * aspectRatio;
+height = targetHeight;
+      width = targetHeight * aspectRatio;
     }
     return { width: Math.round(width), height: Math.round(height) };
-  }
+}
+  
   // Get dynamic image dimensions for frame compatibility
   getDynamicImageDimensions(viewportWidth = 1200, enforceSquare = true) {
     try {
@@ -764,20 +763,12 @@ width = targetHeight * aspectRatio;
       console.error('Error calculating dynamic image dimensions:', error);
       return {
         width: 600,
-        height: 600,
-aspectRatio: '1:1'
-      };
-    } catch (error) {
-      console.error('Error calculating dynamic image dimensions:', error);
-      return {
-        width: 600,
-        height: 600,
+height: 600,
         aspectRatio: '1:1'
       };
     }
   }
-
-  // Enhanced image search from multiple sources with category filtering and attribution
+// Enhanced image search from multiple sources with category filtering and attribution
   async searchImages(query, options = {}) {
     try {
       const { category = 'all', orientation = 'square', loadMore = false } = options;
@@ -831,9 +822,9 @@ aspectRatio: '1:1'
     
     return baseImages;
   }
+}
 
-// Enhanced Unsplash search with comprehensive category mapping and attribution
-  searchUnsplashImages(query, options = {}) {
+  // Enhanced Unsplash search with comprehensive category mapping and attribution
     const { category, orientation, loadMore } = options;
     
     // Comprehensive category-specific search terms for enhanced food discovery
@@ -892,9 +883,9 @@ aspectRatio: '1:1'
     return mockUnsplashImages;
   }
 
+}
+
   // Generate relevant tags for image categorization
-// Enhanced tag generation for comprehensive image categorization
-  generateImageTags(query, category) {
     const baseTags = query.toLowerCase().split(' ');
     
     // Comprehensive category tag mappings for better search accuracy
@@ -906,9 +897,9 @@ aspectRatio: '1:1'
       'bakery': ['handmade', 'artisan', 'golden', 'crispy', 'traditional', 'warm', 'freshly-baked', 'crusty'],
       'seafood': ['omega-3', 'wild-caught', 'sustainable', 'marine', 'delicate', 'fresh-caught', 'oceanic'],
       'beverages': ['refreshing', 'cold', 'natural', 'healthy', 'thirst-quenching', 'energizing', 'pure'],
-      'spices': ['aromatic', 'flavorful', 'fragrant', 'exotic', 'pungent', 'culinary', 'seasoning'],
+'spices': ['aromatic', 'flavorful', 'fragrant', 'exotic', 'pungent', 'culinary', 'seasoning'],
       'organic': ['certified', 'sustainable', 'eco-friendly', 'chemical-free', 'natural', 'wholesome'],
-'snacks': ['crunchy', 'satisfying', 'portable', 'tasty', 'convenient', 'wholesome', 'guilt-free'],
+      'snacks': ['crunchy', 'satisfying', 'portable', 'tasty', 'convenient', 'wholesome', 'guilt-free'],
       // Legacy support
       'Fresh Vegetables': ['organic', 'healthy', 'green', 'fresh', 'natural'],
       'Tropical Fruits': ['colorful', 'exotic', 'sweet', 'vitamin', 'tropical'],
@@ -931,10 +922,9 @@ aspectRatio: '1:1'
       commercialUse: image.source === 'unsplash' || image.source === 'internal'
     }));
   }
+}
 
   // AI Image Generation with Stable Diffusion simulation
-// AI Image Generation with Stable Diffusion simulation
-  async generateAIImage(prompt, options = {}) {
     try {
       const {
         style = 'realistic',
@@ -1104,8 +1094,8 @@ aspectRatio: '1:1'
     
     return {
       x: Math.max(0, mainRegion.x - 50),
-      y: Math.max(0, mainRegion.y - 50),
-width: Math.min(targetDimensions.width, mainRegion.width + 100),
+y: Math.max(0, mainRegion.y - 50),
+      width: Math.min(targetDimensions.width, mainRegion.width + 100),
       height: Math.min(targetDimensions.height, mainRegion.height + 100)
     };
   }
