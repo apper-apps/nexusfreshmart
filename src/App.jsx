@@ -1,5 +1,5 @@
 import 'react-toastify/dist/ReactToastify.css';
-import React, { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import React, { Suspense, useCallback, useEffect, useMemo, useState, createContext, useContext } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import { Provider } from "react-redux";
@@ -29,10 +29,32 @@ const OrderTracking = React.lazy(() => import('@/components/pages/OrderTracking'
 const Account = React.lazy(() => import('@/components/pages/Account'));
 // Import components
 
+// RBAC Context for role-based access control
+const RBACContext = createContext({
+  user: { role: 'customer', permissions: [] },
+  setUserRole: () => {},
+  hasPermission: () => false,
+  canAccessFinancialData: () => false
+});
+
+export const useRBAC = () => {
+  const context = useContext(RBACContext);
+  if (!context) {
+    throw new Error('useRBAC must be used within RBACProvider');
+  }
+  return context;
+};
+
 function App() {
   const [sdkReady, setSdkReady] = useState(false);
   const [sdkError, setSdkError] = useState(null);
-
+  const [user, setUser] = useState({
+    role: 'customer', // Default role: customer, admin, finance_manager
+    permissions: ['read_basic'],
+    id: 1,
+    name: 'John Doe',
+    email: 'john@example.com'
+  });
   // Optimized SDK status checking - memoized for performance
   const checkSDKStatus = useCallback(() => {
     try {
@@ -114,15 +136,64 @@ function App() {
 
     return () => clearTimeout(preloadTimer);
   }, []);
+// RBAC utility functions
+  const setUserRole = useCallback((newRole) => {
+    const rolePermissions = {
+      customer: ['read_basic'],
+      admin: ['read_basic', 'read_financial', 'write_financial', 'manage_users'],
+      finance_manager: ['read_basic', 'read_financial', 'write_financial'],
+      employee: ['read_basic', 'read_limited']
+    };
+
+    setUser(prev => ({
+      ...prev,
+      role: newRole,
+      permissions: rolePermissions[newRole] || ['read_basic']
+    }));
+  }, []);
+
+  const hasPermission = useCallback((permission) => {
+    return user.permissions.includes(permission);
+  }, [user.permissions]);
+
+  const canAccessFinancialData = useCallback(() => {
+    return user.role === 'admin' || user.role === 'finance_manager';
+  }, [user.role]);
+
+  // Memoized RBAC context value
+  const rbacValue = useMemo(() => ({
+    user,
+    setUserRole,
+    hasPermission,
+    canAccessFinancialData
+  }), [user, setUserRole, hasPermission, canAccessFinancialData]);
+
 return (
     <Provider store={store}>
       <PersistGate loading={<Loading type="page" />} persistor={persistor}>
-        <BrowserRouter>
-          <div className="min-h-screen bg-background">
-            {/* Minimal SDK Status Indicator (only in development) */}
-            {import.meta.env.DEV && sdkError && (
-              <div className="fixed top-0 right-0 z-50 p-2 text-xs">
-                <div className="px-2 py-1 rounded bg-orange-500 text-white">
+        <RBACContext.Provider value={rbacValue}>
+          <BrowserRouter>
+            <div className="min-h-screen bg-background">
+              {/* Role Switcher (Development Only) */}
+              {import.meta.env.DEV && (
+                <div className="fixed top-0 left-0 z-50 p-2 text-xs">
+                  <select 
+                    value={user.role} 
+                    onChange={(e) => setUserRole(e.target.value)}
+                    className="px-2 py-1 rounded bg-gray-800 text-white text-xs"
+                  >
+                    <option value="customer">Customer</option>
+                    <option value="admin">Admin</option>
+                    <option value="finance_manager">Finance Manager</option>
+                    <option value="employee">Employee</option>
+                  </select>
+                </div>
+              )}
+              
+              {/* Minimal SDK Status Indicator (only in development) */}
+              {import.meta.env.DEV && sdkError && (
+                <div className="fixed top-0 right-0 z-50 p-2 text-xs">
+                  <div className="px-2 py-1 rounded bg-orange-500 text-white">
                   SDK: Background Loading
                 </div>
               </div>
@@ -222,7 +293,8 @@ return (
               limit={3}
             />
 </div>
-        </BrowserRouter>
+          </BrowserRouter>
+        </RBACContext.Provider>
       </PersistGate>
     </Provider>
   );

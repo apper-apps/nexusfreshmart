@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import ApperIcon from '@/components/ApperIcon';
 import Button from '@/components/atoms/Button';
 import Input from '@/components/atoms/Input';
+import { useRBAC } from '@/App';
 
 const Account = () => {
   const [activeTab, setActiveTab] = useState('profile');
+  const { user, canAccessFinancialData, hasPermission } = useRBAC();
   const [formData, setFormData] = useState({
     name: 'John Doe',
     email: 'john@example.com',
@@ -27,15 +29,26 @@ const Account = () => {
     console.log('Saving profile:', formData);
   };
 
-  const tabs = [
+// Filter tabs based on user permissions
+  const allTabs = [
     { id: 'profile', label: 'Profile', icon: 'User' },
     { id: 'addresses', label: 'Addresses', icon: 'MapPin' },
-    { id: 'settings', label: 'Settings', icon: 'Settings' }
+    { id: 'settings', label: 'Settings', icon: 'Settings' },
+    { id: 'financial', label: 'Financial Info', icon: 'DollarSign', requiresFinancialAccess: true }
   ];
 
-  return (
+  const tabs = allTabs.filter(tab => 
+    !tab.requiresFinancialAccess || canAccessFinancialData()
+  );
+return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">My Account</h1>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">My Account</h1>
+        <div className="flex items-center space-x-2 text-sm text-gray-600">
+          <ApperIcon name="Shield" size={16} />
+          <span>Role: {user.role.replace('_', ' ').toUpperCase()}</span>
+        </div>
+      </div>
 
       {/* Tabs */}
       <div className="border-b border-gray-200 mb-8">
@@ -240,6 +253,64 @@ const Account = () => {
               <Button variant="danger" className="w-full justify-start" icon="Trash2">
                 Delete Account
               </Button>
+            </div>
+          </div>
+</div>
+      )}
+
+      {activeTab === 'financial' && canAccessFinancialData() && (
+        <div className="space-y-6">
+          <div className="card p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-gray-900">Financial Information</h2>
+              <div className="flex items-center space-x-2 text-sm text-green-600 bg-green-50 px-3 py-1 rounded-full">
+                <ApperIcon name="Shield" size={14} />
+                <span>Authorized Access</span>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <h3 className="font-medium text-gray-900 mb-2">Salary Information</h3>
+                  <p className="text-sm text-gray-600 mb-1">Base Salary</p>
+                  <p className="text-xl font-semibold text-gray-900">PKR 85,000</p>
+                </div>
+                
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <h3 className="font-medium text-gray-900 mb-2">Tax Information</h3>
+                  <p className="text-sm text-gray-600 mb-1">Tax ID</p>
+                  <p className="text-gray-900">TAX-123456789</p>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <h3 className="font-medium text-gray-900 mb-2">Bank Account</h3>
+                  <p className="text-sm text-gray-600 mb-1">Account Number</p>
+                  <p className="text-gray-900">****-****-1234</p>
+                </div>
+                
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <h3 className="font-medium text-gray-900 mb-2">Benefits</h3>
+                  <div className="space-y-1">
+                    <p className="text-sm text-gray-600">Health Insurance: Active</p>
+                    <p className="text-sm text-gray-600">Provident Fund: 10%</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <div className="flex items-start space-x-3">
+                <ApperIcon name="AlertTriangle" size={20} className="text-yellow-600 mt-0.5" />
+                <div>
+                  <h4 className="font-medium text-yellow-800">Restricted Information</h4>
+                  <p className="text-sm text-yellow-700 mt-1">
+                    This financial information is only visible to authorized personnel (Admin/Finance Manager).
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>

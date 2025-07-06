@@ -170,7 +170,6 @@ const expenseCategories = [
   { Id: 11, name: 'Maintenance', icon: 'Wrench', color: '#14B8A6' },
   { Id: 12, name: 'Other', icon: 'MoreHorizontal', color: '#6B7280' }
 ];
-
 class FinancialService {
   constructor() {
     this.financialData = [];
@@ -180,9 +179,65 @@ class FinancialService {
     this.vendorIdCounter = Math.max(...mockVendors.map(v => v.Id), 0) + 1;
     this.vendorPayments = [...mockVendorPayments];
     this.vendorPaymentIdCounter = Math.max(...mockVendorPayments.map(p => p.Id), 0) + 1;
+    this.currentUserRole = 'customer';
+    this.financialFields = ['totalRevenue', 'totalCost', 'totalProfit', 'profitMargin', 'roi'];
   }
 
-  async getFinancialMetrics(days = 30) {
+  // RBAC middleware simulation - filters financial data based on user role
+  async setUserRole(role) {
+    await this.delay(100);
+    this.currentUserRole = role;
+    return { role };
+  }
+
+  validateFinancialAccess() {
+    return this.currentUserRole === 'admin' || this.currentUserRole === 'finance_manager';
+  }
+
+  filterFinancialData(data) {
+    if (this.validateFinancialAccess()) {
+      return data; // Full access for admin/finance_manager
+    }
+    
+    // Filter out financial fields for non-authorized users
+    if (Array.isArray(data)) {
+      return data.map(item => this.removeFinancialFields(item));
+    } else if (typeof data === 'object' && data !== null) {
+      return this.removeFinancialFields(data);
+    }
+    
+    return data;
+  }
+
+  removeFinancialFields(obj) {
+    const filtered = { ...obj };
+    
+    // Remove specific financial fields
+    this.financialFields.forEach(field => {
+      delete filtered[field];
+    });
+    
+    // Remove financial summary if present
+    if (filtered.summary) {
+      filtered.summary = {
+        ...filtered.summary,
+        totalRevenue: null,
+        totalCost: null,
+        totalProfit: null,
+        profitMargin: null,
+        roi: null
+      };
+    }
+    
+    return filtered;
+  }
+
+  async getFinancialMetrics(days = 30, userRole = null) {
+if (userRole) {
+      const originalRole = this.currentUserRole;
+      this.currentUserRole = userRole;
+    }
+    
     await this.delay();
     
     try {
@@ -200,7 +255,10 @@ class FinancialService {
         return orderDate >= startDate && orderDate <= endDate;
       });
 
-      return this.calculateFinancialMetrics(products, filteredOrders);
+      const metrics = this.calculateFinancialMetrics(products, filteredOrders);
+      
+      // Apply financial data filtering based on user role
+      return this.filterFinancialData(metrics);
     } catch (error) {
       throw new Error('Failed to calculate financial metrics: ' + error.message);
     }
@@ -590,10 +648,20 @@ class FinancialService {
 }
 
   // Expense Management Methods
-  async getExpenses(days = 30) {
+async getExpenses(days = 30, userRole = null) {
+    if (userRole) {
+      const originalRole = this.currentUserRole;
+      this.currentUserRole = userRole;
+    }
+    
     await this.delay();
     
     try {
+      // Check financial access permission
+      if (!this.validateFinancialAccess()) {
+        throw new Error('Insufficient permissions. Financial data access requires admin or finance manager role.');
+      }
+      
       const endDate = new Date();
       const startDate = new Date();
       startDate.setDate(endDate.getDate() - days);
@@ -788,9 +856,16 @@ class FinancialService {
   }
 
   // Vendor Management Methods
-  async getVendors() {
+async getVendors(userRole = null) {
+    if (userRole) {
+      this.currentUserRole = userRole;
+    }
+    
     await this.delay();
-    return [...this.vendors].sort((a, b) => a.name.localeCompare(b.name));
+    
+    // Apply financial data filtering to vendor information
+    const vendors = [...this.vendors].sort((a, b) => a.name.localeCompare(b.name));
+    return this.filterFinancialData(vendors);
   }
 
   async getVendorById(id) {

@@ -1,3 +1,5 @@
+import React from "react";
+import Error from "@/components/ui/Error";
 class PaymentService {
 constructor() {
     this.transactions = [];
@@ -7,8 +9,9 @@ constructor() {
     this.vendorBills = [];
     this.vendorPayments = [];
     this.paymentProofs = [];
-    this.currentUserRole = 'admin';
+    this.currentUserRole = 'customer'; // Start with lowest privilege
     this.financeManagerRole = 'finance_manager';
+    this.financialFields = ['amount', 'walletBalance', 'totalPaid', 'totalOwed', 'revenue', 'profit'];
     this.cardBrands = {
       '4': 'visa',
       '5': 'mastercard',
@@ -61,9 +64,56 @@ constructor() {
         accountNumber: '03009876543',
         instructions: 'Send money to the above EasyPaisa number and upload payment screenshot.'
       }
-    ];
+];
   }
 
+  // RBAC Methods for financial data filtering
+  validateFinancialAccess() {
+    return this.currentUserRole === 'admin' || this.currentUserRole === 'finance_manager';
+  }
+
+  filterPaymentFinancialData(data) {
+    if (this.validateFinancialAccess()) {
+      return data; // Full access for admin/finance_manager
+    }
+    
+    if (Array.isArray(data)) {
+      return data.map(item => this.removePaymentFinancialFields(item));
+    } else if (typeof data === 'object' && data !== null) {
+      return this.removePaymentFinancialFields(data);
+    }
+    
+    return data;
+  }
+
+  removePaymentFinancialFields(obj) {
+    if (!obj) return obj;
+    
+    const filtered = { ...obj };
+    
+    // Remove financial sensitive fields for non-authorized users
+    if (!this.validateFinancialAccess()) {
+      this.financialFields.forEach(field => {
+        if (field === 'amount') {
+          filtered[field] = '***'; // Mask amount instead of removing
+        } else {
+          delete filtered[field];
+        }
+      });
+      
+      // Hide card details
+      if (filtered.cardLast4) {
+        filtered.cardLast4 = '****';
+      }
+      
+      // Hide bank account details
+      if (filtered.bankAccount) {
+        filtered.bankAccount = '****';
+      }
+    }
+    
+    return filtered;
+  }
   // Card Payment Processing
   async processCardPayment(cardData, amount, orderId) {
     await this.delay(2000); // Simulate processing time
@@ -258,10 +308,6 @@ async getAvailablePaymentMethods() {
     return this.transactions.filter(t => t.orderId === orderId);
   }
 
-  async getAllTransactions() {
-    await this.delay(300);
-    return [...this.transactions];
-  }
 
   async getTransactionById(id) {
     await this.delay(300);
@@ -295,11 +341,23 @@ async getAvailablePaymentMethods() {
     // Check if card is expired
     const [month, year] = expiryDate.split('/');
     const expiry = new Date(2000 + parseInt(year), parseInt(month) - 1);
-    if (expiry < new Date()) {
+if (expiry < new Date()) {
       return { valid: false, error: 'Card has expired' };
     }
 
     return { valid: true };
+  }
+
+  async getAllTransactions(userRole = null) {
+    if (userRole) {
+      this.currentUserRole = userRole;
+    }
+    
+    await this.delay(300);
+    
+    // Apply financial data filtering
+    const transactions = [...this.transactions];
+    return this.filterPaymentFinancialData(transactions);
   }
 
   validatePakistaniPhone(phone) {
@@ -343,10 +401,6 @@ generateTransactionId() {
     return maxId + 1;
   }
 // Wallet Management Methods
-  async getWalletBalance() {
-    await this.delay(200);
-    return this.walletBalance;
-  }
 
   async updateWalletBalance(amount) {
     await this.delay(200);
@@ -383,6 +437,20 @@ generateTransactionId() {
     if (amount <= 0) {
       throw new Error('Withdrawal amount must be positive');
     }
+async getWalletBalance(userRole = null) {
+    if (userRole) {
+      this.currentUserRole = userRole;
+    }
+    
+    await this.delay(200);
+    
+    // Check if user has permission to view wallet balance
+    if (!this.validateFinancialAccess()) {
+      throw new Error('Insufficient permissions. Wallet balance access requires admin or finance manager role.');
+    }
+    
+    return this.walletBalance;
+  }
 
     if (amount > this.walletBalance) {
       throw new Error('Insufficient wallet balance');
@@ -460,12 +528,6 @@ generateTransactionId() {
     return { ...transaction };
   }
 
-  async getWalletTransactions(limit = 50) {
-    await this.delay(300);
-    return [...this.walletTransactions]
-      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-      .slice(0, limit);
-  }
 
   async getWalletTransactionById(id) {
     await this.delay(300);
@@ -500,6 +562,24 @@ generateTransactionId() {
         enabled: true,
         accounts: [
           { bank: 'HBL', account: '1234567890' },
+async getWalletTransactions(limit = 50, userRole = null) {
+    if (userRole) {
+      this.currentUserRole = userRole;
+    }
+    
+    await this.delay(300);
+    
+    // Check financial access permission
+    if (!this.validateFinancialAccess()) {
+      throw new Error('Insufficient permissions. Wallet transaction access requires admin or finance manager role.');
+    }
+    
+    const transactions = [...this.walletTransactions]
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+      .slice(0, limit);
+      
+    return this.filterPaymentFinancialData(transactions);
+  }
           { bank: 'UBL', account: '0987654321' }
         ]
       }
@@ -678,10 +758,6 @@ delay(ms = 300) {
     return { success: true };
   }
 
-  async getAllVendors() {
-    await this.delay(300);
-    return [...this.vendors];
-  }
 
   async getVendorById(vendorId) {
     await this.delay(200);
@@ -718,6 +794,17 @@ delay(ms = 300) {
       billNumber: billData.billNumber || this.generateBillNumber(),
       dueDate: billData.dueDate || this.calculateDueDate(vendor.paymentTerms),
       status: 'pending',
+async getAllVendors(userRole = null) {
+    if (userRole) {
+      this.currentUserRole = userRole;
+    }
+    
+    await this.delay(300);
+    
+    // Apply financial data filtering to vendor information
+    const vendors = [...this.vendors];
+    return this.filterPaymentFinancialData(vendors);
+  }
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       createdBy: this.currentUserRole,
