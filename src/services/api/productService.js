@@ -811,7 +811,7 @@ width = targetHeight * aspectRatio;
   }
 
   // AI Image Generation with Stable Diffusion simulation
-  // AI Image Generation with Stable Diffusion simulation
+// AI Image Generation with Stable Diffusion simulation
   async generateAIImage(prompt, options = {}) {
     try {
       const {
@@ -988,5 +988,4 @@ width = targetHeight * aspectRatio;
     };
   }
 }
-
 export const productService = new ProductService();

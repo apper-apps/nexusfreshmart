@@ -84,7 +84,7 @@ const ProductDetail = () => {
 
 const priceChange = getPriceChange();
 
-  // Calculate dynamic image dimensions with aspect ratio enforcement
+// Calculate dynamic image dimensions with aspect ratio enforcement for 1:1 framing
   const calculateImageDimensions = () => {
     // Get viewport width for responsive sizing
     const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
@@ -92,22 +92,26 @@ const priceChange = getPriceChange();
     // Base size calculation with responsive scaling
     let baseSize = 600;
     
-    // Responsive adjustments
+    // Responsive adjustments for mobile-first design
     if (viewportWidth < 640) {
-      baseSize = Math.max(400, Math.min(viewportWidth - 32, 500)); // Mobile: 400-500px
+      // Mobile: 400-500px with padding consideration
+      baseSize = Math.max(400, Math.min(viewportWidth - 32, 500)); 
     } else if (viewportWidth < 1024) {
-      baseSize = Math.max(500, Math.min(viewportWidth * 0.4, 700)); // Tablet: 500-700px
+      // Tablet: 500-700px for comfortable viewing
+      baseSize = Math.max(500, Math.min(viewportWidth * 0.4, 700)); 
     } else {
-      baseSize = Math.max(600, Math.min(viewportWidth * 0.3, 1200)); // Desktop: 600-1200px
+      // Desktop: 600-1200px for detailed product viewing
+      baseSize = Math.max(600, Math.min(viewportWidth * 0.3, 1200)); 
     }
     
-    // Enforce size constraints (400x400px to 1200x1200px)
+    // Enforce platform constraints (400x400px to 1200x1200px) for consistent framing
     const constrainedSize = Math.max(400, Math.min(baseSize, 1200));
     
-    // Ensure 1:1 aspect ratio
+    // Ensure perfect 1:1 aspect ratio for consistent product display
     return {
       width: constrainedSize,
-      height: constrainedSize
+      height: constrainedSize,
+      aspectRatio: '1 / 1'
     };
   };
 
@@ -124,30 +128,46 @@ const priceChange = getPriceChange();
         </button>
       </nav>
 
-<div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-        {/* Product Image */}
+<div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+        {/* Product Image with Enhanced 1:1 Frame Display */}
         <div className="space-y-4">
           <div className="relative">
             <div 
-              className="mx-auto rounded-2xl overflow-hidden bg-gray-100 relative"
+              className="mx-auto rounded-2xl overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 relative shadow-lg"
               style={{
                 width: `${calculateImageDimensions().width}px`,
                 height: `${calculateImageDimensions().height}px`,
-                aspectRatio: '1 / 1'
+                aspectRatio: calculateImageDimensions().aspectRatio
               }}
             >
+              {/* Enhanced Progressive Image Loading with WebP Support */}
               <picture className="block w-full h-full">
                 <source
-                  srcSet={`${product.imageUrl}&fm=webp&w=${calculateImageDimensions().width} 1x, ${product.imageUrl}&fm=webp&w=${calculateImageDimensions().width * 2}&dpr=2 2x`}
+                  srcSet={`${product.imageUrl}&fm=webp&w=${calculateImageDimensions().width}&h=${calculateImageDimensions().height}&fit=crop&crop=center 1x, ${product.imageUrl}&fm=webp&w=${calculateImageDimensions().width * 2}&h=${calculateImageDimensions().height * 2}&fit=crop&crop=center&dpr=2 2x`}
                   type="image/webp"
                 />
                 <img
-                  src={`${product.imageUrl}&w=${calculateImageDimensions().width}`}
+                  src={`${product.imageUrl}&w=${calculateImageDimensions().width}&h=${calculateImageDimensions().height}&fit=crop&crop=center`}
                   alt={product.name}
-                  className="w-full h-full object-cover transition-all duration-500 hover:scale-105"
-                  style={{ backgroundColor: '#f3f4f6' }}
+                  className="w-full h-full object-cover transition-all duration-500 hover:scale-105 image-loaded"
+                  style={{ 
+                    backgroundColor: '#f3f4f6',
+                    aspectRatio: '1 / 1'
+                  }}
+                  loading="lazy"
+                  onError={(e) => {
+                    e.target.src = "/api/placeholder/600/600";
+                  }}
                 />
               </picture>
+              
+              {/* Frame Compatibility Indicator */}
+              <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1 shadow-md">
+                <div className="flex items-center space-x-1">
+                  <div className="w-2 h-2 bg-success rounded-full"></div>
+                  <span className="text-xs font-medium text-gray-700">1:1 Frame</span>
+                </div>
+              </div>
             </div>
             {product.stock <= 10 && product.stock > 0 && (
               <Badge 

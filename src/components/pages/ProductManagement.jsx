@@ -1254,7 +1254,8 @@ const ImageUploadSystem = ({
   onImageUpload, 
   onImageSearch, 
   onImageSelect,
-  formData 
+  onAIImageGenerate,
+  formData
 }) => {
   const [dragActive, setDragActive] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -1622,12 +1623,12 @@ const ImageUploadSystem = ({
         />
       )}
 
-      {/* AI Image Generator */}
+{/* AI Image Generator */}
       {imageData.activeTab === 'ai-generate' && (
         <AIImageGenerator
           imageData={imageData}
           setImageData={setImageData}
-          onImageGenerate={handleAIImageGenerate}
+          onImageGenerate={onAIImageGenerate}
           onImageSelect={handleImageSelect}
           formData={formData}
         />
