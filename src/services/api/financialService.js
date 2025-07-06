@@ -1,5 +1,5 @@
-import { productService } from './productService';
-import { orderService } from './orderService';
+import { productService } from "@/services/api/productService";
+import { orderService } from "@/services/api/orderService";
 
 // Mock expense data with proper Id structure
 const mockExpenses = [
@@ -55,6 +55,105 @@ const mockExpenses = [
   }
 ];
 
+// Mock vendor data with proper Id structure
+const mockVendors = [
+  {
+    Id: 1,
+    name: 'ABC Suppliers Ltd',
+    email: 'billing@abcsuppliers.com',
+    phone: '+92-300-1234567',
+    category: 'Supplier',
+    paymentTerms: 30,
+    address: '123 Industrial Area, Karachi',
+    createdAt: '2024-01-01T00:00:00Z'
+  },
+  {
+    Id: 2,
+    name: 'TechFlow Solutions',
+    email: 'accounts@techflow.pk',
+    phone: '+92-321-9876543',
+    category: 'Service Provider',
+    paymentTerms: 15,
+    address: '456 IT Park, Lahore',
+    createdAt: '2024-01-05T00:00:00Z'
+  },
+  {
+    Id: 3,
+    name: 'City Power Company',
+    email: 'billing@citypower.gov.pk',
+    phone: '+92-42-1234567',
+    category: 'Utility',
+    paymentTerms: 15,
+    address: 'Power House Road, Islamabad',
+    createdAt: '2024-01-10T00:00:00Z'
+  },
+  {
+    Id: 4,
+    name: 'Fresh Produce Traders',
+    email: 'orders@freshproduce.pk',
+    phone: '+92-333-7654321',
+    category: 'Supplier',
+    paymentTerms: 7,
+    address: 'Fruit Market, Multan',
+    createdAt: '2024-01-15T00:00:00Z'
+  }
+];
+
+// Mock vendor payments with due dates
+const mockVendorPayments = [
+  {
+    Id: 1,
+    vendorId: 1,
+    amount: 150000,
+    description: 'Monthly supplies invoice #INV-2024-001',
+    dueDate: '2024-02-15',
+    invoiceNumber: 'INV-2024-001',
+    status: 'pending',
+    createdAt: '2024-01-16T10:00:00Z'
+  },
+  {
+    Id: 2,
+    vendorId: 2,
+    amount: 85000,
+    description: 'Website maintenance Q1 2024',
+    dueDate: '2024-02-01',
+    invoiceNumber: 'TF-001-2024',
+    status: 'paid',
+    paidAt: '2024-01-28T14:30:00Z',
+    createdAt: '2024-01-17T09:00:00Z'
+  },
+  {
+    Id: 3,
+    vendorId: 3,
+    amount: 25000,
+    description: 'Electricity bill January 2024',
+    dueDate: '2024-02-10',
+    invoiceNumber: 'PWR-JAN-2024',
+    status: 'overdue',
+    createdAt: '2024-01-26T16:00:00Z'
+  },
+  {
+    Id: 4,
+    vendorId: 4,
+    amount: 45000,
+    description: 'Fresh fruits weekly supply',
+    dueDate: '2024-02-05',
+    invoiceNumber: 'FP-W1-2024',
+    status: 'pending',
+    createdAt: '2024-01-29T08:00:00Z'
+  },
+  {
+    Id: 5,
+    vendorId: 1,
+    amount: 75000,
+    description: 'Equipment maintenance',
+    dueDate: '2024-02-20',
+    invoiceNumber: 'INV-2024-002',
+    status: 'pending',
+    createdAt: '2024-01-30T11:00:00Z'
+  }
+];
+
 const expenseCategories = [
   { Id: 1, name: 'Rent', icon: 'Home', color: '#EF4444' },
   { Id: 2, name: 'Salaries', icon: 'Users', color: '#3B82F6' },
@@ -75,6 +174,10 @@ class FinancialService {
     this.financialData = [];
     this.expenses = [...mockExpenses];
     this.expenseIdCounter = Math.max(...mockExpenses.map(e => e.Id), 0) + 1;
+    this.vendors = [...mockVendors];
+    this.vendorIdCounter = Math.max(...mockVendors.map(v => v.Id), 0) + 1;
+    this.vendorPayments = [...mockVendorPayments];
+    this.vendorPaymentIdCounter = Math.max(...mockVendorPayments.map(p => p.Id), 0) + 1;
   }
 
   async getFinancialMetrics(days = 30) {
@@ -677,7 +780,249 @@ class FinancialService {
         averageExpense: expenses.length > 0 ? totalExpenses / expenses.length : 0
       };
     } catch (error) {
-      throw new Error('Failed to get expense analytics: ' + error.message);
+throw new Error('Failed to get expense analytics: ' + error.message);
+    }
+  }
+
+  // Vendor Management Methods
+  async getVendors() {
+    await this.delay();
+    return [...this.vendors].sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  async getVendorById(id) {
+    await this.delay();
+    
+    try {
+      const vendor = this.vendors.find(v => v.Id === parseInt(id));
+      if (!vendor) {
+        throw new Error('Vendor not found');
+      }
+      return { ...vendor };
+    } catch (error) {
+      throw new Error('Failed to get vendor: ' + error.message);
+    }
+  }
+
+  async createVendor(vendorData) {
+    await this.delay();
+    
+    try {
+      const newVendor = {
+        Id: this.vendorIdCounter++,
+        name: vendorData.name,
+        email: vendorData.email,
+        phone: vendorData.phone,
+        category: vendorData.category,
+        paymentTerms: parseInt(vendorData.paymentTerms) || 30,
+        address: vendorData.address || '',
+        createdAt: new Date().toISOString()
+      };
+
+      this.vendors.push(newVendor);
+      return { ...newVendor };
+    } catch (error) {
+      throw new Error('Failed to create vendor: ' + error.message);
+    }
+  }
+
+  async updateVendor(id, vendorData) {
+    await this.delay();
+    
+    try {
+      const index = this.vendors.findIndex(v => v.Id === parseInt(id));
+      if (index === -1) {
+        throw new Error('Vendor not found');
+      }
+
+      const updatedVendor = {
+        ...this.vendors[index],
+        name: vendorData.name,
+        email: vendorData.email,
+        phone: vendorData.phone,
+        category: vendorData.category,
+        paymentTerms: parseInt(vendorData.paymentTerms) || 30,
+        address: vendorData.address || ''
+      };
+
+      this.vendors[index] = updatedVendor;
+      return { ...updatedVendor };
+    } catch (error) {
+      throw new Error('Failed to update vendor: ' + error.message);
+    }
+  }
+
+  async deleteVendor(id) {
+    await this.delay();
+    
+    try {
+      const index = this.vendors.findIndex(v => v.Id === parseInt(id));
+      if (index === -1) {
+        throw new Error('Vendor not found');
+      }
+
+      // Check for existing payments
+      const hasPayments = this.vendorPayments.some(p => p.vendorId === parseInt(id));
+      if (hasPayments) {
+        throw new Error('Cannot delete vendor with existing payments');
+      }
+
+      this.vendors.splice(index, 1);
+      return { success: true };
+    } catch (error) {
+      throw new Error('Failed to delete vendor: ' + error.message);
+    }
+  }
+
+  // Vendor Payment Methods
+  async getVendorPayments(days = 30) {
+    await this.delay();
+    
+    try {
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(endDate.getDate() - days);
+
+      const filteredPayments = this.vendorPayments.filter(payment => {
+        const paymentDate = new Date(payment.createdAt);
+        return paymentDate >= startDate && paymentDate <= endDate;
+      });
+
+      return [...filteredPayments].sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+    } catch (error) {
+      throw new Error('Failed to get vendor payments: ' + error.message);
+    }
+  }
+
+  async processVendorPayment(paymentData) {
+    await this.delay();
+    
+    try {
+      const newPayment = {
+        Id: this.vendorPaymentIdCounter++,
+        vendorId: parseInt(paymentData.vendorId),
+        amount: parseFloat(paymentData.amount),
+        description: paymentData.description,
+        dueDate: paymentData.dueDate,
+        invoiceNumber: paymentData.invoiceNumber || '',
+        status: paymentData.status || 'pending',
+        createdAt: new Date().toISOString()
+      };
+
+      this.vendorPayments.push(newPayment);
+      return { ...newPayment };
+    } catch (error) {
+      throw new Error('Failed to process vendor payment: ' + error.message);
+    }
+  }
+
+  async processBulkVendorPayments(paymentIds) {
+    await this.delay(1000); // Simulate bulk processing time
+    
+    try {
+      const processedPayments = [];
+      
+      for (const paymentId of paymentIds) {
+        const index = this.vendorPayments.findIndex(p => p.Id === parseInt(paymentId));
+        if (index !== -1) {
+          this.vendorPayments[index] = {
+            ...this.vendorPayments[index],
+            status: 'paid',
+            paidAt: new Date().toISOString()
+          };
+          processedPayments.push(this.vendorPayments[index]);
+        }
+      }
+
+      return {
+        success: true,
+        processedCount: processedPayments.length,
+        payments: processedPayments
+      };
+    } catch (error) {
+      throw new Error('Failed to process bulk payments: ' + error.message);
+    }
+  }
+
+  async getVendorPaymentAnalytics(days = 30) {
+    await this.delay();
+    
+    try {
+      const payments = await this.getVendorPayments(days);
+      
+      // Calculate analytics
+      const totalPaid = payments
+        .filter(p => p.status === 'paid')
+        .reduce((sum, p) => sum + p.amount, 0);
+      
+      const totalPending = payments
+        .filter(p => p.status === 'pending')
+        .reduce((sum, p) => sum + p.amount, 0);
+      
+      const totalOverdue = payments
+        .filter(p => p.status === 'overdue' || (p.status === 'pending' && new Date(p.dueDate) < new Date()))
+        .reduce((sum, p) => sum + p.amount, 0);
+
+      // Vendor payment breakdown
+      const vendorBreakdown = {};
+      payments.forEach(payment => {
+        const vendorId = payment.vendorId;
+        if (!vendorBreakdown[vendorId]) {
+          const vendor = this.vendors.find(v => v.Id === vendorId);
+          vendorBreakdown[vendorId] = {
+            vendorName: vendor?.name || 'Unknown',
+            totalAmount: 0,
+            paidAmount: 0,
+            pendingAmount: 0,
+            paymentCount: 0
+          };
+        }
+        
+        vendorBreakdown[vendorId].totalAmount += payment.amount;
+        vendorBreakdown[vendorId].paymentCount++;
+        
+        if (payment.status === 'paid') {
+          vendorBreakdown[vendorId].paidAmount += payment.amount;
+        } else {
+          vendorBreakdown[vendorId].pendingAmount += payment.amount;
+        }
+      });
+
+      // Payment trends (daily breakdown)
+      const trendData = [];
+      for (let i = days - 1; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dateString = date.toISOString().split('T')[0];
+        
+        const dayPayments = payments.filter(payment => 
+          payment.paidAt && payment.paidAt.split('T')[0] === dateString
+        );
+        
+        const dayAmount = dayPayments.reduce((sum, payment) => sum + payment.amount, 0);
+        
+        trendData.push({
+          date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          amount: dayAmount,
+          count: dayPayments.length
+        });
+      }
+
+      return {
+        totalPaid,
+        totalPending,
+        totalOverdue,
+        paymentCount: payments.length,
+        averagePayment: payments.length > 0 ? (totalPaid + totalPending) / payments.length : 0,
+        vendorBreakdown: Object.values(vendorBreakdown),
+        trendData,
+        overdueCount: payments.filter(p => 
+          p.status === 'overdue' || (p.status === 'pending' && new Date(p.dueDate) < new Date())
+        ).length
+      };
+    } catch (error) {
+      throw new Error('Failed to get vendor payment analytics: ' + error.message);
+throw new Error('Failed to get vendor payment analytics: ' + error.message);
     }
   }
 
@@ -685,5 +1030,3 @@ class FinancialService {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 }
-
-export const financialService = new FinancialService();
