@@ -1027,6 +1027,395 @@ throw new Error('Failed to get vendor payment analytics: ' + error.message);
   }
 
   delay(ms = 300) {
+return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  // Cash Flow Analysis Methods
+  async getCashFlowAnalytics(days = 30) {
+    await this.delay();
+    
+    try {
+      const [products, orders, expenses, vendorPayments] = await Promise.all([
+        productService.getAll(),
+        orderService.getAll(),
+        this.getExpenses(days),
+        this.getVendorPayments(days)
+      ]);
+
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(endDate.getDate() - days);
+
+      // Calculate cash inflows (revenue from orders)
+      const filteredOrders = orders.filter(order => {
+        const orderDate = new Date(order.createdAt);
+        return orderDate >= startDate && orderDate <= endDate;
+      });
+
+      let totalInflows = 0;
+      filteredOrders.forEach(order => {
+        if (order.items) {
+          order.items.forEach(item => {
+            const product = products.find(p => p.id === item.productId);
+            if (product) {
+              totalInflows += product.price * item.quantity;
+            }
+          });
+        }
+      });
+
+      // Calculate cash outflows (expenses + vendor payments)
+      const totalExpenseOutflows = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+      const totalVendorOutflows = vendorPayments
+        .filter(payment => payment.status === 'paid')
+        .reduce((sum, payment) => sum + payment.amount, 0);
+      
+      const totalOutflows = totalExpenseOutflows + totalVendorOutflows;
+      const netCashFlow = totalInflows - totalOutflows;
+
+      // Generate trend data
+      const trendData = [];
+      for (let i = days - 1; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(endDate.getDate() - i);
+        const dateString = date.toISOString().split('T')[0];
+
+        const dayOrders = filteredOrders.filter(order => {
+          const orderDate = new Date(order.createdAt);
+          return orderDate.toISOString().split('T')[0] === dateString;
+        });
+
+        const dayExpenses = expenses.filter(expense => expense.date === dateString);
+        const dayPayments = vendorPayments.filter(payment => 
+          payment.paidAt && payment.paidAt.split('T')[0] === dateString
+        );
+
+        let dayInflows = 0;
+        dayOrders.forEach(order => {
+          if (order.items) {
+            order.items.forEach(item => {
+              const product = products.find(p => p.id === item.productId);
+              if (product) {
+                dayInflows += product.price * item.quantity;
+              }
+            });
+          }
+        });
+
+        const dayExpenseOutflows = dayExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+        const dayPaymentOutflows = dayPayments.reduce((sum, payment) => sum + payment.amount, 0);
+        const dayOutflows = dayExpenseOutflows + dayPaymentOutflows;
+
+        trendData.push({
+          date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          inflows: dayInflows,
+          outflows: dayOutflows,
+          netFlow: dayInflows - dayOutflows
+        });
+      }
+
+      return {
+        totalInflows,
+        totalOutflows,
+        netCashFlow,
+        trendData,
+        breakdown: {
+          revenueInflows: totalInflows,
+          expenseOutflows: totalExpenseOutflows,
+          vendorOutflows: totalVendorOutflows
+        }
+      };
+    } catch (error) {
+      throw new Error('Failed to get cash flow analytics: ' + error.message);
+    }
+  }
+
+  async calculateWorkingCapital() {
+    await this.delay();
+    
+    try {
+      const [products, orders, expenses, vendorPayments] = await Promise.all([
+        productService.getAll(),
+        orderService.getAll(),
+        this.getExpenses(365), // Get full year for better calculation
+        this.getVendorPayments(365)
+      ]);
+
+      // Calculate current assets
+      const recentOrders = orders.filter(order => {
+        const orderDate = new Date(order.createdAt);
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        return orderDate >= thirtyDaysAgo;
+      });
+
+      let receivables = 0;
+      recentOrders.forEach(order => {
+        if (order.paymentStatus === 'pending' && order.items) {
+          order.items.forEach(item => {
+            const product = products.find(p => p.id === item.productId);
+            if (product) {
+              receivables += product.price * item.quantity;
+            }
+          });
+        }
+      });
+
+      // Estimate inventory value
+      const inventory = products.reduce((sum, product) => {
+        const estimatedStock = product.stock || 0;
+        const purchasePrice = product.purchasePrice || product.price * 0.6;
+        return sum + (estimatedStock * purchasePrice);
+      }, 0);
+
+      // Estimate cash position (simplified - in reality would come from bank accounts)
+      const monthlyRevenue = orders
+        .filter(order => {
+          const orderDate = new Date(order.createdAt);
+          const lastMonth = new Date();
+          lastMonth.setMonth(lastMonth.getMonth() - 1);
+          return orderDate >= lastMonth;
+        })
+        .reduce((sum, order) => {
+          let orderTotal = 0;
+          if (order.items) {
+            order.items.forEach(item => {
+              const product = products.find(p => p.id === item.productId);
+              if (product) {
+                orderTotal += product.price * item.quantity;
+              }
+            });
+          }
+          return sum + orderTotal;
+        }, 0);
+
+      const estimatedCash = monthlyRevenue * 0.3; // Conservative estimate
+      const otherCurrentAssets = estimatedCash * 0.1;
+      const currentAssets = estimatedCash + receivables + inventory + otherCurrentAssets;
+
+      // Calculate current liabilities
+      const pendingVendorPayments = vendorPayments
+        .filter(payment => payment.status === 'pending')
+        .reduce((sum, payment) => sum + payment.amount, 0);
+
+      const recentExpenses = expenses
+        .filter(expense => {
+          const expenseDate = new Date(expense.date);
+          const thirtyDaysAgo = new Date();
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+          return expenseDate >= thirtyDaysAgo;
+        })
+        .reduce((sum, expense) => sum + expense.amount, 0);
+
+      const accruedExpenses = recentExpenses * 0.2; // Estimate
+      const shortTermDebt = monthlyRevenue * 0.1; // Conservative estimate
+      const otherCurrentLiabilities = (pendingVendorPayments + accruedExpenses) * 0.1;
+      const currentLiabilities = pendingVendorPayments + accruedExpenses + shortTermDebt + otherCurrentLiabilities;
+
+      const workingCapital = currentAssets - currentLiabilities;
+      const workingCapitalRatio = currentLiabilities > 0 ? currentAssets / currentLiabilities : 0;
+
+      return {
+        amount: workingCapital,
+        ratio: workingCapitalRatio,
+        currentAssets,
+        currentLiabilities,
+        cash: estimatedCash,
+        receivables,
+        inventory,
+        otherCurrentAssets,
+        payables: pendingVendorPayments,
+        accruedExpenses,
+        shortTermDebt,
+        otherCurrentLiabilities
+      };
+    } catch (error) {
+      throw new Error('Failed to calculate working capital: ' + error.message);
+    }
+  }
+
+  async getLiquidityMetrics(days = 30) {
+    await this.delay();
+    
+    try {
+      const workingCapital = await this.calculateWorkingCapital();
+      const cashFlowAnalytics = await this.getCashFlowAnalytics(days);
+
+      // Current Ratio = Current Assets / Current Liabilities
+      const currentRatio = workingCapital.ratio;
+
+      // Quick Ratio = (Current Assets - Inventory) / Current Liabilities
+      const quickAssets = workingCapital.currentAssets - workingCapital.inventory;
+      const quickRatio = workingCapital.currentLiabilities > 0 ? 
+        quickAssets / workingCapital.currentLiabilities : 0;
+
+      // Cash Ratio = Cash / Current Liabilities
+      const cashRatio = workingCapital.currentLiabilities > 0 ? 
+        workingCapital.cash / workingCapital.currentLiabilities : 0;
+
+      // Operating Cash Flow Ratio = Operating Cash Flow / Current Liabilities
+      const operatingCashFlow = cashFlowAnalytics.netCashFlow;
+      const operatingCashFlowRatio = workingCapital.currentLiabilities > 0 ? 
+        operatingCashFlow / workingCapital.currentLiabilities : 0;
+
+      return {
+        currentRatio,
+        quickRatio,
+        cashRatio,
+        operatingCashFlowRatio,
+        liquidityScore: this.calculateLiquidityScore(currentRatio, quickRatio, cashRatio),
+        recommendations: this.generateLiquidityRecommendations(currentRatio, quickRatio, cashRatio)
+      };
+    } catch (error) {
+      throw new Error('Failed to get liquidity metrics: ' + error.message);
+    }
+  }
+
+  calculateLiquidityScore(currentRatio, quickRatio, cashRatio) {
+    let score = 0;
+    
+    // Current ratio scoring (40%)
+    if (currentRatio >= 2) score += 40;
+    else if (currentRatio >= 1.5) score += 30;
+    else if (currentRatio >= 1) score += 20;
+    else if (currentRatio >= 0.5) score += 10;
+    
+    // Quick ratio scoring (35%)
+    if (quickRatio >= 1) score += 35;
+    else if (quickRatio >= 0.8) score += 25;
+    else if (quickRatio >= 0.5) score += 15;
+    else if (quickRatio >= 0.3) score += 8;
+    
+    // Cash ratio scoring (25%)
+    if (cashRatio >= 0.5) score += 25;
+    else if (cashRatio >= 0.3) score += 18;
+    else if (cashRatio >= 0.2) score += 12;
+    else if (cashRatio >= 0.1) score += 6;
+    
+    return Math.round(score);
+  }
+
+  generateLiquidityRecommendations(currentRatio, quickRatio, cashRatio) {
+    const recommendations = [];
+    
+    if (currentRatio < 1) {
+      recommendations.push({
+        type: 'critical',
+        title: 'Improve Current Ratio',
+        message: 'Current liabilities exceed current assets. Consider increasing cash reserves or reducing short-term debt.',
+        priority: 'high'
+      });
+    }
+    
+    if (quickRatio < 0.5) {
+      recommendations.push({
+        type: 'warning',
+        title: 'Monitor Quick Liquidity',
+        message: 'Quick ratio is low. Focus on converting inventory to cash or increasing liquid assets.',
+        priority: 'medium'
+      });
+    }
+    
+    if (cashRatio < 0.1) {
+      recommendations.push({
+        type: 'info',
+        title: 'Build Cash Reserves',
+        message: 'Consider building cash reserves for better financial flexibility.',
+        priority: 'low'
+      });
+    }
+    
+    return recommendations;
+  }
+
+  async getCashFlowProjections(days = 30) {
+    await this.delay();
+    
+    try {
+      const [products, orders, expenses, vendorPayments] = await Promise.all([
+        productService.getAll(),
+        orderService.getAll(),
+        this.getExpenses(90), // Get 90 days for trend analysis
+        this.getVendorPayments(90)
+      ]);
+
+      // Calculate historical averages for projection
+      const recentOrders = orders.filter(order => {
+        const orderDate = new Date(order.createdAt);
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        return orderDate >= thirtyDaysAgo;
+      });
+
+      // Calculate average daily revenue
+      let totalRevenue = 0;
+      recentOrders.forEach(order => {
+        if (order.items) {
+          order.items.forEach(item => {
+            const product = products.find(p => p.id === item.productId);
+            if (product) {
+              totalRevenue += product.price * item.quantity;
+            }
+          });
+        }
+      });
+      const averageDailyRevenue = totalRevenue / 30;
+
+      // Calculate average daily expenses
+      const averageDailyExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0) / 90;
+
+      // Calculate average daily vendor payments
+      const paidVendorPayments = vendorPayments.filter(payment => payment.status === 'paid');
+      const averageDailyVendorPayments = paidVendorPayments.reduce((sum, payment) => sum + payment.amount, 0) / 90;
+
+      // Get pending vendor payments for scheduled outflows
+      const pendingPayments = vendorPayments.filter(payment => payment.status === 'pending');
+
+      // Generate projections
+      const projections = [];
+      let cumulativeCashFlow = 0;
+
+      for (let i = 0; i < days; i++) {
+        const date = new Date();
+        date.setDate(date.getDate() + i);
+        const dateString = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+        // Base daily cash flow
+        const projectedRevenue = averageDailyRevenue * (0.8 + Math.random() * 0.4); // Add some variation
+        const projectedExpenses = averageDailyExpenses;
+        const projectedVendorPayments = averageDailyVendorPayments;
+
+        // Check for scheduled vendor payments
+        const scheduledPayments = pendingPayments.filter(payment => {
+          const dueDate = new Date(payment.dueDate);
+          return dueDate.toDateString() === date.toDateString();
+        });
+
+        const scheduledPaymentAmount = scheduledPayments.reduce((sum, payment) => sum + payment.amount, 0);
+
+        const dailyInflow = projectedRevenue;
+        const dailyOutflow = projectedExpenses + projectedVendorPayments + scheduledPaymentAmount;
+        const netDailyFlow = dailyInflow - dailyOutflow;
+        
+        cumulativeCashFlow += netDailyFlow;
+
+        projections.push({
+          date: dateString,
+          projectedInflow: dailyInflow,
+          projectedOutflow: dailyOutflow,
+          netDailyFlow,
+          cumulativeCashFlow,
+          scheduledPayments: scheduledPayments.length > 0 ? scheduledPayments : null
+        });
+      }
+
+      return projections;
+    } catch (error) {
+      throw new Error('Failed to get cash flow projections: ' + error.message);
+    }
+  }
+
+  delay(ms = 300) {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 }

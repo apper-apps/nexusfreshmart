@@ -23,7 +23,7 @@ const FinancialDashboard = () => {
   const [loading, setLoading] = useState(true);
 const [error, setError] = useState(null);
   const [dateRange, setDateRange] = useState('30');
-  const [selectedView, setSelectedView] = useState('overview');
+const [selectedView, setSelectedView] = useState('overview');
   const [expenseData, setExpenseData] = useState({
     expenses: [],
     categories: [],
@@ -33,6 +33,12 @@ const [error, setError] = useState(null);
     vendors: [],
     payments: [],
     analytics: {}
+  });
+  const [cashFlowData, setCashFlowData] = useState({
+    analysis: {},
+    workingCapital: {},
+    liquidity: {},
+    projections: []
   });
   const [showExpenseForm, setShowExpenseForm] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
@@ -51,8 +57,11 @@ const [error, setError] = useState(null);
       loadExpenseData();
     } else if (selectedView === 'vendors') {
       loadVendorData();
+    } else if (selectedView === 'cashflow') {
+      loadCashFlowData();
     }
-  }, [dateRange, selectedView]);
+}, [dateRange, selectedView]);
+
   const loadFinancialData = async () => {
     try {
       setLoading(true);
@@ -111,8 +120,28 @@ const [error, setError] = useState(null);
     } finally {
       setLoading(false);
     }
-  };
+};
 
+  const loadCashFlowData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const [analysis, workingCapital, liquidity, projections] = await Promise.all([
+        financialService.getCashFlowAnalytics(parseInt(dateRange)),
+        financialService.calculateWorkingCapital(),
+        financialService.getLiquidityMetrics(parseInt(dateRange)),
+        financialService.getCashFlowProjections(30)
+      ]);
+      
+      setCashFlowData({ analysis, workingCapital, liquidity, projections });
+    } catch (err) {
+      setError(err.message);
+      toast.error('Failed to load cash flow data');
+    } finally {
+      setLoading(false);
+    }
+  };
   const handleExpenseSubmit = async (expenseData) => {
     try {
       if (editingExpense) {
@@ -496,10 +525,10 @@ const [error, setError] = useState(null);
 
 {/* Navigation Tabs */}
       <div className="border-b border-gray-200 mb-8">
-        <nav className="-mb-px flex space-x-8">
+        <nav className="-mb-px flex space-x-8 overflow-x-auto">
           <button
             onClick={() => setSelectedView('overview')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+            className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
               selectedView === 'overview'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -509,8 +538,19 @@ const [error, setError] = useState(null);
             Financial Overview
           </button>
           <button
+            onClick={() => setSelectedView('cashflow')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+              selectedView === 'cashflow'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <ApperIcon name="TrendingUp" size={16} className="mr-2 inline" />
+            Cash Flow Analysis
+          </button>
+          <button
             onClick={() => setSelectedView('expenses')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+            className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
               selectedView === 'expenses'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -521,7 +561,7 @@ const [error, setError] = useState(null);
           </button>
           <button
             onClick={() => setSelectedView('vendors')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+            className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
               selectedView === 'vendors'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -536,12 +576,17 @@ const [error, setError] = useState(null);
 {selectedView === 'overview' && (
         <>
           {/* Key Financial Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+{/* Key Financial Metrics - Enhanced with Real-time Updates */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
             <div className="card p-6 bg-gradient-to-r from-green-500 to-emerald-500 text-white">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-green-100 text-sm font-medium">Total Revenue</p>
                   <p className="text-3xl font-bold">Rs. {metrics.totalRevenue.toLocaleString()}</p>
+                  <div className="flex items-center mt-2">
+                    <ApperIcon name="TrendingUp" size={12} className="mr-1" />
+                    <span className="text-xs text-green-100">Real-time</span>
+                  </div>
                 </div>
                 <div className="bg-white/20 p-3 rounded-lg">
                   <ApperIcon name="TrendingUp" size={24} />
@@ -552,8 +597,12 @@ const [error, setError] = useState(null);
             <div className="card p-6 bg-gradient-to-r from-blue-500 to-cyan-500 text-white">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-blue-100 text-sm font-medium">Total Profit</p>
+                  <p className="text-blue-100 text-sm font-medium">Net Profit</p>
                   <p className="text-3xl font-bold">Rs. {metrics.totalProfit.toLocaleString()}</p>
+                  <div className="flex items-center mt-2">
+                    <div className={`w-2 h-2 rounded-full mr-2 ${metrics.totalProfit > 0 ? 'bg-green-300' : 'bg-red-300'}`}></div>
+                    <span className="text-xs text-blue-100">Live</span>
+                  </div>
                 </div>
                 <div className="bg-white/20 p-3 rounded-lg">
                   <ApperIcon name="DollarSign" size={24} />
@@ -566,6 +615,12 @@ const [error, setError] = useState(null);
                 <div>
                   <p className="text-purple-100 text-sm font-medium">Profit Margin</p>
                   <p className="text-3xl font-bold">{metrics.profitMargin.toFixed(1)}%</p>
+                  <div className="flex items-center mt-2">
+                    <ApperIcon name={metrics.profitMargin > 15 ? "ArrowUp" : metrics.profitMargin > 5 ? "Minus" : "ArrowDown"} size={12} className="mr-1" />
+                    <span className="text-xs text-purple-100">
+                      {metrics.profitMargin > 15 ? 'Excellent' : metrics.profitMargin > 5 ? 'Good' : 'Low'}
+                    </span>
+                  </div>
                 </div>
                 <div className="bg-white/20 p-3 rounded-lg">
                   <ApperIcon name="Percent" size={24} />
@@ -578,13 +633,34 @@ const [error, setError] = useState(null);
                 <div>
                   <p className="text-orange-100 text-sm font-medium">Return on Investment</p>
                   <p className="text-3xl font-bold">{metrics.roi.toFixed(1)}%</p>
+                  <div className="flex items-center mt-2">
+                    <ApperIcon name="Target" size={12} className="mr-1" />
+                    <span className="text-xs text-orange-100">
+                      {dateRange} days
+                    </span>
+                  </div>
                 </div>
                 <div className="bg-white/20 p-3 rounded-lg">
                   <ApperIcon name="Target" size={24} />
                 </div>
               </div>
             </div>
-          </div>
+
+            <div className="card p-6 bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-indigo-100 text-sm font-medium">Cash Position</p>
+                  <p className="text-3xl font-bold">Rs. {(metrics.totalRevenue - metrics.totalCost).toLocaleString()}</p>
+                  <div className="flex items-center mt-2">
+                    <div className="w-2 h-2 rounded-full bg-white mr-2 animate-pulse"></div>
+                    <span className="text-xs text-indigo-100">Current</span>
+                  </div>
+                </div>
+                <div className="bg-white/20 p-3 rounded-lg">
+                  <ApperIcon name="Wallet" size={24} />
+                </div>
+              </div>
+            </div>
 
           {/* Charts Section */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
@@ -858,12 +934,483 @@ const [error, setError] = useState(null);
                     </div>
                   </div>
                 </button>
+</div>
+            </div>
+          </div>
+        </>
+      )}
+      {selectedView === 'cashflow' && (
+        <>
+          {/* Cash Flow Metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="card p-6 bg-gradient-to-r from-emerald-500 to-green-500 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-emerald-100 text-sm font-medium">Cash Inflows</p>
+                  <p className="text-3xl font-bold">Rs. {cashFlowData.analysis.totalInflows?.toLocaleString() || 0}</p>
+                  <div className="flex items-center mt-2">
+                    <ApperIcon name="ArrowDownToLine" size={12} className="mr-1" />
+                    <span className="text-xs text-emerald-100">This period</span>
+                  </div>
+                </div>
+                <div className="bg-white/20 p-3 rounded-lg">
+                  <ApperIcon name="ArrowDownToLine" size={24} />
+                </div>
+              </div>
+            </div>
+
+            <div className="card p-6 bg-gradient-to-r from-red-500 to-pink-500 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-red-100 text-sm font-medium">Cash Outflows</p>
+                  <p className="text-3xl font-bold">Rs. {cashFlowData.analysis.totalOutflows?.toLocaleString() || 0}</p>
+                  <div className="flex items-center mt-2">
+                    <ApperIcon name="ArrowUpFromLine" size={12} className="mr-1" />
+                    <span className="text-xs text-red-100">This period</span>
+                  </div>
+                </div>
+                <div className="bg-white/20 p-3 rounded-lg">
+                  <ApperIcon name="ArrowUpFromLine" size={24} />
+                </div>
+              </div>
+            </div>
+
+            <div className="card p-6 bg-gradient-to-r from-blue-500 to-cyan-500 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-blue-100 text-sm font-medium">Net Cash Flow</p>
+                  <p className="text-3xl font-bold">Rs. {cashFlowData.analysis.netCashFlow?.toLocaleString() || 0}</p>
+                  <div className="flex items-center mt-2">
+                    <ApperIcon name={cashFlowData.analysis.netCashFlow > 0 ? "TrendingUp" : "TrendingDown"} size={12} className="mr-1" />
+                    <span className="text-xs text-blue-100">
+                      {cashFlowData.analysis.netCashFlow > 0 ? 'Positive' : 'Negative'}
+                    </span>
+                  </div>
+                </div>
+                <div className="bg-white/20 p-3 rounded-lg">
+                  <ApperIcon name="Activity" size={24} />
+                </div>
+              </div>
+            </div>
+
+            <div className="card p-6 bg-gradient-to-r from-purple-500 to-indigo-500 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-purple-100 text-sm font-medium">Working Capital</p>
+                  <p className="text-3xl font-bold">Rs. {cashFlowData.workingCapital.amount?.toLocaleString() || 0}</p>
+                  <div className="flex items-center mt-2">
+                    <ApperIcon name="Coins" size={12} className="mr-1" />
+                    <span className="text-xs text-purple-100">
+                      {cashFlowData.workingCapital.ratio > 1.5 ? 'Strong' : 
+                       cashFlowData.workingCapital.ratio > 1 ? 'Adequate' : 'Weak'}
+                    </span>
+                  </div>
+                </div>
+                <div className="bg-white/20 p-3 rounded-lg">
+                  <ApperIcon name="Coins" size={24} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Cash Flow Analysis Charts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            {/* Cash Flow Trend */}
+            <div className="card p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Cash Flow Trend Analysis</h2>
+              <Chart
+                options={{
+                  chart: {
+                    type: 'area',
+                    toolbar: { show: false }
+                  },
+                  stroke: {
+                    curve: 'smooth',
+                    width: [3, 3, 3]
+                  },
+                  fill: {
+                    type: 'gradient',
+                    gradient: {
+                      shade: 'light',
+                      type: 'vertical',
+                      shadeIntensity: 0.25,
+                      gradientToColors: ['#10B981', '#EF4444', '#3B82F6'],
+                      inverseColors: false,
+                      opacityFrom: 0.8,
+                      opacityTo: 0.2
+                    }
+                  },
+                  colors: ['#10B981', '#EF4444', '#3B82F6'],
+                  xaxis: {
+                    categories: cashFlowData.analysis.trendData?.map(d => d.date) || []
+                  },
+                  yaxis: {
+                    labels: {
+                      formatter: (val) => `Rs. ${val.toLocaleString()}`
+                    }
+                  },
+                  tooltip: {
+                    y: {
+                      formatter: (val) => `Rs. ${val.toLocaleString()}`
+                    }
+                  },
+                  legend: {
+                    position: 'top'
+                  }
+                }}
+                series={[
+                  {
+                    name: 'Cash Inflows',
+                    data: cashFlowData.analysis.trendData?.map(d => d.inflows) || []
+                  },
+                  {
+                    name: 'Cash Outflows',
+                    data: cashFlowData.analysis.trendData?.map(d => d.outflows) || []
+                  },
+                  {
+                    name: 'Net Cash Flow',
+                    data: cashFlowData.analysis.trendData?.map(d => d.netFlow) || []
+                  }
+                ]}
+                type="area"
+                height={350}
+              />
+            </div>
+
+            {/* Liquidity Analysis */}
+            <div className="card p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Liquidity Ratios</h2>
+              <div className="space-y-6">
+                <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-blue-900">Current Ratio</span>
+                    <span className="text-lg font-bold text-blue-700">
+                      {cashFlowData.liquidity.currentRatio?.toFixed(2) || '0.00'}
+                    </span>
+                  </div>
+                  <div className="w-full bg-blue-200 rounded-full h-2">
+                    <div 
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${Math.min((cashFlowData.liquidity.currentRatio || 0) * 50, 100)}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-blue-600 mt-2">
+                    {(cashFlowData.liquidity.currentRatio || 0) > 1.5 ? 'Excellent liquidity' : 
+                     (cashFlowData.liquidity.currentRatio || 0) > 1 ? 'Good liquidity' : 'Low liquidity'}
+                  </p>
+                </div>
+
+                <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-green-900">Quick Ratio</span>
+                    <span className="text-lg font-bold text-green-700">
+                      {cashFlowData.liquidity.quickRatio?.toFixed(2) || '0.00'}
+                    </span>
+                  </div>
+                  <div className="w-full bg-green-200 rounded-full h-2">
+                    <div 
+                      className="bg-green-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${Math.min((cashFlowData.liquidity.quickRatio || 0) * 100, 100)}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-green-600 mt-2">
+                    {(cashFlowData.liquidity.quickRatio || 0) > 1 ? 'Strong quick liquidity' : 'Monitor quick assets'}
+                  </p>
+                </div>
+
+                <div className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-purple-900">Cash Ratio</span>
+                    <span className="text-lg font-bold text-purple-700">
+                      {cashFlowData.liquidity.cashRatio?.toFixed(2) || '0.00'}
+                    </span>
+                  </div>
+                  <div className="w-full bg-purple-200 rounded-full h-2">
+                    <div 
+                      className="bg-purple-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${Math.min((cashFlowData.liquidity.cashRatio || 0) * 200, 100)}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-purple-600 mt-2">
+                    {(cashFlowData.liquidity.cashRatio || 0) > 0.5 ? 'Strong cash position' : 'Adequate cash reserves'}
+                  </p>
+                </div>
+
+                <div className="bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-orange-900">Operating Cash Flow Ratio</span>
+                    <span className="text-lg font-bold text-orange-700">
+                      {cashFlowData.liquidity.operatingCashFlowRatio?.toFixed(2) || '0.00'}
+                    </span>
+                  </div>
+                  <div className="w-full bg-orange-200 rounded-full h-2">
+                    <div 
+                      className="bg-orange-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${Math.min((cashFlowData.liquidity.operatingCashFlowRatio || 0) * 100, 100)}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-orange-600 mt-2">
+                    Ability to pay current liabilities from operations
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Cash Flow Projections and Working Capital Analysis */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            {/* Cash Flow Projections */}
+            <div className="card p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">30-Day Cash Flow Projection</h2>
+              <Chart
+                options={{
+                  chart: {
+                    type: 'line',
+                    toolbar: { show: false }
+                  },
+                  stroke: {
+                    curve: 'smooth',
+                    width: 3
+                  },
+                  colors: ['#6366F1'],
+                  xaxis: {
+                    categories: cashFlowData.projections?.map(p => p.date) || []
+                  },
+                  yaxis: {
+                    labels: {
+                      formatter: (val) => `Rs. ${val.toLocaleString()}`
+                    }
+                  },
+                  markers: {
+                    size: 5,
+                    colors: ['#6366F1'],
+                    strokeColors: '#ffffff',
+                    strokeWidth: 2
+                  },
+                  tooltip: {
+                    y: {
+                      formatter: (val) => `Rs. ${val.toLocaleString()}`
+                    }
+                  },
+                  fill: {
+                    type: 'gradient',
+                    gradient: {
+                      shade: 'light',
+                      type: 'vertical',
+                      shadeIntensity: 0.25,
+                      gradientToColors: ['#8B5CF6'],
+                      inverseColors: false,
+                      opacityFrom: 0.4,
+                      opacityTo: 0.1
+                    }
+                  }
+                }}
+                series={[
+                  {
+                    name: 'Projected Cash Balance',
+                    data: cashFlowData.projections?.map(p => p.cumulativeCashFlow) || []
+                  }
+                ]}
+                type="area"
+                height={300}
+              />
+              
+              <div className="mt-4 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <ApperIcon name="Info" size={16} className="text-indigo-600" />
+                  <div>
+                    <p className="text-sm font-medium text-indigo-900">
+                      Projected minimum cash: Rs. {Math.min(...(cashFlowData.projections?.map(p => p.cumulativeCashFlow) || [0])).toLocaleString()}
+                    </p>
+                    <p className="text-xs text-indigo-600">
+                      Based on historical trends and pending obligations
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Working Capital Analysis */}
+            <div className="card p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Working Capital Analysis</h2>
+              
+              <div className="space-y-4">
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-medium text-green-900">Current Assets</h3>
+                    <span className="text-lg font-bold text-green-700">
+                      Rs. {cashFlowData.workingCapital.currentAssets?.toLocaleString() || 0}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <span className="text-green-600">Cash & Equivalents:</span>
+                      <p className="font-medium">Rs. {cashFlowData.workingCapital.cash?.toLocaleString() || 0}</p>
+                    </div>
+                    <div>
+                      <span className="text-green-600">Accounts Receivable:</span>
+                      <p className="font-medium">Rs. {cashFlowData.workingCapital.receivables?.toLocaleString() || 0}</p>
+                    </div>
+                    <div>
+                      <span className="text-green-600">Inventory:</span>
+                      <p className="font-medium">Rs. {cashFlowData.workingCapital.inventory?.toLocaleString() || 0}</p>
+                    </div>
+                    <div>
+                      <span className="text-green-600">Other Current:</span>
+                      <p className="font-medium">Rs. {cashFlowData.workingCapital.otherCurrentAssets?.toLocaleString() || 0}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-r from-red-50 to-pink-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-medium text-red-900">Current Liabilities</h3>
+                    <span className="text-lg font-bold text-red-700">
+                      Rs. {cashFlowData.workingCapital.currentLiabilities?.toLocaleString() || 0}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <span className="text-red-600">Accounts Payable:</span>
+                      <p className="font-medium">Rs. {cashFlowData.workingCapital.payables?.toLocaleString() || 0}</p>
+                    </div>
+                    <div>
+                      <span className="text-red-600">Short-term Debt:</span>
+                      <p className="font-medium">Rs. {cashFlowData.workingCapital.shortTermDebt?.toLocaleString() || 0}</p>
+                    </div>
+                    <div>
+                      <span className="text-red-600">Accrued Expenses:</span>
+                      <p className="font-medium">Rs. {cashFlowData.workingCapital.accruedExpenses?.toLocaleString() || 0}</p>
+                    </div>
+                    <div>
+                      <span className="text-red-600">Other Current:</span>
+                      <p className="font-medium">Rs. {cashFlowData.workingCapital.otherCurrentLiabilities?.toLocaleString() || 0}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-medium text-blue-900">Net Working Capital</h3>
+                    <span className="text-2xl font-bold text-blue-700">
+                      Rs. {cashFlowData.workingCapital.amount?.toLocaleString() || 0}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-blue-600">Working Capital Ratio:</span>
+                    <span className="font-medium text-blue-800">
+                      {cashFlowData.workingCapital.ratio?.toFixed(2) || '0.00'}
+                    </span>
+                  </div>
+                  <div className="mt-2">
+                    <div className="w-full bg-blue-200 rounded-full h-2">
+                      <div 
+                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${Math.min((cashFlowData.workingCapital.ratio || 0) * 50, 100)}%` }}
+                      ></div>
+                    </div>
+                    <p className="text-xs text-blue-600 mt-1">
+                      {(cashFlowData.workingCapital.ratio || 0) > 1.5 ? 'Strong liquidity position' : 
+                       (cashFlowData.workingCapital.ratio || 0) > 1 ? 'Adequate working capital' : 'Monitor liquidity closely'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Cash Flow Insights and Recommendations */}
+          <div className="card p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">Cash Flow Insights & Recommendations</h2>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div>
+                <h3 className="font-medium text-gray-900 mb-4">Current Financial Health</h3>
+                <div className="space-y-3">
+                  {cashFlowData.analysis.netCashFlow > 0 && (
+                    <div className="flex items-start space-x-3 p-3 bg-green-50 rounded-lg">
+                      <ApperIcon name="CheckCircle" size={16} className="text-green-600 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-green-900">Positive Cash Flow</p>
+                        <p className="text-xs text-green-700">Your business is generating more cash than it's spending</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {cashFlowData.analysis.netCashFlow < 0 && (
+                    <div className="flex items-start space-x-3 p-3 bg-red-50 rounded-lg">
+                      <ApperIcon name="AlertTriangle" size={16} className="text-red-600 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-red-900">Negative Cash Flow</p>
+                        <p className="text-xs text-red-700">Your business is spending more cash than it's generating</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {(cashFlowData.workingCapital.ratio || 0) > 1.5 && (
+                    <div className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg">
+                      <ApperIcon name="Shield" size={16} className="text-blue-600 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-blue-900">Strong Liquidity</p>
+                        <p className="text-xs text-blue-700">Excellent ability to meet short-term obligations</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {(cashFlowData.workingCapital.ratio || 0) < 1 && (
+                    <div className="flex items-start space-x-3 p-3 bg-yellow-50 rounded-lg">
+                      <ApperIcon name="AlertCircle" size={16} className="text-yellow-600 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-yellow-900">Liquidity Concern</p>
+                        <p className="text-xs text-yellow-700">Monitor cash position closely</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-medium text-gray-900 mb-4">Action Recommendations</h3>
+                <div className="space-y-3">
+                  {cashFlowData.analysis.netCashFlow < 0 && (
+                    <div className="flex items-start space-x-3 p-3 bg-orange-50 rounded-lg">
+                      <ApperIcon name="Lightbulb" size={16} className="text-orange-600 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-orange-900">Improve Collections</p>
+                        <p className="text-xs text-orange-700">Focus on reducing accounts receivable and accelerating payments</p>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-start space-x-3 p-3 bg-purple-50 rounded-lg">
+                    <ApperIcon name="TrendingUp" size={16} className="text-purple-600 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-purple-900">Monitor Daily</p>
+                      <p className="text-xs text-purple-700">Track cash position daily for better financial control</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-3 p-3 bg-indigo-50 rounded-lg">
+                    <ApperIcon name="Target" size={16} className="text-indigo-600 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-indigo-900">Optimize Inventory</p>
+                      <p className="text-xs text-indigo-700">Balance inventory levels to improve cash flow</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+                    <ApperIcon name="Calendar" size={16} className="text-gray-600 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Plan Ahead</p>
+                      <p className="text-xs text-gray-700">Use projections to anticipate and prepare for cash needs</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </>
       )}
-
       {selectedView === 'expenses' && (
         <>
           {/* Expense Metrics */}
