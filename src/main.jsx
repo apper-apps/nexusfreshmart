@@ -1,8 +1,8 @@
-import '@/index.css';
-import React, { useEffect, useState } from "react";
-import ReactDOM from "react-dom/client";
-import App from "@/App";
-import Error from "@/components/ui/Error";
+import '@/index.css'
+import React, { useEffect, useState } from 'react'
+import ReactDOM from 'react-dom/client'
+import App from '@/App'
+import Error from '@/components/ui/Error'
 
 // Performance monitoring
 const performanceMonitor = {
