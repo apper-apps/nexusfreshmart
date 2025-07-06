@@ -243,7 +243,7 @@ async getPendingVerifications() {
     return this.orders
       .filter(order => {
         // Include orders with payment proof requiring verification
-        const hasPaymentProof = order.paymentProof && order.paymentProof.fileName;
+        const hasPaymentProof = order.paymentProof && (order.paymentProof.fileName || order.paymentProofFileName);
         const isPendingVerification = order.verificationStatus === 'pending' || 
                                     (!order.verificationStatus && hasPaymentProof &&
                                      (order.paymentMethod === 'jazzcash' || order.paymentMethod === 'easypaisa' || order.paymentMethod === 'bank'));
@@ -255,9 +255,9 @@ async getPendingVerifications() {
         amount: order?.total || order?.totalAmount || 0,
         paymentMethod: order?.paymentMethod || 'unknown',
         customerName: order?.deliveryAddress?.name || 'Unknown',
-        paymentProof: `/api/uploads/${order?.paymentProof?.fileName || 'default.jpg'}`, // Simulate proof URL
-        paymentProofFileName: order?.paymentProof?.fileName || 'unknown',
-        submittedAt: order?.paymentProof?.uploadedAt || order?.createdAt,
+        paymentProof: `/api/uploads/${order?.paymentProof?.fileName || order?.paymentProofFileName || 'default.jpg'}`, // Simulate proof URL
+        paymentProofFileName: order?.paymentProof?.fileName || order?.paymentProofFileName || 'unknown',
+        submittedAt: order?.paymentProof?.uploadedAt || order?.paymentProofSubmittedAt || order?.createdAt,
         verificationStatus: order?.verificationStatus || 'pending'
       }));
   }

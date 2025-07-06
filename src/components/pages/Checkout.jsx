@@ -213,8 +213,11 @@ const orderData = {
         paymentMethod,
         paymentResult,
         paymentStatus: paymentMethod === 'cash' ? 'pending' : 'pending_verification',
-        paymentProof: paymentProofData,
-        paymentProofFileName: paymentProof?.name || null,
+        paymentProof: paymentProofData ? {
+          fileName: paymentProof?.name || null,
+          fileSize: paymentProof?.size || 0,
+          uploadedAt: new Date().toISOString()
+        } : null,
         transactionId: transactionId || paymentResult?.transactionId || null,
         deliveryAddress: {
           name: formData.name,
@@ -225,7 +228,8 @@ const orderData = {
           postalCode: formData.postalCode,
           instructions: formData.instructions
         },
-        status: paymentMethod === 'cash' ? 'confirmed' : 'payment_pending'
+        status: paymentMethod === 'cash' ? 'confirmed' : 'payment_pending',
+        verificationStatus: paymentMethod === 'cash' ? null : 'pending'
       }
 
       const order = await orderService.create(orderData)
