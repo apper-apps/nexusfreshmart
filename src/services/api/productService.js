@@ -1,6 +1,6 @@
-import productsData from "@/mockData/products.json";
 import React from "react";
 import Error from "@/components/ui/Error";
+import productsData from "@/services/mockData/products.json";
 
 class ProductService {
   constructor() {
@@ -19,7 +19,7 @@ class ProductService {
       throw new Error('Product not found');
     }
     return { ...product };
-}
+  }
 
   async create(productData) {
     await this.delay();
@@ -385,9 +385,10 @@ console.error('Error calculating financial health:', error);
           });
         };
         
-        img.onerror = () => {
+img.onerror = () => {
           resolve({ isValid: false, error: 'Invalid or corrupted image file' });
-img.src = URL.createObjectURL(file);
+        };
+        img.src = URL.createObjectURL(file);
       });
       
     } catch (error) {
