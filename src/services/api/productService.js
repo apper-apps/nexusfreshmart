@@ -1,3 +1,5 @@
+import React from "react";
+import Error from "@/components/ui/Error";
 import productsData from "@/services/mockData/products.json";
 
 class ProductService {
@@ -705,12 +707,24 @@ width = targetHeight * aspectRatio;
     return baseImages;
   }
 
-  // Enhanced Unsplash search with comprehensive category mapping and attribution
+// Enhanced Unsplash search with comprehensive category mapping and attribution
   searchUnsplashImages(query, options = {}) {
     const { category, orientation, loadMore } = options;
     
-    // Category-specific search terms for better results
+    // Comprehensive category-specific search terms for enhanced food discovery
     const categoryMappings = {
+      'vegetables': ['fresh vegetables', 'organic vegetables', 'farm vegetables', 'leafy greens', 'root vegetables', 'colorful vegetables'],
+      'fruits': ['fresh fruits', 'tropical fruits', 'seasonal fruits', 'organic fruits', 'citrus fruits', 'berry fruits'],
+      'meat': ['premium meat', 'fresh meat cuts', 'grass fed beef', 'organic meat', 'butcher quality', 'gourmet meat'],
+      'dairy': ['fresh dairy', 'organic dairy', 'farm dairy', 'artisan cheese', 'fresh milk', 'creamy dairy'],
+      'bakery': ['artisan bread', 'fresh bakery', 'sourdough bread', 'pastries', 'handmade bread', 'golden bread'],
+      'seafood': ['fresh seafood', 'ocean fish', 'sustainable seafood', 'wild caught fish', 'premium seafood', 'market fresh fish'],
+      'beverages': ['fresh beverages', 'natural drinks', 'craft beverages', 'healthy drinks', 'artisan coffee', 'fresh juice'],
+      'spices': ['aromatic spices', 'fresh herbs', 'organic spices', 'cooking spices', 'herb garden', 'spice collection'],
+      'organic': ['organic produce', 'certified organic', 'sustainable farming', 'natural foods', 'eco friendly', 'farm to table'],
+      'snacks': ['healthy snacks', 'natural snacks', 'gourmet snacks', 'artisan snacks', 'wholesome treats', 'premium snacks'],
+      
+      // Legacy support for existing categories
       'Fresh Vegetables': ['vegetables', 'fresh produce', 'organic vegetables', 'farm fresh'],
       'Tropical Fruits': ['tropical fruits', 'exotic fruits', 'fresh fruits', 'colorful fruits'],
       'Dairy Products': ['dairy', 'milk products', 'cheese', 'yogurt'],
@@ -724,10 +738,12 @@ width = targetHeight * aspectRatio;
     const searchTerms = categoryMappings[category] || [query];
     const randomTerm = searchTerms[Math.floor(Math.random() * searchTerms.length)];
     
-    // Simulated high-quality Unsplash results with proper attribution
+    // Enhanced photographer database for more diverse attribution
     const photographers = [
       'Brooke Lark', 'Edgar Castrejon', 'Thought Catalog', 'Nadya Spetnitskaya',
-      'Annie Spratt', 'Monika Grabkowska', 'Louis Hansel', 'Jakub Kapusnak'
+      'Annie Spratt', 'Monika Grabkowska', 'Louis Hansel', 'Jakub Kapusnak',
+      'Dan Gold', 'Eiliv-Sonas Aceron', 'Caroline Attwood', 'Farhad Ibrahimzade',
+      'Priscilla Du Preez', 'Markus Spiske', 'Freddy G', 'Taylor Kiser'
     ];
     
     const mockUnsplashImages = Array.from({ length: loadMore ? 12 : 6 }, (_, index) => ({
@@ -752,18 +768,31 @@ width = targetHeight * aspectRatio;
   }
 
   // Generate relevant tags for image categorization
+// Enhanced tag generation for comprehensive image categorization
   generateImageTags(query, category) {
     const baseTags = query.toLowerCase().split(' ');
+    
+    // Comprehensive category tag mappings for better search accuracy
     const categoryTags = {
+      'vegetables': ['organic', 'healthy', 'green', 'fresh', 'natural', 'farm', 'nutritious', 'colorful'],
+      'fruits': ['sweet', 'vitamin', 'tropical', 'seasonal', 'juicy', 'colorful', 'antioxidant', 'ripe'],
+      'meat': ['protein', 'quality', 'fresh', 'gourmet', 'butcher', 'premium', 'grass-fed', 'tender'],
+      'dairy': ['creamy', 'calcium', 'protein', 'fresh', 'natural', 'pasteurized', 'rich', 'smooth'],
+      'bakery': ['handmade', 'artisan', 'golden', 'crispy', 'traditional', 'warm', 'freshly-baked', 'crusty'],
+      'seafood': ['omega-3', 'wild-caught', 'sustainable', 'marine', 'delicate', 'fresh-caught', 'oceanic'],
+      'beverages': ['refreshing', 'cold', 'natural', 'healthy', 'thirst-quenching', 'energizing', 'pure'],
+      'spices': ['aromatic', 'flavorful', 'fragrant', 'exotic', 'pungent', 'culinary', 'seasoning'],
+      'organic': ['certified', 'sustainable', 'eco-friendly', 'chemical-free', 'natural', 'wholesome'],
+      'snacks': ['crunchy', 'satisfying', 'portable', 'tasty', 'convenient', 'wholesome', 'guilt-free'],
+      
+      // Legacy support
       'Fresh Vegetables': ['organic', 'healthy', 'green', 'fresh', 'natural'],
       'Tropical Fruits': ['colorful', 'exotic', 'sweet', 'vitamin', 'tropical'],
       'Dairy Products': ['creamy', 'calcium', 'protein', 'fresh', 'natural'],
       'Premium Meat': ['protein', 'quality', 'fresh', 'gourmet', 'butcher'],
       'Artisan Bakery': ['handmade', 'artisan', 'golden', 'crispy', 'traditional'],
       'Beverages': ['refreshing', 'cold', 'thirst', 'natural', 'healthy']
-    };
-    
-    const tags = [...baseTags, ...(categoryTags[category] || ['food', 'ingredient'])];
+const tags = [...baseTags, ...(categoryTags[category] || ['food', 'ingredient', 'culinary'])];
     return [...new Set(tags)]; // Remove duplicates
   }
 
@@ -778,6 +807,7 @@ width = targetHeight * aspectRatio;
     }));
   }
 
+  // AI Image Generation with Stable Diffusion simulation
   // AI Image Generation with Stable Diffusion simulation
   async generateAIImage(prompt, options = {}) {
     try {
