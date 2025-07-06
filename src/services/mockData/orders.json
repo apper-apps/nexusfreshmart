@@ -268,7 +268,55 @@
         "lng": 74.3586
       },
       "instructions": "Ring bell at main gate"
+"instructions": "Ring bell at main gate"
     },
     "createdAt": "2024-01-20T08:45:00Z"
+  },
+  {
+    "id": 7,
+    "customerId": "user404",
+    "items": [
+      {
+        "productId": 12,
+        "name": "Organic Honey",
+        "price": 450,
+        "quantity": 1,
+        "unit": "bottle"
+      },
+      {
+        "productId": 10,
+        "name": "Fresh Milk",
+        "price": 85,
+        "quantity": 2,
+        "unit": "liter"
+      }
+    ],
+    "total": 770,
+    "deliveryCharge": 150,
+    "paymentMethod": "jazzcash",
+    "paymentProof": {
+      "fileName": "jazzcash_order7.jpg",
+      "fileSize": 1920,
+      "uploadedAt": "2024-01-21T10:15:00Z"
+    },
+    "status": "confirmed",
+    "verificationStatus": "verified",
+    "deliveryPersonId": null,
+    "deliveryStatus": "pending_assignment",
+    "estimatedDelivery": "2024-01-22T16:00:00Z",
+    "actualDelivery": null,
+    "deliveryAddress": {
+      "name": "Ayesha Siddiqui",
+      "phone": "+92 306 2222333",
+      "email": "ayesha@example.com",
+      "address": "456 Johar Town, Block H",
+      "city": "Lahore",
+      "postalCode": "54782",
+      "coordinates": {
+        "lat": 31.4697,
+        "lng": 74.2728
+      },
+      "instructions": "Please call before arriving"
+    },
+    "createdAt": "2024-01-21T09:30:00Z"
   }
-]

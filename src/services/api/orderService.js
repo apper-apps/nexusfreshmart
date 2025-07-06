@@ -319,7 +319,46 @@ return {
     };
   }
 
-delay() {
+// Order Calculation Methods
+  calculateOrderSubtotal(items) {
+    if (!items || !Array.isArray(items)) {
+      return 0;
+    }
+    
+    return items.reduce((subtotal, item) => {
+      const itemPrice = parseFloat(item.price) || 0;
+      const itemQuantity = parseInt(item.quantity) || 0;
+      return subtotal + (itemPrice * itemQuantity);
+    }, 0);
+  }
+
+  calculateOrderTotal(items, deliveryCharge = 0) {
+    const subtotal = this.calculateOrderSubtotal(items);
+    const delivery = parseFloat(deliveryCharge) || 0;
+    return subtotal + delivery;
+  }
+
+  validateOrderAmount(order) {
+    const calculatedSubtotal = this.calculateOrderSubtotal(order.items);
+    const calculatedTotal = this.calculateOrderTotal(order.items, order.deliveryCharge);
+    
+    // Return calculated values if order total is missing or zero
+    if (!order.total || order.total === 0) {
+      return {
+        subtotal: calculatedSubtotal,
+        total: calculatedTotal,
+        isCalculated: true
+      };
+    }
+    
+    return {
+      subtotal: calculatedSubtotal,
+      total: order.total,
+      isCalculated: false
+    };
+  }
+
+  delay() {
     return new Promise(resolve => setTimeout(resolve, 400));
   }
 }

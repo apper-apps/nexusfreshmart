@@ -113,16 +113,25 @@ const Orders = () => {
                       )}
                     </div>
                   )}
-                
 <div className="text-right">
-                    <p className="text-xl font-bold gradient-text">
-                      Rs. {(order?.total || 0).toLocaleString()}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      {order?.items?.length || 0} items
-                    </p>
-                  </div>
+                  <p className="text-xl font-bold gradient-text">
+                    Rs. {(() => {
+                      // Calculate subtotal if order total is missing or zero
+                      if (!order?.total || order.total === 0) {
+                        const itemsSubtotal = order?.items?.reduce((sum, item) => {
+                          return sum + ((item.price || 0) * (item.quantity || 0));
+                        }, 0) || 0;
+                        const deliveryCharge = order?.deliveryCharge || 0;
+                        return (itemsSubtotal + deliveryCharge).toLocaleString();
+                      }
+                      return order.total.toLocaleString();
+                    })()}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {order?.items?.length || 0} items
+                  </p>
                 </div>
+              </div>
               </div>
 
             {/* Order Items Preview */}
