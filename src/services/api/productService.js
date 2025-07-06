@@ -113,7 +113,6 @@ class ProductService {
         price: 2.99,
         category: 'Fruits',
         stock: 100,
-        isActive: true
       },
       {
         id: 2,
