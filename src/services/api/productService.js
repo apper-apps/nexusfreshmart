@@ -1,4 +1,6 @@
 import productsData from "@/mockData/products.json";
+import React from "react";
+import Error from "@/components/ui/Error";
 
 class ProductService {
   constructor() {
@@ -230,10 +232,10 @@ async bulkUpdatePrices(updateData) {
     const minSellingPrice = purchasePrice > 0 ? purchasePrice * 1.1 : 0;
     
     // Calculate profit margin percentage
-    let profitMargin = 0;
+let profitMargin = 0;
     if (purchasePrice > 0 && finalPrice > 0) {
       profitMargin = ((finalPrice - purchasePrice) / purchasePrice) * 100;
-}
+    }
 
     return {
       minSellingPrice: Math.round(minSellingPrice * 100) / 100,
@@ -385,11 +387,8 @@ console.error('Error calculating financial health:', error);
         
         img.onerror = () => {
           resolve({ isValid: false, error: 'Invalid or corrupted image file' });
-        };
-        
-        img.src = URL.createObjectURL(file);
+img.src = URL.createObjectURL(file);
       });
-});
       
     } catch (error) {
       return { isValid: false, error: 'Failed to validate image' };
