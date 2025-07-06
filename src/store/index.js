@@ -15,10 +15,12 @@ export const store = configureStore({
   reducer: {
     cart: persistedCartReducer
   },
-  middleware: (getDefaultMiddleware) =>
+middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE']
+        ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
+        ignoredActionsPaths: ['meta.arg', 'payload.timestamp'],
+        ignoredPaths: ['cart.items.updatedAt']
       }
     })
 });

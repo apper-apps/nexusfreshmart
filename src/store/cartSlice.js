@@ -54,7 +54,7 @@ const cartSlice = createSlice({
     },
     
     updateQuantity: (state, action) => {
-      const { productId, quantity } = action.payload;
+const { productId, quantity } = action.payload;
       
       if (quantity <= 0) {
         state.items = state.items.filter(item => item.id !== productId);
@@ -65,21 +65,13 @@ const cartSlice = createSlice({
           const validQuantity = Math.min(quantity, item.stock);
           item.quantity = validQuantity;
           item.updatedAt = Date.now();
-          item.isUpdating = true;
-          
-          // Remove updating flag after animation
-          setTimeout(() => {
-            const currentItem = state.items.find(i => i.id === productId);
-            if (currentItem) {
-              currentItem.isUpdating = false;
-            }
-          }, 300);
+          // Note: isUpdating flag should be managed at component level
+          // to avoid async operations in reducers
         }
       }
       
       cartSlice.caseReducers.calculateTotals(state);
     },
-    
     clearCart: (state) => {
       state.items = [];
       state.total = 0;
