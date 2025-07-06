@@ -1,4 +1,6 @@
 import axios from "axios";
+import React from "react";
+import Error from "@/components/ui/Error";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
 export const productService = {
@@ -506,10 +508,8 @@ ctx.drawImage(img, 0, 0);
         };
         img.src = URL.createObjectURL(file);
       });
-      
-    } catch (error) {
-      
-    } catch (error) {
+} catch (error) {
+      console.error('Error validating image:', error);
       return { isValid: false, error: 'Failed to validate image' };
     }
   }
@@ -908,9 +908,7 @@ aspectRatio: '1:1'
       'beverages': ['refreshing', 'cold', 'natural', 'healthy', 'thirst-quenching', 'energizing', 'pure'],
       'spices': ['aromatic', 'flavorful', 'fragrant', 'exotic', 'pungent', 'culinary', 'seasoning'],
       'organic': ['certified', 'sustainable', 'eco-friendly', 'chemical-free', 'natural', 'wholesome'],
-      'snacks': ['crunchy', 'satisfying', 'portable', 'tasty', 'convenient', 'wholesome', 'guilt-free'],
 'snacks': ['crunchy', 'satisfying', 'portable', 'tasty', 'convenient', 'wholesome', 'guilt-free'],
-      
       // Legacy support
       'Fresh Vegetables': ['organic', 'healthy', 'green', 'fresh', 'natural'],
       'Tropical Fruits': ['colorful', 'exotic', 'sweet', 'vitamin', 'tropical'],
