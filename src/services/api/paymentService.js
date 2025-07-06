@@ -431,26 +431,12 @@ generateTransactionId() {
     return { ...transaction };
   }
 
-  async withdrawFromWallet(amount) {
+async withdrawFromWallet(amount) {
     await this.delay(500);
     
     if (amount <= 0) {
       throw new Error('Withdrawal amount must be positive');
     }
-async getWalletBalance(userRole = null) {
-    if (userRole) {
-      this.currentUserRole = userRole;
-    }
-    
-    await this.delay(200);
-    
-    // Check if user has permission to view wallet balance
-    if (!this.validateFinancialAccess()) {
-      throw new Error('Insufficient permissions. Wallet balance access requires admin or finance manager role.');
-    }
-    
-    return this.walletBalance;
-  }
 
     if (amount > this.walletBalance) {
       throw new Error('Insufficient wallet balance');
@@ -470,6 +456,21 @@ async getWalletBalance(userRole = null) {
 
     this.walletTransactions.push(transaction);
     return { ...transaction };
+  }
+
+  async getWalletBalance(userRole = null) {
+    if (userRole) {
+      this.currentUserRole = userRole;
+    }
+    
+    await this.delay(200);
+    
+    // Check if user has permission to view wallet balance
+    if (!this.validateFinancialAccess()) {
+      throw new Error('Insufficient permissions. Wallet balance access requires admin or finance manager role.');
+    }
+    
+    return this.walletBalance;
   }
 
   async transferFromWallet(amount, recipientId = null) {
@@ -545,7 +546,7 @@ async getWalletBalance(userRole = null) {
   }
 
 // Gateway Configuration Management
-  async getGatewayConfig() {
+async getGatewayConfig() {
     await this.delay(200);
     return {
       cardGateway: {
@@ -562,7 +563,13 @@ async getWalletBalance(userRole = null) {
         enabled: true,
         accounts: [
           { bank: 'HBL', account: '1234567890' },
-async getWalletTransactions(limit = 50, userRole = null) {
+          { bank: 'UBL', account: '0987654321' }
+        ]
+      }
+    };
+  }
+
+  async getWalletTransactions(limit = 50, userRole = null) {
     if (userRole) {
       this.currentUserRole = userRole;
     }
@@ -579,11 +586,6 @@ async getWalletTransactions(limit = 50, userRole = null) {
       .slice(0, limit);
       
     return this.filterPaymentFinancialData(transactions);
-  }
-          { bank: 'UBL', account: '0987654321' }
-        ]
-      }
-    };
   }
 
   async updateGatewayConfig(gatewayId, config) {
@@ -792,19 +794,9 @@ delay(ms = 300) {
       amount: billData.amount,
       description: billData.description,
       billNumber: billData.billNumber || this.generateBillNumber(),
+billNumber: billData.billNumber || this.generateBillNumber(),
       dueDate: billData.dueDate || this.calculateDueDate(vendor.paymentTerms),
       status: 'pending',
-async getAllVendors(userRole = null) {
-    if (userRole) {
-      this.currentUserRole = userRole;
-    }
-    
-    await this.delay(300);
-    
-    // Apply financial data filtering to vendor information
-    const vendors = [...this.vendors];
-    return this.filterPaymentFinancialData(vendors);
-  }
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       createdBy: this.currentUserRole,
@@ -821,6 +813,17 @@ async getAllVendors(userRole = null) {
 
     return { ...bill };
   }
+
+  async getAllVendors(userRole = null) {
+    if (userRole) {
+      this.currentUserRole = userRole;
+    }
+    
+    await this.delay(300);
+    
+    // Apply financial data filtering to vendor information
+    const vendors = [...this.vendors];
+    return this.filterPaymentFinancialData(vendors);
 
   async processVendorBillPayment(billId, paymentData) {
     await this.delay(800);
