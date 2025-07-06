@@ -1,4 +1,6 @@
 import axios from "axios";
+import React from "react";
+import Error from "@/components/ui/Error";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
 export const productService = {
@@ -514,7 +516,7 @@ return new Promise((resolve) => {
   }
 
   // Enhanced image variance calculation for blur detection
-  calculateImageVariance(imageData) {
+calculateImageVariance(imageData) {
     let sum = 0;
     let sumSquared = 0;
     let edgeSum = 0;
@@ -538,11 +540,10 @@ return new Promise((resolve) => {
     const mean = sum / pixelCount;
     const variance = (sumSquared / pixelCount) - (mean * mean);
     const edgeIntensity = edgeSum / pixelCount;
-const edgeIntensity = edgeSum / pixelCount;
     
     // Combine variance and edge intensity for better blur detection
+    return variance + (edgeIntensity * 2);
   }
-
   detectTextWatermarks(imageData, width, height) {
     try {
       const pixelCount = width * height;
@@ -701,6 +702,7 @@ const edgeIntensity = edgeSum / pixelCount;
 // Calculate optimal dimensions for image resizing with aspect ratio enforcement
   calculateOptimalDimensions(originalWidth, originalHeight, targetWidth, targetHeight, enforceSquare = false) {
     const targetAspectRatio = targetWidth / targetHeight;
+    const aspectRatio = originalWidth / originalHeight;
     
     let width, height;
     
@@ -722,12 +724,11 @@ const edgeIntensity = edgeSum / pixelCount;
       height = targetWidth / aspectRatio;
     } else {
       // Image is taller than target
-height = targetHeight;
+      height = targetHeight;
       width = targetHeight * aspectRatio;
     }
     return { width: Math.round(width), height: Math.round(height) };
-}
-  
+  }
   // Get dynamic image dimensions for frame compatibility
   getDynamicImageDimensions(viewportWidth = 1200, enforceSquare = true) {
     try {
@@ -820,11 +821,11 @@ height: 600,
       return baseImages.filter(img => img.category === category);
     }
     
-    return baseImages;
+return baseImages;
   }
-}
 
   // Enhanced Unsplash search with comprehensive category mapping and attribution
+  searchUnsplashImages(query, options = {}) {
     const { category, orientation, loadMore } = options;
     
     // Comprehensive category-specific search terms for enhanced food discovery
@@ -882,10 +883,8 @@ height: 600,
     
     return mockUnsplashImages;
   }
-
-}
-
-  // Generate relevant tags for image categorization
+// Generate relevant tags for image categorization
+  generateImageTags(query, category) {
     const baseTags = query.toLowerCase().split(' ');
     
     // Comprehensive category tag mappings for better search accuracy
@@ -897,7 +896,7 @@ height: 600,
       'bakery': ['handmade', 'artisan', 'golden', 'crispy', 'traditional', 'warm', 'freshly-baked', 'crusty'],
       'seafood': ['omega-3', 'wild-caught', 'sustainable', 'marine', 'delicate', 'fresh-caught', 'oceanic'],
       'beverages': ['refreshing', 'cold', 'natural', 'healthy', 'thirst-quenching', 'energizing', 'pure'],
-'spices': ['aromatic', 'flavorful', 'fragrant', 'exotic', 'pungent', 'culinary', 'seasoning'],
+      'spices': ['aromatic', 'flavorful', 'fragrant', 'exotic', 'pungent', 'culinary', 'seasoning'],
       'organic': ['certified', 'sustainable', 'eco-friendly', 'chemical-free', 'natural', 'wholesome'],
       'snacks': ['crunchy', 'satisfying', 'portable', 'tasty', 'convenient', 'wholesome', 'guilt-free'],
       // Legacy support
@@ -922,9 +921,8 @@ height: 600,
       commercialUse: image.source === 'unsplash' || image.source === 'internal'
     }));
   }
-}
-
-  // AI Image Generation with Stable Diffusion simulation
+// AI Image Generation with Stable Diffusion simulation
+  async generateAIImage(prompt, options = {}) {
     try {
       const {
         style = 'realistic',
@@ -974,7 +972,6 @@ height: 600,
       throw new Error('Failed to generate AI image: ' + error.message);
     }
   }
-
   // Enhance AI prompts for better results
   enhanceAIPrompt(prompt, style, category) {
     const styleEnhancements = {
