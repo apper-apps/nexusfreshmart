@@ -178,13 +178,13 @@ return (
               <div data-testid="app-loaded" style={{ display: 'none' }}>App Loaded</div>
               {/* Role Switcher (Development Only) */}
               {import.meta.env.DEV && (
-<select 
+                <div className="fixed top-2 right-2 z-50">
+                  <select 
                     data-testid="role-selector"
                     value={user.role} 
                     onChange={(e) => setUserRole(e.target.value)}
                     className="px-2 py-1 rounded bg-gray-800 text-white text-xs"
                   >
-                    <option value="customer">Customer</option>
                     <option value="customer">Customer</option>
                     <option value="admin">Admin</option>
                     <option value="finance_manager">Finance Manager</option>
@@ -192,18 +192,16 @@ return (
                   </select>
                 </div>
               )}
-              
-              {/* Minimal SDK Status Indicator (only in development) */}
+{/* Minimal SDK Status Indicator (only in development) */}
               {import.meta.env.DEV && sdkError && (
-<div className="px-2 py-1 rounded bg-orange-500 text-white">
+                <div className="fixed top-2 left-2 z-50">
+                  <div className="px-2 py-1 rounded bg-orange-500 text-white text-xs">
                     SDK: Background Loading
                   </div>
                 </div>
               )}
-              
-              <Suspense fallback={<Loading type="page" />}>
 <Suspense fallback={<Loading type="page" />}>
-              <Routes>
+                <Routes>
                 <Route path="/" element={<Layout />}>
                   {/* Core routes - no lazy loading */}
                   <Route index element={<Home />} />
@@ -279,7 +277,7 @@ return (
                       <PayrollManagement />
                     </Suspense>
                   } />
-                </Route>
+</Route>
               </Routes>
             </Suspense>
             <ToastContainer
