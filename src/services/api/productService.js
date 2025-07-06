@@ -1,6 +1,4 @@
 import productsData from "../mockData/products.json";
-import React from "react";
-import Error from "@/components/ui/Error";
 
 class ProductService {
   constructor() {
@@ -28,7 +26,6 @@ async create(productData) {
     if (!productData.name || !productData.price || productData.stock === undefined) {
       throw new Error('Name, price, and stock are required fields');
     }
-
     // Validate data types and constraints
     if (productData.price <= 0) {
       throw new Error('Price must be greater than 0');
@@ -117,7 +114,6 @@ async bulkUpdatePrices(updateData) {
     if (!validation.isValid) {
       throw new Error(validation.error);
     }
-
     let filteredProducts = [...this.products];
     
     // Filter by category
@@ -212,7 +208,6 @@ async bulkUpdatePrices(updateData) {
 delay(ms = 150) { // Reduced delay for faster perceived performance
     return new Promise(resolve => setTimeout(resolve, ms));
   }
-
   // Calculate profit metrics for a product
   calculateProfitMetrics(productData) {
     const price = parseFloat(productData.price) || 0;
@@ -248,6 +243,7 @@ return {
       finalPrice: Math.round(finalPrice * 100) / 100
     };
   }
+  
   // Enhanced profit metrics calculation with error handling
   getDisplayMetrics(product) {
     try {
@@ -319,5 +315,7 @@ return {
       console.error('Error calculating financial health:', error);
       return 'unknown';
     }
-  }
+}
+}
+
 export const productService = new ProductService();
