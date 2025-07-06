@@ -307,7 +307,6 @@ export const {
 } = cartSlice.actions;
 
 // Export async thunks
-export { validateCartPrices, addToCartWithValidation, updateQuantityWithValidation };
 // Selectors
 export const selectCartItems = (state) => state.cart.items;
 export const selectCartTotal = (state) => state.cart.total;
