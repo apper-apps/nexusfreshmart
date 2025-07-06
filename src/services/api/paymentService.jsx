@@ -164,7 +164,7 @@ export const paymentService = {
     }
   },
 
-  // Cancel payment
+// Cancel payment
   async cancelPayment(transactionId) {
     try {
       if (!transactionId) {
@@ -183,7 +183,133 @@ export const paymentService = {
         error: error.response?.data?.message || 'Failed to cancel payment'
       };
     }
+  },
+
+  // Wallet Management Methods
+  async getWalletBalance() {
+    try {
+      // Mock wallet balance for development
+      const mockBalance = 15000 + Math.floor(Math.random() * 10000);
+      return mockBalance;
+    } catch (error) {
+      console.error('Error getting wallet balance:', error);
+      throw new Error('Failed to get wallet balance');
+    }
+  },
+
+  async getWalletTransactions() {
+    try {
+      // Mock wallet transactions for development
+      const mockTransactions = [
+        {
+          id: 'wt_001',
+          type: 'deposit',
+          amount: 5000,
+          date: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+          description: 'Deposit from bank account',
+          status: 'completed'
+        },
+        {
+          id: 'wt_002',
+          type: 'withdrawal',
+          amount: 2500,
+          date: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
+          description: 'Withdrawal to bank account',
+          status: 'completed'
+        },
+        {
+          id: 'wt_003',
+          type: 'transfer',
+          amount: 1000,
+          date: new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString(),
+          description: 'Transfer to supplier',
+          status: 'pending'
+        }
+      ];
+      return mockTransactions;
+    } catch (error) {
+      console.error('Error getting wallet transactions:', error);
+      throw new Error('Failed to get wallet transactions');
+    }
+  },
+
+  async depositToWallet(amount) {
+    try {
+      if (!amount || amount <= 0) {
+        throw new Error('Amount must be greater than 0');
+      }
+
+      // Mock deposit operation
+      const transaction = {
+        id: `dep_${Date.now()}`,
+        type: 'deposit',
+        amount: parseFloat(amount),
+        date: new Date().toISOString(),
+        status: 'completed',
+        description: `Deposit of Rs. ${amount.toLocaleString()}`
+      };
+
+      return {
+        success: true,
+        data: transaction
+      };
+    } catch (error) {
+      console.error('Error depositing to wallet:', error);
+      throw new Error(error.message || 'Failed to deposit to wallet');
+    }
+  },
+
+  async withdrawFromWallet(amount) {
+    try {
+      if (!amount || amount <= 0) {
+        throw new Error('Amount must be greater than 0');
+      }
+
+      // Mock withdrawal operation
+      const transaction = {
+        id: `wit_${Date.now()}`,
+        type: 'withdrawal',
+        amount: parseFloat(amount),
+        date: new Date().toISOString(),
+        status: 'completed',
+        description: `Withdrawal of Rs. ${amount.toLocaleString()}`
+      };
+
+      return {
+        success: true,
+        data: transaction
+      };
+    } catch (error) {
+      console.error('Error withdrawing from wallet:', error);
+      throw new Error(error.message || 'Failed to withdraw from wallet');
+    }
+  },
+
+  async transferFromWallet(amount, recipient) {
+    try {
+      if (!amount || amount <= 0) {
+        throw new Error('Amount must be greater than 0');
+      }
+
+      // Mock transfer operation
+      const transaction = {
+        id: `tra_${Date.now()}`,
+        type: 'transfer',
+        amount: parseFloat(amount),
+        date: new Date().toISOString(),
+        status: 'completed',
+        description: `Transfer of Rs. ${amount.toLocaleString()}${recipient ? ` to ${recipient}` : ''}`,
+        recipient: recipient || 'Unknown'
+      };
+
+      return {
+        success: true,
+        data: transaction
+      };
+    } catch (error) {
+      console.error('Error transferring from wallet:', error);
+      throw new Error(error.message || 'Failed to transfer from wallet');
+    }
   }
 };
-
 export default paymentService;
