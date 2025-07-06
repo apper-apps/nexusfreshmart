@@ -34,6 +34,8 @@ async getById(id) {
 const newOrder = {
       id: this.getNextId(),
       ...orderData,
+      // Preserve user-provided transaction ID over payment result transaction ID
+      transactionId: orderData.transactionId || orderData.paymentResult?.transactionId || null,
       paymentStatus: orderData.paymentStatus || (orderData.paymentMethod === 'cash' ? 'pending' : 'completed'),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()

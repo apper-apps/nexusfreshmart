@@ -6,6 +6,7 @@ import ApperIcon from "@/components/ApperIcon";
 import Button from "@/components/atoms/Button";
 import Input from "@/components/atoms/Input";
 import Error from "@/components/ui/Error";
+import Loading from "@/components/ui/Loading";
 import Account from "@/components/pages/Account";
 import PaymentMethod from "@/components/molecules/PaymentMethod";
 import { orderService } from "@/services/api/orderService";
@@ -200,7 +201,7 @@ function handleFileUpload(e) {
         }
       }
 
-      const orderData = {
+const orderData = {
         items: cart.map(item => ({
           id: item.id,
           name: item.name,
@@ -208,14 +209,13 @@ function handleFileUpload(e) {
           quantity: item.quantity,
           image: item.image
         })),
-        total,
         deliveryCharge,
         paymentMethod,
-paymentResult,
+        paymentResult,
         paymentStatus: paymentMethod === 'cash' ? 'pending' : 'pending_verification',
         paymentProof: paymentProofData,
         paymentProofFileName: paymentProof?.name || null,
-        transactionId: transactionId || null,
+        transactionId: transactionId || paymentResult?.transactionId || null,
         deliveryAddress: {
           name: formData.name,
           phone: formData.phone,
@@ -256,7 +256,7 @@ paymentResult,
         throw new Error(`Payment method ${paymentMethod} is not available`)
       }
 
-      if (paymentMethod === 'card') {
+if (paymentMethod === 'card') {
         paymentResult = await paymentService.processCardPayment(
           { 
             cardNumber: '4111111111111111', 
@@ -290,6 +290,11 @@ paymentResult,
             throw new Error('Payment verification failed')
           }
         }
+      }
+
+      // Override system-generated transaction ID with user-provided one for non-cash payments
+      if (paymentResult && transactionId && paymentMethod !== 'cash') {
+        paymentResult.transactionId = transactionId;
       }
 
       // Complete the order
