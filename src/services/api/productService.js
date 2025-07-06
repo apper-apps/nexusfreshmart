@@ -787,12 +787,15 @@ width = targetHeight * aspectRatio;
       
       // Legacy support
       'Fresh Vegetables': ['organic', 'healthy', 'green', 'fresh', 'natural'],
+'Fresh Vegetables': ['organic', 'healthy', 'green', 'fresh', 'natural'],
       'Tropical Fruits': ['colorful', 'exotic', 'sweet', 'vitamin', 'tropical'],
       'Dairy Products': ['creamy', 'calcium', 'protein', 'fresh', 'natural'],
       'Premium Meat': ['protein', 'quality', 'fresh', 'gourmet', 'butcher'],
       'Artisan Bakery': ['handmade', 'artisan', 'golden', 'crispy', 'traditional'],
       'Beverages': ['refreshing', 'cold', 'thirst', 'natural', 'healthy']
-const tags = [...baseTags, ...(categoryTags[category] || ['food', 'ingredient', 'culinary'])];
+    };
+    
+    const tags = [...baseTags, ...(categoryTags[category] || ['food', 'ingredient', 'culinary'])];
     return [...new Set(tags)]; // Remove duplicates
   }
 
