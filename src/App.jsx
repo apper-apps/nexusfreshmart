@@ -20,6 +20,7 @@ const Analytics = React.lazy(() => import('@/components/pages/Analytics'));
 const FinancialDashboard = React.lazy(() => import('@/components/pages/FinancialDashboard'));
 const POS = React.lazy(() => import('@/components/pages/POS'));
 const PaymentManagement = React.lazy(() => import('@/components/pages/PaymentManagement'));
+const PayrollManagement = React.lazy(() => import('@/components/pages/PayrollManagement'));
 const DeliveryTracking = React.lazy(() => import('@/components/pages/DeliveryTracking'));
 const AIGenerate = React.lazy(() => import('@/components/pages/AIGenerate'));
 const Category = React.lazy(() => import('@/components/pages/Category'));
@@ -193,9 +194,14 @@ return (
                       <PaymentManagement />
                     </Suspense>
                   } />
-                  <Route path="admin/ai-generate" element={
+<Route path="admin/ai-generate" element={
                     <Suspense fallback={<Loading type="page" />}>
                       <AIGenerate />
+                    </Suspense>
+                  } />
+                  <Route path="admin/payroll" element={
+                    <Suspense fallback={<Loading type="page" />}>
+                      <PayrollManagement />
                     </Suspense>
                   } />
                 </Route>

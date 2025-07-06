@@ -1,0 +1,152 @@
+[
+  {
+    "Id": 1,
+    "employeeId": 1,
+    "date": "2024-01-15",
+    "clockIn": "09:00",
+    "clockOut": "17:30",
+    "notes": "Regular workday",
+    "createdAt": "2024-01-15T09:00:00.000Z",
+    "updatedAt": "2024-01-15T17:30:00.000Z"
+  },
+  {
+    "Id": 2,
+    "employeeId": 2,
+    "date": "2024-01-15",
+    "clockIn": "08:45",
+    "clockOut": "17:15",
+    "notes": "Marketing meeting",
+    "createdAt": "2024-01-15T08:45:00.000Z",
+    "updatedAt": "2024-01-15T17:15:00.000Z"
+  },
+  {
+    "Id": 3,
+    "employeeId": 3,
+    "date": "2024-01-15",
+    "clockIn": "09:15",
+    "clockOut": "18:00",
+    "notes": "HR training session",
+    "createdAt": "2024-01-15T09:15:00.000Z",
+    "updatedAt": "2024-01-15T18:00:00.000Z"
+  },
+  {
+    "Id": 4,
+    "employeeId": 4,
+    "date": "2024-01-15",
+    "clockIn": "09:00",
+    "clockOut": "17:00",
+    "notes": "Financial reports",
+    "createdAt": "2024-01-15T09:00:00.000Z",
+    "updatedAt": "2024-01-15T17:00:00.000Z"
+  },
+  {
+    "Id": 5,
+    "employeeId": 5,
+    "date": "2024-01-15",
+    "clockIn": "09:30",
+    "clockOut": "18:30",
+    "notes": "Code review sessions",
+    "createdAt": "2024-01-15T09:30:00.000Z",
+    "updatedAt": "2024-01-15T18:30:00.000Z"
+  },
+  {
+    "Id": 6,
+    "employeeId": 1,
+    "date": "2024-01-16",
+    "clockIn": "08:50",
+    "clockOut": "17:20",
+    "notes": "Team standup",
+    "createdAt": "2024-01-16T08:50:00.000Z",
+    "updatedAt": "2024-01-16T17:20:00.000Z"
+  },
+  {
+    "Id": 7,
+    "employeeId": 2,
+    "date": "2024-01-16",
+    "clockIn": "09:00",
+    "clockOut": "17:30",
+    "notes": "Campaign planning",
+    "createdAt": "2024-01-16T09:00:00.000Z",
+    "updatedAt": "2024-01-16T17:30:00.000Z"
+  },
+  {
+    "Id": 8,
+    "employeeId": 6,
+    "date": "2024-01-15",
+    "clockIn": "09:00",
+    "clockOut": "17:00",
+    "notes": "Client calls",
+    "createdAt": "2024-01-15T09:00:00.000Z",
+    "updatedAt": "2024-01-15T17:00:00.000Z"
+  },
+  {
+    "Id": 9,
+    "employeeId": 7,
+    "date": "2024-01-15",
+    "clockIn": "08:30",
+    "clockOut": "17:45",
+    "notes": "Operations review",
+    "createdAt": "2024-01-15T08:30:00.000Z",
+    "updatedAt": "2024-01-15T17:45:00.000Z"
+  },
+  {
+    "Id": 10,
+    "employeeId": 8,
+    "date": "2024-01-15",
+    "clockIn": "09:15",
+    "clockOut": "17:15",
+    "notes": "Design review",
+    "createdAt": "2024-01-15T09:15:00.000Z",
+    "updatedAt": "2024-01-15T17:15:00.000Z"
+  },
+  {
+    "Id": 11,
+    "employeeId": 9,
+    "date": "2024-01-15",
+    "clockIn": "08:45",
+    "clockOut": "18:15",
+    "notes": "Infrastructure maintenance",
+    "createdAt": "2024-01-15T08:45:00.000Z",
+    "updatedAt": "2024-01-15T18:15:00.000Z"
+  },
+  {
+    "Id": 12,
+    "employeeId": 10,
+    "date": "2024-01-15",
+    "clockIn": "09:00",
+    "clockOut": "17:00",
+    "notes": "Customer support",
+    "createdAt": "2024-01-15T09:00:00.000Z",
+    "updatedAt": "2024-01-15T17:00:00.000Z"
+  },
+  {
+    "Id": 13,
+    "employeeId": 1,
+    "date": "2024-01-17",
+    "clockIn": "09:00",
+    "clockOut": null,
+    "notes": "Currently working",
+    "createdAt": "2024-01-17T09:00:00.000Z",
+    "updatedAt": "2024-01-17T09:00:00.000Z"
+  },
+  {
+    "Id": 14,
+    "employeeId": 3,
+    "date": "2024-01-17",
+    "clockIn": "09:10",
+    "clockOut": null,
+    "notes": "Currently working",
+    "createdAt": "2024-01-17T09:10:00.000Z",
+    "updatedAt": "2024-01-17T09:10:00.000Z"
+  },
+  {
+    "Id": 15,
+    "employeeId": 5,
+    "date": "2024-01-17",
+    "clockIn": "09:20",
+    "clockOut": null,
+    "notes": "Currently working",
+    "createdAt": "2024-01-17T09:20:00.000Z",
+    "updatedAt": "2024-01-17T09:20:00.000Z"
+  }
+]
