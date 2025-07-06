@@ -1,4 +1,4 @@
-import productsData from "../mockData/products.json";
+import productsData from "@/mockData/products.json";
 
 class ProductService {
   constructor() {
@@ -17,8 +17,9 @@ class ProductService {
       throw new Error('Product not found');
     }
     return { ...product };
-  }
-async create(productData) {
+}
+
+  async create(productData) {
     await this.delay();
     // Validate required fields
     if (!productData.name || !productData.price || productData.stock === undefined) {
@@ -32,7 +33,8 @@ async create(productData) {
     if (productData.stock < 0) {
       throw new Error('Stock cannot be negative');
     }
-const newProduct = {
+
+    const newProduct = {
       id: this.getNextId(),
       ...productData,
       price: parseFloat(productData.price),
@@ -198,8 +200,9 @@ async bulkUpdatePrices(updateData) {
     }
 
     return { isValid: true };
-  }
-delay(ms = 150) { // Reduced delay for faster perceived performance
+}
+
+  delay(ms = 150) { // Reduced delay for faster perceived performance
     return new Promise(resolve => setTimeout(resolve, ms));
   }
   
@@ -230,8 +233,9 @@ delay(ms = 150) { // Reduced delay for faster perceived performance
     let profitMargin = 0;
     if (purchasePrice > 0 && finalPrice > 0) {
       profitMargin = ((finalPrice - purchasePrice) / purchasePrice) * 100;
-    }
-return {
+}
+
+    return {
       minSellingPrice: Math.round(minSellingPrice * 100) / 100,
       profitMargin: Math.round(profitMargin * 100) / 100,
       finalPrice: Math.round(finalPrice * 100) / 100
@@ -305,11 +309,12 @@ return {
       if (margin > 0) return 'poor';
       return 'loss';
     } catch (error) {
-      console.error('Error calculating financial health:', error);
-return 'unknown';
+console.error('Error calculating financial health:', error);
+      return 'unknown';
     }
   }
-// Image validation and processing methods
+
+  // Image validation and processing methods
   // Enhanced image validation with watermark/text detection and quality assessment
   async validateImage(file) {
     try {
@@ -384,13 +389,14 @@ return 'unknown';
         
         img.src = URL.createObjectURL(file);
       });
+});
       
-} catch (error) {
-      console.error('Error validating image:', error);
+    } catch (error) {
       return { isValid: false, error: 'Failed to validate image' };
     }
   }
-// Enhanced image variance calculation for blur detection
+
+  // Enhanced image variance calculation for blur detection
   calculateImageVariance(imageData) {
     let sum = 0;
     let sumSquared = 0;
@@ -416,10 +422,10 @@ return 'unknown';
     const variance = (sumSquared / pixelCount) - (mean * mean);
     const edgeIntensity = edgeSum / pixelCount;
     
-    // Combine variance and edge intensity for better blur detection
 // Combine variance and edge intensity for better blur detection
     return variance + (edgeIntensity * 0.5);
   }
+
   detectTextWatermarks(imageData, width, height) {
     try {
       const pixelCount = width * height;
@@ -601,9 +607,8 @@ return 'unknown';
     } else {
       // Image is taller than target
       height = targetHeight;
-      width = targetHeight * aspectRatio;
-}
-    
+width = targetHeight * aspectRatio;
+    }
     return { width: Math.round(width), height: Math.round(height) };
   }
   // Get dynamic image dimensions for frame compatibility
@@ -644,10 +649,9 @@ return 'unknown';
         height: 600,
         aspectRatio: '1:1'
       };
-    }
 }
   }
-  
+
   // Enhanced image search from multiple sources with category filtering and attribution
   async searchImages(query, options = {}) {
     try {
