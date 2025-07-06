@@ -1611,7 +1611,7 @@ const ImageUploadSystem = ({
         </div>
       )}
 
-      {/* AI Search Tab */}
+{/* Enhanced Unsplash Search Tab */}
       {imageData.activeTab === 'search' && (
         <UnsplashImageSearch
           imageData={imageData}
@@ -1620,15 +1620,16 @@ const ImageUploadSystem = ({
           onImageSelect={handleImageSelect}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
+          formData={formData}
         />
       )}
 
-{/* AI Image Generator */}
+{/* Enhanced AI Image Generator Tab */}
       {imageData.activeTab === 'ai-generate' && (
         <AIImageGenerator
           imageData={imageData}
           setImageData={setImageData}
-          onImageGenerate={onAIImageGenerate}
+          onImageGenerate={handleAIImageGenerate}
           onImageSelect={handleImageSelect}
           formData={formData}
         />
