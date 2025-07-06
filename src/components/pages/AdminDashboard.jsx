@@ -79,7 +79,6 @@ const AdminDashboard = () => {
       const sortedOrdersData = [...(orders || [])].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
       setSortedOrders(sortedOrdersData || [])
       setRecentOrders(sortedOrdersData.slice(0, 5) || [])
-setRecentOrders(sortedOrdersData.slice(0, 5) || []);
 
       setStats({
         walletBalance: walletBalance || 0,
@@ -100,6 +99,8 @@ setRecentOrders(sortedOrdersData.slice(0, 5) || []);
   useEffect(() => {
     loadDashboardData();
   }, []);
+
+  if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Loading type="dashboard" />
