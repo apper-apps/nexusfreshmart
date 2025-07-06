@@ -932,15 +932,15 @@ const [selectedView, setSelectedView] = useState('overview');
                       <p className="font-medium text-gray-900">Generate Report</p>
                       <p className="text-sm text-gray-600">Export financial summary</p>
                     </div>
-</div>
+<p className="text-sm text-gray-600">Export financial summary</p>
+                    </div>
+                  </div>
                 </button>
-</div>
+              </div>
+            </div>
           </div>
         </>
       )}
-      {selectedView === 'cashflow' && (
-      {selectedView === 'cashflow' && (
-        <>
           {/* Cash Flow Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div className="card p-6 bg-gradient-to-r from-emerald-500 to-green-500 text-white">
