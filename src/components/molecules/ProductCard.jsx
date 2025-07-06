@@ -105,25 +105,15 @@ return (
           )}
         </div>
 
-        {/* Financial Metrics Row */}
-        {(product.profitMargin || product.minSellingPrice) && (
+{/* Customer Value Row */}
+        {product.previousPrice && product.previousPrice > product.price && (
           <div className="flex items-center justify-between text-xs">
-            {product.profitMargin && (
-              <Badge 
-                variant={
-                  parseFloat(product.profitMargin) > 25 ? "success" : 
-                  parseFloat(product.profitMargin) > 15 ? "warning" : "danger"
-                }
-                size="small"
-              >
-                {product.profitMargin}% profit
-              </Badge>
-            )}
-            {product.minSellingPrice && (
-              <span className="text-gray-500">
-                Min: Rs. {parseFloat(product.minSellingPrice).toLocaleString()}
-              </span>
-            )}
+            <Badge variant="success" size="small">
+              Great Savings
+            </Badge>
+            <span className="text-green-600 font-medium">
+              Save Rs. {(product.previousPrice - product.price).toLocaleString()}
+            </span>
           </div>
         )}
 
