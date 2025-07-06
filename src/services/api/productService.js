@@ -325,10 +325,6 @@ async bulkUpdatePrices(updateData) {
 
     return { isValid: true };
 }
-
-  delay(ms = 150) { // Reduced delay for faster perceived performance
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
   
   // Calculate profit metrics for a product
   calculateProfitMetrics(productData) {
@@ -1110,7 +1106,6 @@ width = targetHeight * aspectRatio;
 };
   }
 }
-
 const productServiceInstance = new ProductService();
-export { productService, productServiceInstance };
+export { productServiceInstance };
 export default productServiceInstance;
