@@ -220,39 +220,36 @@ async getMonthlyRevenue() {
     const monthlyOrders = this.orders.filter(order => {
       const orderDate = new Date(order.createdAt);
       return orderDate.getMonth() === currentMonth && orderDate.getFullYear() === currentYear;
-    });
+});
     
-    return monthlyOrders.reduce((sum, order) => sum + order.total, 0);
+    return monthlyOrders.reduce((sum, order) => sum + (order?.total || 0), 0);
   }
-
   async getRevenueByPaymentMethod() {
     await this.delay();
     const revenueByMethod = {};
     
-    this.orders.forEach(order => {
-      const method = order.paymentMethod || 'unknown';
-      revenueByMethod[method] = (revenueByMethod[method] || 0) + order.total;
+this.orders.forEach(order => {
+      const method = order?.paymentMethod || 'unknown';
+      revenueByMethod[method] = (revenueByMethod[method] || 0) + (order?.total || 0);
     });
     
     return revenueByMethod;
-return revenueByMethod;
   }
-
   // Payment Verification Methods
 async getPendingVerifications() {
     await this.delay();
     return this.orders
       .filter(order => order.verificationStatus === 'pending' && order.paymentProof)
-      .map(order => ({
-        Id: order.id,
-        orderId: order.id,
-        amount: order.total,
-        paymentMethod: order.paymentMethod,
-        customerName: order.deliveryAddress?.name || 'Unknown',
-        paymentProof: `/api/uploads/${order.paymentProof.fileName}`, // Simulate proof URL
-        paymentProofFileName: order.paymentProof.fileName,
-        submittedAt: order.paymentProof.uploadedAt || order.createdAt,
-        verificationStatus: order.verificationStatus
+.map(order => ({
+        Id: order?.id,
+        orderId: order?.id,
+        amount: order?.total || 0,
+        paymentMethod: order?.paymentMethod || 'unknown',
+        customerName: order?.deliveryAddress?.name || 'Unknown',
+        paymentProof: `/api/uploads/${order?.paymentProof?.fileName || 'default.jpg'}`, // Simulate proof URL
+        paymentProofFileName: order?.paymentProof?.fileName || 'unknown',
+        submittedAt: order?.paymentProof?.uploadedAt || order?.createdAt,
+        verificationStatus: order?.verificationStatus || 'pending'
       }));
   }
 
@@ -302,14 +299,14 @@ async updateVerificationStatus(orderId, status, notes = '') {
       return null;
     }
 
-    return {
-      orderId: order.id,
-      submittedAt: order.paymentProofSubmittedAt,
-      verifiedAt: order.verifiedAt,
-      status: order.verificationStatus,
-      notes: order.verificationNotes,
-      paymentProof: order.paymentProof,
-      paymentProofFileName: order.paymentProofFileName
+return {
+      orderId: order?.id,
+      submittedAt: order?.paymentProofSubmittedAt,
+      verifiedAt: order?.verifiedAt,
+      status: order?.verificationStatus || 'pending',
+      notes: order?.verificationNotes || '',
+      paymentProof: order?.paymentProof || null,
+      paymentProofFileName: order?.paymentProofFileName || 'unknown'
     };
   }
 

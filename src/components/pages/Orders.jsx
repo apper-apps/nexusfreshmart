@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { format } from 'date-fns';
-import ApperIcon from '@/components/ApperIcon';
-import OrderStatusBadge from '@/components/molecules/OrderStatusBadge';
-import Loading from '@/components/ui/Loading';
-import Error from '@/components/ui/Error';
-import Empty from '@/components/ui/Empty';
-import { orderService } from '@/services/api/orderService';
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { format } from "date-fns";
+import ApperIcon from "@/components/ApperIcon";
+import Empty from "@/components/ui/Empty";
+import Error from "@/components/ui/Error";
+import Loading from "@/components/ui/Loading";
+import OrderStatusBadge from "@/components/molecules/OrderStatusBadge";
+import { orderService } from "@/services/api/orderService";
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);
@@ -90,39 +90,40 @@ const Orders = () => {
                 </div>
               </div>
 <div className="flex items-center space-x-4">
-                <OrderStatusBadge status={order.status} />
-                {(order.paymentMethod === 'jazzcash' || order.paymentMethod === 'easypaisa' || order.paymentMethod === 'bank') && (
-                  <div className="flex items-center space-x-1">
-                    {order.verificationStatus === 'verified' && (
-                      <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full flex items-center">
-                        <ApperIcon name="CheckCircle" size={12} className="mr-1" />
-                        Payment Verified
-                      </span>
-                    )}
-                    {order.verificationStatus === 'rejected' && (
-                      <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full flex items-center">
-                        <ApperIcon name="XCircle" size={12} className="mr-1" />
-                        Payment Rejected
-                      </span>
-                    )}
-                    {order.verificationStatus === 'pending' && (
-                      <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full flex items-center">
-                        <ApperIcon name="Clock" size={12} className="mr-1" />
-                        Pending Verification
-                      </span>
-                    )}
+                  <OrderStatusBadge status={order.status} />
+                  {(order.paymentMethod === 'jazzcash' || order.paymentMethod === 'easypaisa' || order.paymentMethod === 'bank') && (
+                    <div className="flex items-center space-x-1">
+                      {order.verificationStatus === 'verified' && (
+                        <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full flex items-center">
+                          <ApperIcon name="CheckCircle" size={12} className="mr-1" />
+                          Payment Verified
+                        </span>
+                      )}
+                      {order.verificationStatus === 'rejected' && (
+                        <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full flex items-center">
+                          <ApperIcon name="XCircle" size={12} className="mr-1" />
+                          Payment Rejected
+                        </span>
+                      )}
+                      {order.verificationStatus === 'pending' && (
+                        <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full flex items-center">
+                          <ApperIcon name="Clock" size={12} className="mr-1" />
+                          Pending Verification
+                        </span>
+                      )}
+                    </div>
+                  )}
+                
+                  <div className="text-right">
+                    <p className="text-xl font-bold gradient-text">
+                      Rs. {(order?.total || 0).toLocaleString()}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      {order?.items?.length || 0} items
+                    </p>
                   </div>
-                )}
-                <div className="text-right">
-                  <p className="text-xl font-bold gradient-text">
-                    Rs. {order.total.toLocaleString()}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    {order.items.length} items
-                  </p>
                 </div>
               </div>
-            </div>
 
             {/* Order Items Preview */}
             <div className="bg-gray-50 rounded-lg p-4 mb-4">
