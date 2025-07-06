@@ -1,9 +1,80 @@
 import { productService } from './productService';
 import { orderService } from './orderService';
 
+// Mock expense data with proper Id structure
+const mockExpenses = [
+  {
+    Id: 1,
+    amount: 25000,
+    vendor: 'City Landlord',
+    category: 'Rent',
+    description: 'Monthly office rent',
+    date: '2024-01-15',
+    receiptUrl: null,
+    createdAt: '2024-01-15T10:00:00Z'
+  },
+  {
+    Id: 2,
+    amount: 45000,
+    vendor: 'Staff Payroll',
+    category: 'Salaries',
+    description: 'Monthly staff salaries',
+    date: '2024-01-01',
+    receiptUrl: null,
+    createdAt: '2024-01-01T09:00:00Z'
+  },
+  {
+    Id: 3,
+    amount: 2500,
+    vendor: 'Metro Transport',
+    category: 'Transportation',
+    description: 'Business travel expenses',
+    date: '2024-01-10',
+    receiptUrl: null,
+    createdAt: '2024-01-10T14:30:00Z'
+  },
+  {
+    Id: 4,
+    amount: 3200,
+    vendor: 'City Power Co',
+    category: 'Utilities',
+    description: 'Electricity bill',
+    date: '2024-01-05',
+    receiptUrl: null,
+    createdAt: '2024-01-05T11:15:00Z'
+  },
+  {
+    Id: 5,
+    amount: 8000,
+    vendor: 'Digital Marketing Co',
+    category: 'Marketing',
+    description: 'Facebook and Google ads',
+    date: '2024-01-12',
+    receiptUrl: null,
+    createdAt: '2024-01-12T16:45:00Z'
+  }
+];
+
+const expenseCategories = [
+  { Id: 1, name: 'Rent', icon: 'Home', color: '#EF4444' },
+  { Id: 2, name: 'Salaries', icon: 'Users', color: '#3B82F6' },
+  { Id: 3, name: 'Transportation', icon: 'Car', color: '#10B981' },
+  { Id: 4, name: 'Utilities', icon: 'Zap', color: '#F59E0B' },
+  { Id: 5, name: 'Marketing', icon: 'Megaphone', color: '#8B5CF6' },
+  { Id: 6, name: 'Office Supplies', icon: 'Package', color: '#06B6D4' },
+  { Id: 7, name: 'Equipment', icon: 'Monitor', color: '#84CC16' },
+  { Id: 8, name: 'Insurance', icon: 'Shield', color: '#EC4899' },
+  { Id: 9, name: 'Professional Services', icon: 'Briefcase', color: '#F97316' },
+  { Id: 10, name: 'Travel', icon: 'Plane', color: '#6366F1' },
+  { Id: 11, name: 'Maintenance', icon: 'Wrench', color: '#14B8A6' },
+  { Id: 12, name: 'Other', icon: 'MoreHorizontal', color: '#6B7280' }
+];
+
 class FinancialService {
   constructor() {
     this.financialData = [];
+    this.expenses = [...mockExpenses];
+    this.expenseIdCounter = Math.max(...mockExpenses.map(e => e.Id), 0) + 1;
   }
 
   async getFinancialMetrics(days = 30) {
@@ -411,6 +482,203 @@ class FinancialService {
     }
     
     return recommendations;
+  }
+// Expense Management Methods
+  async getExpenses(days = 30) {
+    await this.delay();
+    
+    try {
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(endDate.getDate() - days);
+
+      const filteredExpenses = this.expenses.filter(expense => {
+        const expenseDate = new Date(expense.date);
+        return expenseDate >= startDate && expenseDate <= endDate;
+      });
+
+      return [...filteredExpenses].sort((a, b) => new Date(b.date) - new Date(a.date));
+    } catch (error) {
+      throw new Error('Failed to get expenses: ' + error.message);
+    }
+  }
+
+  async getExpenseById(id) {
+    await this.delay();
+    
+    try {
+      const expense = this.expenses.find(e => e.Id === parseInt(id));
+      if (!expense) {
+        throw new Error('Expense not found');
+      }
+      return { ...expense };
+    } catch (error) {
+      throw new Error('Failed to get expense: ' + error.message);
+    }
+  }
+
+  async createExpense(expenseData) {
+    await this.delay();
+    
+    try {
+      const newExpense = {
+        Id: this.expenseIdCounter++,
+        amount: parseFloat(expenseData.amount),
+        vendor: expenseData.vendor,
+        category: expenseData.category,
+        description: expenseData.description,
+        date: expenseData.date,
+        receiptUrl: expenseData.receiptUrl || null,
+        createdAt: new Date().toISOString()
+      };
+
+      this.expenses.push(newExpense);
+      return { ...newExpense };
+    } catch (error) {
+      throw new Error('Failed to create expense: ' + error.message);
+    }
+  }
+
+  async updateExpense(id, expenseData) {
+    await this.delay();
+    
+    try {
+      const index = this.expenses.findIndex(e => e.Id === parseInt(id));
+      if (index === -1) {
+        throw new Error('Expense not found');
+      }
+
+      const updatedExpense = {
+        ...this.expenses[index],
+        amount: parseFloat(expenseData.amount),
+        vendor: expenseData.vendor,
+        category: expenseData.category,
+        description: expenseData.description,
+        date: expenseData.date,
+        receiptUrl: expenseData.receiptUrl || this.expenses[index].receiptUrl
+      };
+
+      this.expenses[index] = updatedExpense;
+      return { ...updatedExpense };
+    } catch (error) {
+      throw new Error('Failed to update expense: ' + error.message);
+    }
+  }
+
+  async deleteExpense(id) {
+    await this.delay();
+    
+    try {
+      const index = this.expenses.findIndex(e => e.Id === parseInt(id));
+      if (index === -1) {
+        throw new Error('Expense not found');
+      }
+
+      this.expenses.splice(index, 1);
+      return { success: true };
+    } catch (error) {
+      throw new Error('Failed to delete expense: ' + error.message);
+    }
+  }
+
+  async getExpenseCategories() {
+    await this.delay();
+    return [...expenseCategories];
+  }
+
+  async processReceiptOCR(file) {
+    await this.delay(1000); // Simulate OCR processing time
+    
+    try {
+      // Mock OCR processing - in reality, this would use actual OCR service
+      const mockOCRResults = [
+        {
+          success: true,
+          amount: 1250.00,
+          vendor: 'Tech Store',
+          date: new Date().toISOString().split('T')[0],
+          category: 'Office Supplies',
+          description: 'Computer accessories'
+        },
+        {
+          success: true,
+          amount: 450.75,
+          vendor: 'Cafe Express',
+          date: new Date().toISOString().split('T')[0],
+          category: 'Other',
+          description: 'Business lunch meeting'
+        },
+        {
+          success: true,
+          amount: 2800.00,
+          vendor: 'Transport Co',
+          date: new Date().toISOString().split('T')[0],
+          category: 'Transportation',
+          description: 'Business travel'
+        }
+      ];
+
+      // Return a random mock result
+      return mockOCRResults[Math.floor(Math.random() * mockOCRResults.length)];
+    } catch (error) {
+      throw new Error('Failed to process receipt: ' + error.message);
+    }
+  }
+
+  async getExpenseAnalytics(days = 30) {
+    await this.delay();
+    
+    try {
+      const expenses = await this.getExpenses(days);
+      
+      // Calculate total expenses
+      const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+      
+      // Calculate monthly average
+      const monthlyAverage = days >= 30 ? totalExpenses / (days / 30) : totalExpenses;
+      
+      // Category breakdown
+      const categoryBreakdown = {};
+      expenses.forEach(expense => {
+        const category = expense.category;
+        categoryBreakdown[category] = (categoryBreakdown[category] || 0) + expense.amount;
+      });
+      
+      const categoryBreakdownArray = Object.entries(categoryBreakdown)
+        .map(([category, amount]) => ({ category, amount }))
+        .sort((a, b) => b.amount - a.amount);
+      
+      // Top category
+      const topCategory = categoryBreakdownArray.length > 0 ? categoryBreakdownArray[0].category : 'N/A';
+      
+      // Trend data (daily expenses)
+      const trendData = [];
+      for (let i = days - 1; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dateString = date.toISOString().split('T')[0];
+        
+        const dayExpenses = expenses.filter(expense => expense.date === dateString);
+        const dayTotal = dayExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+        
+        trendData.push({
+          date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          amount: dayTotal
+        });
+      }
+      
+      return {
+        totalExpenses,
+        monthlyAverage,
+        topCategory,
+        categoryBreakdown: categoryBreakdownArray,
+        trendData,
+        expenseCount: expenses.length,
+        averageExpense: expenses.length > 0 ? totalExpenses / expenses.length : 0
+      };
+    } catch (error) {
+      throw new Error('Failed to get expense analytics: ' + error.message);
+    }
   }
 
   delay(ms = 300) {
