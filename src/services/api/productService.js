@@ -1,4 +1,6 @@
 import productsData from "../mockData/products.json";
+import React from "react";
+import Error from "@/components/ui/Error";
 
 class ProductService {
   constructor() {
@@ -446,12 +448,24 @@ return {
     }
   }
 
-  // Calculate optimal dimensions for image resizing
-  calculateOptimalDimensions(originalWidth, originalHeight, targetWidth, targetHeight) {
+// Calculate optimal dimensions for image resizing with aspect ratio enforcement
+  calculateOptimalDimensions(originalWidth, originalHeight, targetWidth, targetHeight, enforceSquare = false) {
     const aspectRatio = originalWidth / originalHeight;
     const targetAspectRatio = targetWidth / targetHeight;
     
     let width, height;
+    
+    // Enforce 1:1 aspect ratio if requested
+    if (enforceSquare) {
+      const size = Math.min(targetWidth, targetHeight);
+      // Ensure size is within constraints (400-1200px)
+      const constrainedSize = Math.max(400, Math.min(size, 1200));
+      return { 
+        width: constrainedSize, 
+        height: constrainedSize,
+        aspectRatio: '1:1'
+      };
+    }
     
     if (aspectRatio > targetAspectRatio) {
       // Image is wider than target
@@ -462,10 +476,49 @@ return {
       height = targetHeight;
       width = targetHeight * aspectRatio;
     }
-    
-    return { width: Math.round(width), height: Math.round(height) };
+return { width: Math.round(width), height: Math.round(height) };
   }
 
+  // Get dynamic image dimensions for frame compatibility
+  getDynamicImageDimensions(viewportWidth = 1200, enforceSquare = true) {
+    try {
+      // Base size calculation with responsive scaling
+      let baseSize = 600;
+      
+      // Responsive adjustments for different screen sizes
+      if (viewportWidth < 640) {
+        baseSize = Math.max(400, Math.min(viewportWidth - 32, 500)); // Mobile: 400-500px
+      } else if (viewportWidth < 1024) {
+        baseSize = Math.max(500, Math.min(viewportWidth * 0.4, 700)); // Tablet: 500-700px
+      } else {
+        baseSize = Math.max(600, Math.min(viewportWidth * 0.3, 1200)); // Desktop: 600-1200px
+      }
+      
+      // Enforce size constraints (400x400px to 1200x1200px)
+      const constrainedSize = Math.max(400, Math.min(baseSize, 1200));
+      
+      // Return square dimensions if enforcing 1:1 aspect ratio
+      if (enforceSquare) {
+        return {
+          width: constrainedSize,
+          height: constrainedSize,
+          aspectRatio: '1:1'
+        };
+      }
+      
+      return {
+        width: constrainedSize,
+        height: constrainedSize
+      };
+    } catch (error) {
+      console.error('Error calculating dynamic image dimensions:', error);
+      return {
+        width: 600,
+        height: 600,
+        aspectRatio: '1:1'
+      };
+    }
+  }
   // Search images from multiple sources
   async searchImages(query) {
     try {

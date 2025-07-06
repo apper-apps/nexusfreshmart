@@ -82,7 +82,34 @@ const ProductDetail = () => {
     );
   }
 
-  const priceChange = getPriceChange();
+const priceChange = getPriceChange();
+
+  // Calculate dynamic image dimensions with aspect ratio enforcement
+  const calculateImageDimensions = () => {
+    // Get viewport width for responsive sizing
+    const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
+    
+    // Base size calculation with responsive scaling
+    let baseSize = 600;
+    
+    // Responsive adjustments
+    if (viewportWidth < 640) {
+      baseSize = Math.max(400, Math.min(viewportWidth - 32, 500)); // Mobile: 400-500px
+    } else if (viewportWidth < 1024) {
+      baseSize = Math.max(500, Math.min(viewportWidth * 0.4, 700)); // Tablet: 500-700px
+    } else {
+      baseSize = Math.max(600, Math.min(viewportWidth * 0.3, 1200)); // Desktop: 600-1200px
+    }
+    
+    // Enforce size constraints (400x400px to 1200x1200px)
+    const constrainedSize = Math.max(400, Math.min(baseSize, 1200));
+    
+    // Ensure 1:1 aspect ratio
+    return {
+      width: constrainedSize,
+      height: constrainedSize
+    };
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -101,18 +128,27 @@ const ProductDetail = () => {
         {/* Product Image */}
         <div className="space-y-4">
           <div className="relative">
-            <picture className="block w-full h-96 rounded-2xl overflow-hidden bg-gray-100">
-              <source
-                srcSet={`${product.imageUrl}&fm=webp&w=600 1x, ${product.imageUrl}&fm=webp&w=1200&dpr=2 2x`}
-                type="image/webp"
-              />
-              <img
-                src={`${product.imageUrl}&w=600`}
-                alt={product.name}
-                className="w-full h-96 object-cover transition-all duration-500 hover:scale-105"
-                style={{ backgroundColor: '#f3f4f6' }}
-              />
-            </picture>
+            <div 
+              className="mx-auto rounded-2xl overflow-hidden bg-gray-100 relative"
+              style={{
+                width: `${calculateImageDimensions().width}px`,
+                height: `${calculateImageDimensions().height}px`,
+                aspectRatio: '1 / 1'
+              }}
+            >
+              <picture className="block w-full h-full">
+                <source
+                  srcSet={`${product.imageUrl}&fm=webp&w=${calculateImageDimensions().width} 1x, ${product.imageUrl}&fm=webp&w=${calculateImageDimensions().width * 2}&dpr=2 2x`}
+                  type="image/webp"
+                />
+                <img
+                  src={`${product.imageUrl}&w=${calculateImageDimensions().width}`}
+                  alt={product.name}
+                  className="w-full h-full object-cover transition-all duration-500 hover:scale-105"
+                  style={{ backgroundColor: '#f3f4f6' }}
+                />
+              </picture>
+            </div>
             {product.stock <= 10 && product.stock > 0 && (
               <Badge 
                 variant="warning" 
