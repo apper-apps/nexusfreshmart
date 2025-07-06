@@ -932,13 +932,13 @@ const [selectedView, setSelectedView] = useState('overview');
                       <p className="font-medium text-gray-900">Generate Report</p>
                       <p className="text-sm text-gray-600">Export financial summary</p>
                     </div>
-                  </div>
+</div>
                 </button>
 </div>
-            </div>
           </div>
         </>
       )}
+      {selectedView === 'cashflow' && (
       {selectedView === 'cashflow' && (
         <>
           {/* Cash Flow Metrics */}
