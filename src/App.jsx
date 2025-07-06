@@ -7,26 +7,25 @@ import { PersistGate } from "redux-persist/integration/react";
 import { persistor, store } from "@/store/index";
 import Layout from "@/components/organisms/Layout";
 import Loading from "@/components/ui/Loading";
+// Direct imports for core components
 import ProductDetail from "@/components/pages/ProductDetail";
 import Cart from "@/components/pages/Cart";
 import Checkout from "@/components/pages/Checkout";
 import Home from "@/components/pages/Home";
-// Core pages - loaded immediately
 
-// Heavy pages - code split with React.lazy()
-const AdminDashboard = React.lazy(() => import("@/components/pages/AdminDashboard"));
-const ProductManagement = React.lazy(() => import("@/components/pages/ProductManagement"));
-const Analytics = React.lazy(() => import("@/components/pages/Analytics"));
-const FinancialDashboard = React.lazy(() => import("@/components/pages/FinancialDashboard"));
-const POS = React.lazy(() => import("@/components/pages/POS"));
-const PaymentManagement = React.lazy(() => import("@/components/pages/PaymentManagement"));
-const DeliveryTracking = React.lazy(() => import("@/components/pages/DeliveryTracking"));
-const AIGenerate = React.lazy(() => import("@/components/pages/AIGenerate"));
-// Medium priority pages - lazy loaded
-const Category = React.lazy(() => import("@/components/pages/Category"));
-const Orders = React.lazy(() => import("@/components/pages/Orders"));
-const OrderTracking = React.lazy(() => import("@/components/pages/OrderTracking"));
-const Account = React.lazy(() => import("@/components/pages/Account"));
+// Lazy load heavy components for better performance
+const AdminDashboard = React.lazy(() => import('@/components/pages/AdminDashboard'));
+const ProductManagement = React.lazy(() => import('@/components/pages/ProductManagement'));
+const Analytics = React.lazy(() => import('@/components/pages/Analytics'));
+const FinancialDashboard = React.lazy(() => import('@/components/pages/FinancialDashboard'));
+const POS = React.lazy(() => import('@/components/pages/POS'));
+const PaymentManagement = React.lazy(() => import('@/components/pages/PaymentManagement'));
+const DeliveryTracking = React.lazy(() => import('@/components/pages/DeliveryTracking'));
+const AIGenerate = React.lazy(() => import('@/components/pages/AIGenerate'));
+const Category = React.lazy(() => import('@/components/pages/Category'));
+const Orders = React.lazy(() => import('@/components/pages/Orders'));
+const OrderTracking = React.lazy(() => import('@/components/pages/OrderTracking'));
+const Account = React.lazy(() => import('@/components/pages/Account'));
 // Import components
 
 function App() {
@@ -127,7 +126,7 @@ return (
                 </div>
               </div>
             )}
-            <Suspense fallback={<Loading type="page" />}>
+<Suspense fallback={<Loading type="page" />}>
               <Routes>
                 <Route path="/" element={<Layout />}>
                   {/* Core routes - no lazy loading */}
@@ -137,20 +136,68 @@ return (
                   <Route path="checkout" element={<Checkout />} />
                   
                   {/* Lazy loaded routes */}
-                  <Route path="category/:categoryName" element={<Category />} />
-                  <Route path="orders" element={<Orders />} />
-                  <Route path="orders/:orderId" element={<OrderTracking />} />
-                  <Route path="account" element={<Account />} />
+                  <Route path="category/:categoryName" element={
+                    <Suspense fallback={<Loading type="page" />}>
+                      <Category />
+                    </Suspense>
+                  } />
+                  <Route path="orders" element={
+                    <Suspense fallback={<Loading type="page" />}>
+                      <Orders />
+                    </Suspense>
+                  } />
+                  <Route path="orders/:orderId" element={
+                    <Suspense fallback={<Loading type="page" />}>
+                      <OrderTracking />
+                    </Suspense>
+                  } />
+                  <Route path="account" element={
+                    <Suspense fallback={<Loading type="page" />}>
+                      <Account />
+                    </Suspense>
+                  } />
                   
-{/* Heavy admin routes - lazy loaded */}
-                  <Route path="admin" element={<AdminDashboard />} />
-                  <Route path="admin/products" element={<ProductManagement />} />
-                  <Route path="admin/pos" element={<POS />} />
-                  <Route path="admin/delivery-dashboard" element={<DeliveryTracking />} />
-                  <Route path="admin/analytics" element={<Analytics />} />
-                  <Route path="admin/financial-dashboard" element={<FinancialDashboard />} />
-<Route path="admin/payments" element={<PaymentManagement />} />
-                  <Route path="admin/ai-generate" element={<AIGenerate />} />
+                  {/* Heavy admin routes - lazy loaded */}
+                  <Route path="admin" element={
+                    <Suspense fallback={<Loading type="page" />}>
+                      <AdminDashboard />
+                    </Suspense>
+                  } />
+                  <Route path="admin/products" element={
+                    <Suspense fallback={<Loading type="page" />}>
+                      <ProductManagement />
+                    </Suspense>
+                  } />
+                  <Route path="admin/pos" element={
+                    <Suspense fallback={<Loading type="page" />}>
+                      <POS />
+                    </Suspense>
+                  } />
+                  <Route path="admin/delivery-dashboard" element={
+                    <Suspense fallback={<Loading type="page" />}>
+                      <DeliveryTracking />
+                    </Suspense>
+                  } />
+                  <Route path="admin/analytics" element={
+                    <Suspense fallback={<Loading type="page" />}>
+                      <Analytics />
+                    </Suspense>
+                  } />
+                  <Route path="admin/financial-dashboard" element={
+                    <Suspense fallback={<Loading type="page" />}>
+                      <FinancialDashboard />
+                    </Suspense>
+                  } />
+                  <Route path="admin/payments" element={
+                    <Suspense fallback={<Loading type="page" />}>
+                      <PaymentManagement />
+                    </Suspense>
+                  } />
+                  <Route path="admin/ai-generate" element={
+                    <Suspense fallback={<Loading type="page" />}>
+                      <AIGenerate />
+                    </Suspense>
+                  } />
                 </Route>
               </Routes>
             </Suspense>
