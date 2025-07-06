@@ -107,13 +107,13 @@ export const httpOrderService = {
     }
   }
 };
-
 // Mock Order Service Class
 class OrderService {
   constructor() {
     this.orders = [];
   }
-async getAll() {
+
+  async getAll() {
     await this.delay();
     return [...this.orders];
   }
@@ -193,7 +193,7 @@ async getAll() {
     if (index === -1) {
       throw new Error('Order not found');
     }
-this.orders.splice(index, 1);
+    this.orders.splice(index, 1);
     return true;
   }
 
@@ -202,6 +202,7 @@ this.orders.splice(index, 1);
       order.id > max ? order.id : max, 0);
     return maxId + 1;
   }
+
   async assignDeliveryPersonnel(orderId, deliveryPersonId) {
     await this.delay();
     const order = await this.getById(orderId);
@@ -212,6 +213,7 @@ this.orders.splice(index, 1);
     };
     return await this.update(orderId, updatedOrder);
   }
+
   async updateDeliveryStatus(orderId, deliveryStatus, actualDelivery = null) {
     await this.delay();
     const order = await this.getById(orderId);
@@ -229,10 +231,10 @@ this.orders.splice(index, 1);
   }
 
   async getOrdersByDeliveryStatus(deliveryStatus) {
-return this.orders.filter(order => order.deliveryStatus === deliveryStatus);
+    return this.orders.filter(order => order.deliveryStatus === deliveryStatus);
   }
 
-// Payment Integration Methods
+  // Payment Integration Methods
   async updatePaymentStatus(orderId, paymentStatus, paymentResult = null) {
     await this.delay();
     const order = await this.getById(orderId);
@@ -265,7 +267,7 @@ return this.orders.filter(order => order.deliveryStatus === deliveryStatus);
       throw new Error('Order payment does not require verification');
     }
     
-try {
+    try {
       // Mock payment verification - replace with actual paymentService import if needed
       const verificationResult = {
         verified: true,
@@ -305,9 +307,10 @@ try {
     
     return await this.update(orderId, updatedOrder);
   }
+
   async processRefund(orderId, refundAmount, reason) {
     await this.delay();
-const order = await this.getById(orderId);
+    const order = await this.getById(orderId);
     const refund = {
       id: Date.now(), // Use timestamp for refund ID
       orderId,
@@ -323,10 +326,10 @@ const order = await this.getById(orderId);
       refund,
       status: 'refund_requested'
     };
-return await this.update(orderId, updatedOrder);
+    return await this.update(orderId, updatedOrder);
   }
 
-async getMonthlyRevenue() {
+  async getMonthlyRevenue() {
     await this.delay();
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
@@ -334,23 +337,24 @@ async getMonthlyRevenue() {
     const monthlyOrders = this.orders.filter(order => {
       const orderDate = new Date(order.createdAt);
       return orderDate.getMonth() === currentMonth && orderDate.getFullYear() === currentYear;
-});
-return monthlyOrders.reduce((sum, order) => sum + (order?.total || order?.totalAmount || 0), 0);
+    });
+    return monthlyOrders.reduce((sum, order) => sum + (order?.total || order?.totalAmount || 0), 0);
   }
+
   async getRevenueByPaymentMethod() {
     await this.delay();
     const revenueByMethod = {};
     
-this.orders.forEach(order => {
+    this.orders.forEach(order => {
       const method = order?.paymentMethod || 'unknown';
       revenueByMethod[method] = (revenueByMethod[method] || 0) + (order?.total || order?.totalAmount || 0);
     });
     
     return revenueByMethod;
   }
+
   // Payment Verification Methods
-// Payment Verification Methods
-async getPendingVerifications() {
+  async getPendingVerifications() {
     await this.delay();
     return this.orders
       .filter(order => {
@@ -374,7 +378,7 @@ async getPendingVerifications() {
       }));
   }
 
-async updateVerificationStatus(orderId, status, notes = '') {
+  async updateVerificationStatus(orderId, status, notes = '') {
     await this.delay();
     const orderIndex = this.orders.findIndex(o => o.id === parseInt(orderId));
     
@@ -420,7 +424,7 @@ async updateVerificationStatus(orderId, status, notes = '') {
       return null;
     }
 
-return {
+    return {
       orderId: order?.id,
       submittedAt: order?.paymentProofSubmittedAt,
       verifiedAt: order?.verifiedAt,
@@ -431,7 +435,7 @@ return {
     };
   }
 
-// Order Calculation Methods
+  // Order Calculation Methods
   calculateOrderSubtotal(items) {
     if (!items || !Array.isArray(items)) {
       return 0;
@@ -475,4 +479,8 @@ return {
   }
 }
 
-export const orderService = new OrderService();
+// Create and export service instance
+const orderService = new OrderService();
+
+export { orderService };
+export default orderService;

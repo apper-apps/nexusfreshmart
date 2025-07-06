@@ -1095,6 +1095,8 @@ y: Math.max(0, mainRegion.y - 50),
   }
 }
 
-const productServiceInstance = new ProductService();
-export { productServiceInstance };
-export default productServiceInstance;
+// Create and export service instance
+const productService = new ProductService();
+
+export { productService };
+export default productService;
