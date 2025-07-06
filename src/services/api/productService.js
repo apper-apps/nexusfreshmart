@@ -1,10 +1,15 @@
 import axios from "axios";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
-export const productService = {
-  // Get all products
+
+class ProductService {
+  constructor() {
+    this.apiBaseUrl = API_BASE_URL;
+  }
+
+  // Legacy API methods for backward compatibility
   async getProducts() {
     try {
-      const response = await axios.get(`${API_BASE_URL}/products`);
+      const response = await axios.get(`${this.apiBaseUrl}/products`);
       return {
         success: true,
         data: response.data || []
@@ -16,16 +21,15 @@ export const productService = {
         error: error.response?.data?.message || 'Failed to fetch products'
       };
     }
-  },
+  }
 
-  // Get product by ID
   async getProductById(productId) {
     try {
       if (!productId) {
         throw new Error('Product ID is required');
       }
 
-      const response = await axios.get(`${API_BASE_URL}/products/${productId}`);
+      const response = await axios.get(`${this.apiBaseUrl}/products/${productId}`);
       return {
         success: true,
         data: response.data
@@ -37,16 +41,15 @@ export const productService = {
         error: error.response?.data?.message || 'Failed to fetch product'
       };
     }
-  },
+  }
 
-  // Create new product
   async createProduct(productData) {
     try {
       if (!productData || !productData.name) {
         throw new Error('Invalid product data');
       }
 
-      const response = await axios.post(`${API_BASE_URL}/products`, productData);
+      const response = await axios.post(`${this.apiBaseUrl}/products`, productData);
       return {
         success: true,
         data: response.data
@@ -58,16 +61,15 @@ export const productService = {
         error: error.response?.data?.message || 'Failed to create product'
       };
     }
-  },
+  }
 
-  // Update product
   async updateProduct(productId, productData) {
     try {
       if (!productId || !productData) {
         throw new Error('Product ID and data are required');
       }
 
-      const response = await axios.put(`${API_BASE_URL}/products/${productId}`, productData);
+      const response = await axios.put(`${this.apiBaseUrl}/products/${productId}`, productData);
       return {
         success: true,
         data: response.data
@@ -79,16 +81,15 @@ export const productService = {
         error: error.response?.data?.message || 'Failed to update product'
       };
     }
-  },
+  }
 
-  // Delete product
   async deleteProduct(productId) {
     try {
       if (!productId) {
         throw new Error('Product ID is required');
       }
 
-      const response = await axios.delete(`${API_BASE_URL}/products/${productId}`);
+      const response = await axios.delete(`${this.apiBaseUrl}/products/${productId}`);
       return {
         success: true,
         data: response.data
@@ -101,10 +102,10 @@ export const productService = {
       };
     }
   }
-};
 
-class ProductService {
-  constructor() {
+  // Mock data and local methods for development
+constructor() {
+    this.apiBaseUrl = API_BASE_URL;
     this.products = [
       {
         id: 1,
