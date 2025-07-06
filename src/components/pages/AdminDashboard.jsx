@@ -5,12 +5,13 @@ import { toast } from "react-toastify";
 import { store } from "@/store/index";
 import ApperIcon from "@/components/ApperIcon";
 import Button from "@/components/atoms/Button";
-import Error from '@/components/ui/Error'
-import Loading from '@/components/ui/Loading'
-import Orders from '@/components/pages/Orders'
-import { orderService } from '@/services/api/orderService'
-import { productServiceInstance as productService } from '@/services/api/productService'
-import { paymentService } from '@/services/api/paymentService'
+import Error from "@/components/ui/Error";
+import Loading from "@/components/ui/Loading";
+import Orders from "@/components/pages/Orders";
+import paymentService from "@/services/api/paymentService";
+import orderService from "@/services/api/orderService";
+import productService from "@/services/api/productService";
+
 const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
