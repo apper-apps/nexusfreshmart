@@ -227,7 +227,48 @@
         "lng": 74.3436
       },
       "instructions": "Call 30 minutes before delivery"
+"instructions": "Call 30 minutes before delivery"
     },
     "createdAt": "2024-01-19T14:15:00Z"
+  },
+  {
+    "id": 6,
+    "customerId": "user303",
+    "items": [
+      {
+        "productId": 8,
+        "name": "Green Vegetables Mix",
+        "price": 450,
+        "quantity": 2,
+        "unit": "kg"
+      }
+    ],
+    "total": 900,
+    "deliveryCharge": 150,
+    "paymentMethod": "easypaisa",
+    "paymentProof": {
+      "fileName": "easypaisa_screenshot_order6.jpg",
+      "fileSize": 2156,
+      "uploadedAt": "2024-01-20T09:30:00Z"
+    },
+    "status": "payment_pending",
+    "verificationStatus": "pending",
+    "deliveryPersonId": null,
+    "deliveryStatus": "pending_assignment",
+    "estimatedDelivery": "2024-01-21T14:00:00Z",
+    "actualDelivery": null,
+    "deliveryAddress": {
+      "name": "Hassan Ali",
+      "phone": "+92 305 9999000",
+      "email": "hassan@example.com",
+      "address": "987 Gulberg III, Block M",
+      "city": "Lahore",
+      "postalCode": "54660",
+      "coordinates": {
+        "lat": 31.5497,
+        "lng": 74.3586
+      },
+      "instructions": "Ring bell at main gate"
+    },
+    "createdAt": "2024-01-20T08:45:00Z"
   }
-]
