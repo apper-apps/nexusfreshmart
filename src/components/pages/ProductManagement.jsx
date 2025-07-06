@@ -1557,11 +1557,11 @@ const ImageUploadSystem = ({
       )}
 
 {/* AI Search Tab */}
-      {imageData.activeTab === 'search' && (
+{imageData.activeTab === 'search' && (
         <UnsplashImageSearch
           imageData={imageData}
           setImageData={setImageData}
-          onImageSearch={handleImageSearch}
+          onImageSearch={onImageSearch}
           onImageSelect={handleImageSelect}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
