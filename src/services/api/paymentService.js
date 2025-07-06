@@ -16,6 +16,14 @@ constructor() {
       '6': 'discover'
     };
     
+    // Initialize recurring payment automation storage
+    this.recurringPayments = [];
+    this.recurringPaymentIdCounter = 1;
+    this.scheduledPayments = [];
+    this.scheduledPaymentIdCounter = 1;
+    this.paymentAutomationRules = [];
+    this.automationRuleIdCounter = 1;
+    
     // Initialize payment gateways storage
     this.paymentGateways = [
       {
@@ -1017,6 +1025,608 @@ delay(ms = 300) {
   generateFileUrl(fileName) {
     // Simulate file URL generation
     return `https://storage.example.com/proofs/${Date.now()}-${fileName}`;
+}
+
+  // Recurring Payment Automation Methods
+  async createRecurringPayment(recurringData) {
+    await this.delay(500);
+    
+    if (!this.validateFinanceManagerRole()) {
+      throw new Error('Insufficient permissions. Finance manager role required.');
+    }
+
+    // Validate required fields
+    if (!recurringData.name || !recurringData.vendorId || !recurringData.amount || !recurringData.frequency) {
+      throw new Error('Name, vendor ID, amount, and frequency are required');
+    }
+
+    // Validate vendor exists
+    const vendor = this.vendors.find(v => v.Id === recurringData.vendorId);
+    if (!vendor) {
+      throw new Error('Vendor not found');
+    }
+
+    // Validate frequency
+    const validFrequencies = ['daily', 'weekly', 'monthly', 'quarterly', 'yearly'];
+    if (!validFrequencies.includes(recurringData.frequency)) {
+      throw new Error('Invalid frequency. Must be daily, weekly, monthly, quarterly, or yearly');
+    }
+
+    const recurringPayment = {
+      Id: this.recurringPaymentIdCounter++,
+      name: recurringData.name,
+      vendorId: recurringData.vendorId,
+      vendorName: vendor.name,
+      amount: parseFloat(recurringData.amount),
+      frequency: recurringData.frequency,
+      startDate: recurringData.startDate || new Date().toISOString(),
+      endDate: recurringData.endDate || null,
+      nextPaymentDate: this.calculateNextPaymentDate(recurringData.startDate || new Date().toISOString(), recurringData.frequency),
+      status: 'active',
+      description: recurringData.description || `Recurring payment to ${vendor.name}`,
+      paymentMethod: recurringData.paymentMethod || 'bank_transfer',
+      autoRetry: recurringData.autoRetry !== false,
+      maxRetries: recurringData.maxRetries || 3,
+      retryInterval: recurringData.retryInterval || 24, // hours
+      emailNotifications: recurringData.emailNotifications !== false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      createdBy: this.currentUserRole,
+      totalPayments: 0,
+      successfulPayments: 0,
+      failedPayments: 0,
+      lastPaymentDate: null,
+      lastPaymentStatus: null,
+      lastPaymentAmount: null,
+      metadata: recurringData.metadata || {}
+    };
+
+    // Validate the recurring payment data
+    const validation = this.validateRecurringPayment(recurringPayment);
+    if (!validation.valid) {
+      throw new Error(validation.error);
+    }
+
+    this.recurringPayments.push(recurringPayment);
+
+    // Schedule the first payment
+    await this.scheduleNextPayment(recurringPayment);
+
+    return { ...recurringPayment };
+  }
+
+  async updateRecurringPayment(recurringId, updateData) {
+    await this.delay(400);
+    
+    if (!this.validateFinanceManagerRole()) {
+      throw new Error('Insufficient permissions. Finance manager role required.');
+    }
+
+    const recurring = this.recurringPayments.find(r => r.Id === recurringId);
+    if (!recurring) {
+      throw new Error('Recurring payment not found');
+    }
+
+    // If changing vendor, validate new vendor exists
+    if (updateData.vendorId && updateData.vendorId !== recurring.vendorId) {
+      const vendor = this.vendors.find(v => v.Id === updateData.vendorId);
+      if (!vendor) {
+        throw new Error('New vendor not found');
+      }
+      updateData.vendorName = vendor.name;
+    }
+
+    // If changing frequency or start date, recalculate next payment date
+    if (updateData.frequency && updateData.frequency !== recurring.frequency) {
+      const validFrequencies = ['daily', 'weekly', 'monthly', 'quarterly', 'yearly'];
+      if (!validFrequencies.includes(updateData.frequency)) {
+        throw new Error('Invalid frequency');
+      }
+      updateData.nextPaymentDate = this.calculateNextPaymentDate(
+        recurring.nextPaymentDate, 
+        updateData.frequency
+      );
+    }
+
+    // Update the recurring payment
+    Object.assign(recurring, {
+      ...updateData,
+      updatedAt: new Date().toISOString()
+    });
+
+    // If status changed to active, ensure next payment is scheduled
+    if (updateData.status === 'active' && recurring.status === 'active') {
+      await this.scheduleNextPayment(recurring);
+    }
+
+    // If status changed to paused or cancelled, remove scheduled payments
+    if (updateData.status && ['paused', 'cancelled'].includes(updateData.status)) {
+      this.scheduledPayments = this.scheduledPayments.filter(
+        sp => sp.recurringPaymentId !== recurringId
+      );
+    }
+
+    return { ...recurring };
+  }
+
+  async pauseRecurringPayment(recurringId) {
+    await this.delay(300);
+    
+    return await this.updateRecurringPayment(recurringId, { 
+      status: 'paused',
+      pausedAt: new Date().toISOString(),
+      pausedBy: this.currentUserRole
+    });
+  }
+
+  async resumeRecurringPayment(recurringId) {
+    await this.delay(300);
+    
+    const recurring = this.recurringPayments.find(r => r.Id === recurringId);
+    if (!recurring) {
+      throw new Error('Recurring payment not found');
+    }
+
+    // Recalculate next payment date from now
+    const nextPaymentDate = this.calculateNextPaymentDate(new Date().toISOString(), recurring.frequency);
+    
+    return await this.updateRecurringPayment(recurringId, { 
+      status: 'active',
+      nextPaymentDate,
+      resumedAt: new Date().toISOString(),
+      resumedBy: this.currentUserRole
+    });
+  }
+
+  async deleteRecurringPayment(recurringId) {
+    await this.delay(300);
+    
+    if (!this.validateFinanceManagerRole()) {
+      throw new Error('Insufficient permissions. Finance manager role required.');
+    }
+
+    const index = this.recurringPayments.findIndex(r => r.Id === recurringId);
+    if (index === -1) {
+      throw new Error('Recurring payment not found');
+    }
+
+    // Remove all scheduled payments for this recurring payment
+    this.scheduledPayments = this.scheduledPayments.filter(
+      sp => sp.recurringPaymentId !== recurringId
+    );
+
+    // Mark as cancelled instead of deleting (for audit trail)
+    this.recurringPayments[index].status = 'cancelled';
+    this.recurringPayments[index].cancelledAt = new Date().toISOString();
+    this.recurringPayments[index].cancelledBy = this.currentUserRole;
+
+    return { success: true };
+  }
+
+  async getRecurringPayments(status = 'all') {
+    await this.delay(300);
+    
+    let payments = [...this.recurringPayments];
+    
+    if (status !== 'all') {
+      payments = payments.filter(r => r.status === status);
+    }
+    
+    return payments.sort((a, b) => new Date(a.nextPaymentDate) - new Date(b.nextPaymentDate));
+  }
+
+  async getRecurringPaymentById(recurringId) {
+    await this.delay(200);
+    
+    const recurring = this.recurringPayments.find(r => r.Id === recurringId);
+    if (!recurring) {
+      throw new Error('Recurring payment not found');
+    }
+    
+    return { ...recurring };
+  }
+
+  async getScheduledPayments(days = 30) {
+    await this.delay(300);
+    
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() + days);
+    
+    return this.scheduledPayments
+      .filter(sp => new Date(sp.scheduledDate) <= endDate)
+      .sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate))
+      .map(sp => ({
+        ...sp,
+        recurringPayment: this.recurringPayments.find(r => r.Id === sp.recurringPaymentId)
+      }));
+  }
+
+  async processRecurringPayments() {
+    await this.delay(1000);
+    
+    const now = new Date();
+    const duePayments = this.scheduledPayments.filter(sp => 
+      new Date(sp.scheduledDate) <= now && sp.status === 'pending'
+    );
+
+    const results = {
+      processed: 0,
+      successful: 0,
+      failed: 0,
+      errors: []
+    };
+
+    for (const scheduledPayment of duePayments) {
+      try {
+        const result = await this.processScheduledPayment(scheduledPayment);
+        results.processed++;
+        
+        if (result.success) {
+          results.successful++;
+        } else {
+          results.failed++;
+          results.errors.push({
+            recurringPaymentId: scheduledPayment.recurringPaymentId,
+            error: result.error
+          });
+        }
+      } catch (error) {
+        results.processed++;
+        results.failed++;
+        results.errors.push({
+          recurringPaymentId: scheduledPayment.recurringPaymentId,
+          error: error.message
+        });
+      }
+    }
+
+    return results;
+  }
+
+  async processScheduledPayment(scheduledPayment) {
+    try {
+      const recurring = this.recurringPayments.find(r => r.Id === scheduledPayment.recurringPaymentId);
+      if (!recurring || recurring.status !== 'active') {
+        throw new Error('Recurring payment is not active');
+      }
+
+      // Check end date
+      if (recurring.endDate && new Date() > new Date(recurring.endDate)) {
+        recurring.status = 'completed';
+        recurring.completedAt = new Date().toISOString();
+        throw new Error('Recurring payment has reached end date');
+      }
+
+      // Attempt to process the payment
+      const payment = {
+        Id: this.getNextPaymentId(),
+        recurringPaymentId: recurring.Id,
+        vendorId: recurring.vendorId,
+        vendorName: recurring.vendorName,
+        amount: recurring.amount,
+        paymentMethod: recurring.paymentMethod,
+        status: 'processing',
+        transactionId: this.generateTransactionId(),
+        timestamp: new Date().toISOString(),
+        paidBy: 'automated_system',
+        reference: `Recurring payment: ${recurring.name}`,
+        notes: `Automated payment - ${recurring.description}`,
+        isRecurring: true,
+        scheduledPaymentId: scheduledPayment.Id
+      };
+
+      // Simulate payment processing (in real implementation, this would call actual payment gateway)
+      const success = Math.random() > 0.1; // 90% success rate for automated payments
+      
+      if (success) {
+        payment.status = 'completed';
+        payment.completedAt = new Date().toISOString();
+        
+        // Update recurring payment stats
+        recurring.totalPayments++;
+        recurring.successfulPayments++;
+        recurring.lastPaymentDate = new Date().toISOString();
+        recurring.lastPaymentStatus = 'success';
+        recurring.lastPaymentAmount = recurring.amount;
+        
+        // Update vendor totals
+        const vendor = this.vendors.find(v => v.Id === recurring.vendorId);
+        if (vendor) {
+          vendor.totalPaid += recurring.amount;
+          vendor.lastPaymentDate = new Date().toISOString();
+          vendor.updatedAt = new Date().toISOString();
+        }
+        
+        // Schedule next payment
+        await this.scheduleNextPayment(recurring);
+        
+      } else {
+        throw new Error('Payment processing failed');
+      }
+
+      this.vendorPayments.push(payment);
+      
+      // Mark scheduled payment as completed
+      scheduledPayment.status = 'completed';
+      scheduledPayment.processedAt = new Date().toISOString();
+      scheduledPayment.paymentId = payment.Id;
+
+      return { success: true, payment };
+
+    } catch (error) {
+      // Handle payment failure
+      recurring.totalPayments++;
+      recurring.failedPayments++;
+      recurring.lastPaymentDate = new Date().toISOString();
+      recurring.lastPaymentStatus = 'failed';
+      
+      // Mark scheduled payment as failed
+      scheduledPayment.status = 'failed';
+      scheduledPayment.failedAt = new Date().toISOString();
+      scheduledPayment.failureReason = error.message;
+      scheduledPayment.retryCount = (scheduledPayment.retryCount || 0) + 1;
+
+      // Handle retry logic
+      if (recurring.autoRetry && scheduledPayment.retryCount < recurring.maxRetries) {
+        // Schedule retry
+        const retryDate = new Date();
+        retryDate.setHours(retryDate.getHours() + recurring.retryInterval);
+        
+        const retryPayment = {
+          Id: this.scheduledPaymentIdCounter++,
+          recurringPaymentId: recurring.Id,
+          scheduledDate: retryDate.toISOString(),
+          amount: recurring.amount,
+          status: 'pending',
+          isRetry: true,
+          originalScheduledPaymentId: scheduledPayment.Id,
+          retryCount: scheduledPayment.retryCount,
+          createdAt: new Date().toISOString()
+        };
+        
+        this.scheduledPayments.push(retryPayment);
+      } else {
+        // Max retries reached or auto-retry disabled
+        if (scheduledPayment.retryCount >= recurring.maxRetries) {
+          recurring.status = 'failed';
+          recurring.failedAt = new Date().toISOString();
+          recurring.failureReason = `Max retries (${recurring.maxRetries}) exceeded`;
+        }
+      }
+
+      return { success: false, error: error.message };
+    }
+  }
+
+  async scheduleNextPayment(recurringPayment) {
+    if (recurringPayment.status !== 'active') {
+      return;
+    }
+
+    // Calculate next payment date
+    const nextDate = this.calculateNextPaymentDate(recurringPayment.nextPaymentDate, recurringPayment.frequency);
+    
+    // Check if we've reached the end date
+    if (recurringPayment.endDate && new Date(nextDate) > new Date(recurringPayment.endDate)) {
+      recurringPayment.status = 'completed';
+      recurringPayment.completedAt = new Date().toISOString();
+      return;
+    }
+
+    // Update next payment date
+    recurringPayment.nextPaymentDate = nextDate;
+    recurringPayment.updatedAt = new Date().toISOString();
+
+    // Create scheduled payment
+    const scheduledPayment = {
+      Id: this.scheduledPaymentIdCounter++,
+      recurringPaymentId: recurringPayment.Id,
+      scheduledDate: nextDate,
+      amount: recurringPayment.amount,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      isRetry: false,
+      retryCount: 0
+    };
+
+    this.scheduledPayments.push(scheduledPayment);
+    return scheduledPayment;
+  }
+
+  calculateNextPaymentDate(currentDate, frequency) {
+    const date = new Date(currentDate);
+    
+    switch (frequency) {
+      case 'daily':
+        date.setDate(date.getDate() + 1);
+        break;
+      case 'weekly':
+        date.setDate(date.getDate() + 7);
+        break;
+      case 'monthly':
+        date.setMonth(date.getMonth() + 1);
+        break;
+      case 'quarterly':
+        date.setMonth(date.getMonth() + 3);
+        break;
+      case 'yearly':
+        date.setFullYear(date.getFullYear() + 1);
+        break;
+      default:
+        throw new Error('Invalid frequency');
+    }
+    
+    return date.toISOString();
+  }
+
+  validateRecurringPayment(recurringPayment) {
+    // Validate amount
+    if (!recurringPayment.amount || recurringPayment.amount <= 0) {
+      return { valid: false, error: 'Amount must be greater than 0' };
+    }
+
+    // Validate dates
+    if (recurringPayment.endDate && new Date(recurringPayment.endDate) <= new Date(recurringPayment.startDate)) {
+      return { valid: false, error: 'End date must be after start date' };
+    }
+
+    // Validate retry settings
+    if (recurringPayment.maxRetries < 0 || recurringPayment.maxRetries > 10) {
+      return { valid: false, error: 'Max retries must be between 0 and 10' };
+    }
+
+    if (recurringPayment.retryInterval < 1 || recurringPayment.retryInterval > 168) {
+      return { valid: false, error: 'Retry interval must be between 1 and 168 hours' };
+    }
+
+    return { valid: true };
+  }
+
+  // Payment Automation Rules
+  async createAutomationRule(ruleData) {
+    await this.delay(400);
+    
+    if (!this.validateFinanceManagerRole()) {
+      throw new Error('Insufficient permissions. Finance manager role required.');
+    }
+
+    const rule = {
+      Id: this.automationRuleIdCounter++,
+      name: ruleData.name,
+      description: ruleData.description || '',
+      enabled: ruleData.enabled !== false,
+      conditions: ruleData.conditions || {},
+      actions: ruleData.actions || {},
+      priority: ruleData.priority || 1,
+      createdAt: new Date().toISOString(),
+      createdBy: this.currentUserRole,
+      lastTriggered: null,
+      triggerCount: 0
+    };
+
+    this.paymentAutomationRules.push(rule);
+    return { ...rule };
+  }
+
+  async getAutomationRules() {
+    await this.delay(200);
+    return [...this.paymentAutomationRules].sort((a, b) => b.priority - a.priority);
+  }
+
+  async updateAutomationRule(ruleId, updateData) {
+    await this.delay(300);
+    
+    const rule = this.paymentAutomationRules.find(r => r.Id === ruleId);
+    if (!rule) {
+      throw new Error('Automation rule not found');
+    }
+
+    Object.assign(rule, {
+      ...updateData,
+      updatedAt: new Date().toISOString()
+    });
+
+    return { ...rule };
+  }
+
+  async deleteAutomationRule(ruleId) {
+    await this.delay(200);
+    
+    const index = this.paymentAutomationRules.findIndex(r => r.Id === ruleId);
+    if (index === -1) {
+      throw new Error('Automation rule not found');
+    }
+
+    this.paymentAutomationRules.splice(index, 1);
+    return { success: true };
+  }
+
+  // Recurring Payment Analytics
+  async getRecurringPaymentAnalytics(days = 30) {
+    await this.delay(400);
+    
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(endDate.getDate() - days);
+
+    const activeRecurring = this.recurringPayments.filter(r => r.status === 'active');
+    const completedPayments = this.vendorPayments.filter(p => 
+      p.isRecurring && 
+      p.status === 'completed' &&
+      new Date(p.timestamp) >= startDate
+    );
+
+    const totalAutomatedAmount = completedPayments.reduce((sum, p) => sum + p.amount, 0);
+    const avgPaymentAmount = completedPayments.length > 0 ? totalAutomatedAmount / completedPayments.length : 0;
+
+    // Success rate calculation
+    const attemptedPayments = this.scheduledPayments.filter(sp => 
+      sp.status !== 'pending' && 
+      new Date(sp.createdAt) >= startDate
+    );
+    const successfulAttempts = attemptedPayments.filter(sp => sp.status === 'completed');
+    const successRate = attemptedPayments.length > 0 ? (successfulAttempts.length / attemptedPayments.length) * 100 : 0;
+
+    // Upcoming payments
+    const upcomingPayments = this.scheduledPayments.filter(sp => 
+      sp.status === 'pending' && 
+      new Date(sp.scheduledDate) <= new Date(Date.now() + days * 24 * 60 * 60 * 1000)
+    );
+
+    return {
+      activeRecurringPayments: activeRecurring.length,
+      totalAutomatedAmount,
+      avgPaymentAmount,
+      successRate,
+      completedPayments: completedPayments.length,
+      upcomingPayments: upcomingPayments.length,
+      failedPayments: attemptedPayments.filter(sp => sp.status === 'failed').length,
+      totalSavingsInTime: completedPayments.length * 15, // Estimated 15 minutes saved per automated payment
+      recurringByFrequency: this.getRecurringByFrequency(),
+      monthlyProjection: this.calculateMonthlyProjection()
+    };
+  }
+
+  getRecurringByFrequency() {
+    const frequencies = {};
+    this.recurringPayments
+      .filter(r => r.status === 'active')
+      .forEach(r => {
+        frequencies[r.frequency] = (frequencies[r.frequency] || 0) + 1;
+      });
+    return frequencies;
+  }
+
+  calculateMonthlyProjection() {
+    const activeRecurring = this.recurringPayments.filter(r => r.status === 'active');
+    let monthlyTotal = 0;
+
+    activeRecurring.forEach(r => {
+      const multiplier = {
+        'daily': 30,
+        'weekly': 4.33,
+        'monthly': 1,
+        'quarterly': 0.33,
+        'yearly': 0.083
+      }[r.frequency] || 1;
+
+      monthlyTotal += r.amount * multiplier;
+    });
+
+    return monthlyTotal;
+  }
+
+  // Utility methods for recurring payments
+  getNextRecurringId() {
+    return this.recurringPaymentIdCounter++;
+  }
+
+  getNextScheduledId() {
+    return this.scheduledPaymentIdCounter++;
+  }
+
+  getNextAutomationRuleId() {
+    return this.automationRuleIdCounter++;
   }
 }
 
