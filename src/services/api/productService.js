@@ -316,6 +316,224 @@ return {
       return 'unknown';
     }
 }
+
+  // Image validation and processing methods
+  async validateImage(file) {
+    try {
+      // Basic file validation
+      if (!file || !file.type.startsWith('image/')) {
+        return { isValid: false, error: 'Please select a valid image file' };
+      }
+      
+      // Size validation
+      if (file.size > 10 * 1024 * 1024) {
+        return { isValid: false, error: 'Image file size must be less than 10MB' };
+      }
+      
+      // Create image element for quality analysis
+      const img = new Image();
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      return new Promise((resolve) => {
+        img.onload = () => {
+          canvas.width = img.width;
+          canvas.height = img.height;
+          ctx.drawImage(img, 0, 0);
+          
+          // Basic quality checks
+          if (img.width < 200 || img.height < 200) {
+            resolve({ isValid: false, error: 'Image resolution too low. Minimum 200x200px required' });
+            return;
+          }
+          
+          // Check for excessive blur (simplified)
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const variance = this.calculateImageVariance(imageData.data);
+          
+          if (variance < 100) {
+            resolve({ isValid: false, error: 'Image appears to be too blurry or low quality' });
+            return;
+          }
+          
+          resolve({ isValid: true });
+        };
+        
+        img.onerror = () => {
+          resolve({ isValid: false, error: 'Invalid or corrupted image file' });
+        };
+        
+        img.src = URL.createObjectURL(file);
+      });
+      
+    } catch (error) {
+      console.error('Error validating image:', error);
+      return { isValid: false, error: 'Failed to validate image' };
+    }
+  }
+
+  // Calculate image variance for quality assessment
+  calculateImageVariance(imageData) {
+    let sum = 0;
+    let sumSquared = 0;
+    const length = imageData.length;
+    
+    for (let i = 0; i < length; i += 4) {
+      const gray = 0.299 * imageData[i] + 0.587 * imageData[i + 1] + 0.114 * imageData[i + 2];
+      sum += gray;
+      sumSquared += gray * gray;
+    }
+    
+    const mean = sum / (length / 4);
+    const variance = (sumSquared / (length / 4)) - (mean * mean);
+    return variance;
+  }
+
+  // Process and optimize image
+  async processImage(file, options = {}) {
+    try {
+      const {
+        targetSize = { width: 600, height: 600 },
+        maxFileSize = 100 * 1024, // 100KB
+        quality = 0.9
+      } = options;
+      
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        img.onload = () => {
+          // Calculate dimensions maintaining aspect ratio
+          let { width, height } = this.calculateOptimalDimensions(
+            img.width, 
+            img.height, 
+            targetSize.width, 
+            targetSize.height
+          );
+          
+          canvas.width = width;
+          canvas.height = height;
+          
+          // Draw and compress image
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, width, height);
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Convert to blob with compression
+          canvas.toBlob((blob) => {
+            if (blob.size <= maxFileSize) {
+              const url = URL.createObjectURL(blob);
+              resolve({ url, blob, size: blob.size });
+            } else {
+              // Reduce quality if file is too large
+              const reducedQuality = Math.max(0.1, quality - 0.2);
+              canvas.toBlob((reducedBlob) => {
+                const url = URL.createObjectURL(reducedBlob);
+                resolve({ url, blob: reducedBlob, size: reducedBlob.size });
+              }, 'image/webp', reducedQuality);
+            }
+          }, 'image/webp', quality);
+        };
+        
+        img.onerror = () => reject(new Error('Failed to process image'));
+        img.src = URL.createObjectURL(file);
+      });
+      
+    } catch (error) {
+      console.error('Error processing image:', error);
+      throw new Error('Failed to process image');
+    }
+  }
+
+  // Calculate optimal dimensions for image resizing
+  calculateOptimalDimensions(originalWidth, originalHeight, targetWidth, targetHeight) {
+    const aspectRatio = originalWidth / originalHeight;
+    const targetAspectRatio = targetWidth / targetHeight;
+    
+    let width, height;
+    
+    if (aspectRatio > targetAspectRatio) {
+      // Image is wider than target
+      width = targetWidth;
+      height = targetWidth / aspectRatio;
+    } else {
+      // Image is taller than target
+      height = targetHeight;
+      width = targetHeight * aspectRatio;
+    }
+    
+    return { width: Math.round(width), height: Math.round(height) };
+  }
+
+  // Search images from multiple sources
+  async searchImages(query) {
+    try {
+      await this.delay(1000); // Simulate API call
+      
+      const results = [];
+      
+      // Search internal product database
+      const internalResults = this.searchInternalImages(query);
+      results.push(...internalResults);
+      
+      // Search Unsplash API (simulated)
+      const unsplashResults = this.searchUnsplashImages(query);
+      results.push(...unsplashResults);
+      
+      return results.slice(0, 12); // Return max 12 results
+      
+    } catch (error) {
+      console.error('Error searching images:', error);
+      throw new Error('Failed to search images');
+    }
+  }
+
+  // Search internal product images
+  searchInternalImages(query) {
+    const mockInternalImages = [
+      {
+        url: "/api/placeholder/600/600",
+        thumbnail: "/api/placeholder/200/200",
+        description: `Fresh ${query}`,
+        source: 'internal'
+      },
+      {
+        url: "/api/placeholder/600/600",
+        thumbnail: "/api/placeholder/200/200", 
+        description: `Organic ${query}`,
+        source: 'internal'
+      }
+    ];
+    
+    return mockInternalImages;
+  }
+
+  // Search Unsplash images (simulated)
+  searchUnsplashImages(query) {
+    const mockUnsplashImages = [
+      {
+        url: "/api/placeholder/600/600",
+        thumbnail: "/api/placeholder/200/200",
+        description: `Premium ${query}`,
+        source: 'unsplash'
+      },
+      {
+        url: "/api/placeholder/600/600",
+        thumbnail: "/api/placeholder/200/200",
+        description: `Fresh ${query}`,
+        source: 'unsplash'
+      },
+      {
+        url: "/api/placeholder/600/600", 
+        thumbnail: "/api/placeholder/200/200",
+        description: `Natural ${query}`,
+        source: 'unsplash'
+      }
+    ];
+    
+    return mockUnsplashImages;
+  }
 }
 
 export const productService = new ProductService();

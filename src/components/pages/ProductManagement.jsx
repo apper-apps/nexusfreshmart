@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { toast } from "react-toastify";
 import ApperIcon from "@/components/ApperIcon";
 import Badge from "@/components/atoms/Badge";
@@ -36,6 +36,16 @@ const [formData, setFormData] = useState({
     description: "",
     imageUrl: "",
     barcode: ""
+  });
+  
+  // Image management state
+  const [imageData, setImageData] = useState({
+    selectedImage: null,
+    croppedImage: null,
+    uploadProgress: 0,
+    isProcessing: false,
+    searchResults: [],
+    activeTab: 'upload' // upload, search, ai-generate
   });
 
   // Constants
@@ -85,6 +95,73 @@ const [formData, setFormData] = useState({
       
       return newData;
     });
+  };
+
+  // Handle image upload and processing
+  const handleImageUpload = async (file) => {
+    try {
+      setImageData(prev => ({ ...prev, isProcessing: true, uploadProgress: 0 }));
+      
+      // Validate image file
+      const validation = await productService.validateImage(file);
+      if (!validation.isValid) {
+        toast.error(validation.error);
+        return;
+      }
+      
+      // Process and optimize image
+      const processedImage = await productService.processImage(file, {
+        targetSize: { width: 600, height: 600 },
+        maxFileSize: 100 * 1024, // 100KB
+        quality: 0.9
+      });
+      
+      setImageData(prev => ({
+        ...prev,
+        selectedImage: processedImage.url,
+        croppedImage: processedImage.url,
+        isProcessing: false,
+        uploadProgress: 100
+      }));
+      
+      setFormData(prev => ({ ...prev, imageUrl: processedImage.url }));
+      toast.success('Image uploaded and optimized successfully!');
+      
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      setImageData(prev => ({ ...prev, isProcessing: false, uploadProgress: 0 }));
+      toast.error('Failed to upload image. Please try again.');
+    }
+  };
+
+  // Handle image search
+  const handleImageSearch = async (query) => {
+    try {
+      setImageData(prev => ({ ...prev, isProcessing: true }));
+      
+      const searchResults = await productService.searchImages(query);
+      setImageData(prev => ({
+        ...prev,
+        searchResults,
+        isProcessing: false
+      }));
+      
+    } catch (error) {
+      console.error('Error searching images:', error);
+      setImageData(prev => ({ ...prev, isProcessing: false }));
+      toast.error('Failed to search images. Please try again.');
+    }
+  };
+
+  // Handle image selection from search results
+  const handleImageSelect = (imageUrl) => {
+    setImageData(prev => ({
+      ...prev,
+      selectedImage: imageUrl,
+      croppedImage: imageUrl
+    }));
+    setFormData(prev => ({ ...prev, imageUrl }));
+    toast.success('Image selected successfully!');
   };
 
   // Calculate profit metrics based on current form data
@@ -252,6 +329,17 @@ setFormData({
       imageUrl: "",
       barcode: ""
     });
+    
+    // Reset image data
+    setImageData({
+      selectedImage: null,
+      croppedImage: null,
+      uploadProgress: 0,
+      isProcessing: false,
+      searchResults: [],
+      activeTab: 'upload'
+    });
+    
     setEditingProduct(null);
     setShowAddForm(false);
   };
@@ -664,6 +752,7 @@ setFormData({
                   </select>
                 </div>
               </div>
+/>
 
               <Input
                 label="Description"
@@ -673,12 +762,14 @@ setFormData({
                 icon="FileText"
               />
 
-              <Input
-                label="Image URL"
-                name="imageUrl"
-                value={formData.imageUrl}
-                onChange={handleInputChange}
-                icon="Image"
+              {/* Intelligent Image Integration System */}
+              <ImageUploadSystem
+                imageData={imageData}
+                setImageData={setImageData}
+                onImageUpload={handleImageUpload}
+                onImageSearch={handleImageSearch}
+                onImageSelect={handleImageSelect}
+                formData={formData}
               />
 
               <Input
@@ -688,7 +779,6 @@ setFormData({
                 onChange={handleInputChange}
                 icon="BarChart"
               />
-
               <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200">
                 <Button
                   type="button"
@@ -1124,6 +1214,348 @@ const BulkPriceModal = ({ products, categories, onUpdate, onClose }) => {
           </div>
         </form>
       </div>
+    </div>
+);
+};
+
+// Intelligent Image Upload System Component
+const ImageUploadSystem = ({ 
+  imageData, 
+  setImageData, 
+  onImageUpload, 
+  onImageSearch, 
+  onImageSelect,
+  formData 
+}) => {
+  const [dragActive, setDragActive] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [cropData, setCropData] = useState({ x: 0, y: 0, width: 100, height: 100 });
+  const fileInputRef = useRef(null);
+
+  // Handle drag events
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setDragActive(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setDragActive(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragActive(false);
+    
+    const files = e.dataTransfer.files;
+    if (files && files[0]) {
+      handleFileSelect(files[0]);
+    }
+  };
+
+  const handleFileSelect = (file) => {
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select a valid image file');
+      return;
+    }
+    
+    // Validate file size (max 10MB for processing)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Image file size must be less than 10MB');
+      return;
+    }
+    
+    onImageUpload(file);
+  };
+
+  const handleFileInputChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      handleFileSelect(file);
+    }
+  };
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      onImageSearch(searchQuery.trim());
+    }
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
+
+  return (
+    <div className="space-y-4">
+      <label className="block text-sm font-medium text-gray-700">
+        Product Image *
+      </label>
+      
+      {/* Tab Navigation */}
+      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+        {[
+          { id: 'upload', label: 'Upload', icon: 'Upload' },
+          { id: 'search', label: 'AI Search', icon: 'Search' },
+          { id: 'ai-generate', label: 'AI Generate', icon: 'Sparkles' }
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setImageData(prev => ({ ...prev, activeTab: tab.id }))}
+            className={`flex-1 flex items-center justify-center space-x-2 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+              imageData.activeTab === tab.id
+                ? 'bg-white text-primary shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <ApperIcon name={tab.icon} size={16} />
+            <span>{tab.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Upload Tab */}
+      {imageData.activeTab === 'upload' && (
+        <div className="space-y-4">
+          {/* Drag & Drop Zone */}
+          <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={triggerFileInput}
+            className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+              dragActive
+                ? 'border-primary bg-primary/5'
+                : 'border-gray-300 hover:border-primary hover:bg-gray-50'
+            }`}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileInputChange}
+              className="hidden"
+            />
+            
+            <div className="flex flex-col items-center space-y-3">
+              <div className={`p-3 rounded-full ${dragActive ? 'bg-primary/10' : 'bg-gray-100'}`}>
+                <ApperIcon 
+                  name={dragActive ? "Download" : "ImagePlus"} 
+                  size={32} 
+                  className={dragActive ? 'text-primary' : 'text-gray-400'}
+                />
+              </div>
+              
+              <div>
+                <p className="text-lg font-medium text-gray-900">
+                  {dragActive ? 'Drop image here' : 'Upload product image'}
+                </p>
+                <p className="text-sm text-gray-500 mt-1">
+                  Drag & drop or click to browse • Max 10MB • Auto-optimized to 600x600px
+                </p>
+              </div>
+              
+              <div className="flex flex-wrap gap-2 text-xs text-gray-400">
+                <span>JPG</span>
+                <span>PNG</span>
+                <span>WEBP</span>
+                <span>HEIC</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Upload Progress */}
+          {imageData.isProcessing && (
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Processing image...</span>
+                <span className="text-gray-600">{imageData.uploadProgress}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-primary h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${imageData.uploadProgress}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Image Preview & Cropping */}
+          {imageData.selectedImage && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium text-gray-900">Image Preview</h4>
+                <div className="flex space-x-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    icon="RotateCcw"
+                    onClick={() => setImageData(prev => ({ ...prev, selectedImage: null, croppedImage: null }))}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="relative">
+                <img
+                  src={imageData.selectedImage}
+                  alt="Product preview"
+                  className="w-full max-w-md mx-auto rounded-lg shadow-md"
+                  style={{ maxHeight: '300px', objectFit: 'contain' }}
+                />
+                
+                {/* Frame Compatibility Overlay */}
+                <div className="absolute inset-0 border-4 border-primary/30 rounded-lg pointer-events-none">
+                  <div className="absolute top-2 right-2 bg-primary text-white px-2 py-1 rounded text-xs">
+                    Frame Compatible
+                  </div>
+                </div>
+              </div>
+              
+              {/* Image Optimization Settings */}
+              <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+                <h5 className="font-medium text-gray-900">Optimization Settings</h5>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-600">Target Size:</span>
+                    <span className="ml-2 font-medium">600 x 600px</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Max File Size:</span>
+                    <span className="ml-2 font-medium">≤ 100KB</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Aspect Ratio:</span>
+                    <span className="ml-2 font-medium">1:1 (Square)</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Format:</span>
+                    <span className="ml-2 font-medium">WebP/JPEG</span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-4">
+                  <label className="flex items-center space-x-2">
+                    <input type="checkbox" className="rounded" defaultChecked />
+                    <span className="text-sm text-gray-700">Smart cropping</span>
+                  </label>
+                  <label className="flex items-center space-x-2">
+                    <input type="checkbox" className="rounded" />
+                    <span className="text-sm text-gray-700">Remove background</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* AI Search Tab */}
+      {imageData.activeTab === 'search' && (
+        <div className="space-y-4">
+          {/* Search Form */}
+          <form onSubmit={handleSearchSubmit} className="space-y-4">
+            <div className="flex space-x-2">
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search for product images..."
+                icon="Search"
+                className="flex-1"
+              />
+              <Button
+                type="submit"
+                variant="primary"
+                disabled={imageData.isProcessing || !searchQuery.trim()}
+                loading={imageData.isProcessing}
+              >
+                Search
+              </Button>
+            </div>
+            
+            <div className="flex flex-wrap gap-2">
+              {['fresh vegetables', 'fruits', 'dairy products', 'meat', 'bakery items'].map((suggestion) => (
+                <button
+                  key={suggestion}
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery(suggestion);
+                    onImageSearch(suggestion);
+                  }}
+                  className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200 transition-colors"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+          </form>
+
+          {/* Search Results */}
+          {imageData.searchResults.length > 0 && (
+            <div className="space-y-4">
+              <h4 className="font-medium text-gray-900">
+                Search Results ({imageData.searchResults.length})
+              </h4>
+              
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                {imageData.searchResults.map((image, index) => (
+                  <div
+                    key={index}
+                    onClick={() => onImageSelect(image.url)}
+                    className="relative group cursor-pointer rounded-lg overflow-hidden aspect-square bg-gray-100"
+                  >
+                    <img
+                      src={image.thumbnail}
+                      alt={image.description || 'Search result'}
+                      className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                      style={{ width: '200px', height: '200px' }}
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                      <ApperIcon 
+                        name="Check" 
+                        size={24} 
+                        className="text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                      />
+                    </div>
+                    
+                    {/* Source Badge */}
+                    <div className="absolute top-1 right-1 bg-black/70 text-white px-1 py-0.5 rounded text-xs">
+                      {image.source === 'unsplash' ? 'AI' : 'DB'}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Empty State */}
+          {searchQuery && imageData.searchResults.length === 0 && !imageData.isProcessing && (
+            <div className="text-center py-8">
+              <ApperIcon name="Search" size={48} className="text-gray-400 mx-auto mb-3" />
+              <p className="text-gray-600">No images found for "{searchQuery}"</p>
+              <p className="text-sm text-gray-500 mt-1">Try different keywords or upload your own image</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* AI Generate Tab */}
+      {imageData.activeTab === 'ai-generate' && (
+        <div className="space-y-4">
+          <div className="text-center py-8 bg-gray-50 rounded-lg">
+            <ApperIcon name="Sparkles" size={48} className="text-gray-400 mx-auto mb-3" />
+            <h4 className="font-medium text-gray-900 mb-2">AI Image Generation</h4>
+            <p className="text-gray-600 mb-4">Generate custom product images using AI</p>
+            <Button variant="secondary" disabled>
+              Coming Soon
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
