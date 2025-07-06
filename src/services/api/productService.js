@@ -4,6 +4,23 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000
 class ProductService {
   constructor() {
     this.apiBaseUrl = API_BASE_URL;
+    this.products = [
+      {
+        id: 1,
+        name: 'Fresh Apples',
+        price: 2.99,
+        category: 'Fruits',
+        stock: 100,
+      },
+      {
+        id: 2,
+        name: 'Organic Bananas',
+        price: 1.49,
+        category: 'Fruits',
+        stock: 150,
+        isActive: true
+      }
+    ];
   }
 
   // Legacy API methods for backward compatibility
@@ -103,28 +120,7 @@ class ProductService {
     }
   }
 
-  // Mock data and local methods for development
-constructor() {
-    this.apiBaseUrl = API_BASE_URL;
-    this.products = [
-      {
-        id: 1,
-        name: 'Fresh Apples',
-        price: 2.99,
-        category: 'Fruits',
-        stock: 100,
-      },
-      {
-        id: 2,
-        name: 'Organic Bananas',
-        price: 1.49,
-        category: 'Fruits',
-        stock: 150,
-        isActive: true
-      }
-    ];
-  }
-
+// Mock data and local methods for development
   async delay(ms = 150) {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
