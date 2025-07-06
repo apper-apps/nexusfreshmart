@@ -1577,10 +1577,11 @@ const ImageUploadSystem = ({
           onImageGenerate={handleAIImageGenerate}
           onImageSelect={handleImageSelect}
           formData={formData}
+onImageSelect={handleImageSelect}
+          formData={formData}
         />
       )}
     </div>
-</div>
   );
 };
 
@@ -2036,7 +2037,8 @@ const UnsplashImageSearch = ({
         </div>
         <p>All images from Unsplash are free to use for commercial purposes. Attribution is appreciated but not required. Please review individual image licenses when available.</p>
       </div>
-    </div>
+</div>
   );
+};
 
 export default ProductManagement;
