@@ -242,26 +242,82 @@ delay(ms = 150) { // Reduced delay for faster perceived performance
       profitMargin = ((finalPrice - purchasePrice) / purchasePrice) * 100;
     }
     
-    return {
+return {
       minSellingPrice: Math.round(minSellingPrice * 100) / 100,
       profitMargin: Math.round(profitMargin * 100) / 100,
       finalPrice: Math.round(finalPrice * 100) / 100
     };
   }
+  // Enhanced profit metrics calculation with error handling
+  getDisplayMetrics(product) {
+    try {
+      if (!product || typeof product !== 'object') {
+        return null;
+      }
+
+      const metrics = this.calculateProfitMetrics(product);
+      
+      return {
+        ...metrics,
+        hasMetrics: !!(product.profitMargin || product.minSellingPrice || product.purchasePrice),
+        isHealthyMargin: parseFloat(product.profitMargin || 0) > 15,
+        isProfitable: parseFloat(product.profitMargin || 0) > 0
+      };
+    } catch (error) {
+      console.error('Error calculating display metrics:', error);
+      return null;
+    }
+  }
 
   // Validate business rules for product pricing
   validateProfitRules(productData) {
-    const purchasePrice = parseFloat(productData.purchasePrice) || 0;
-    const price = parseFloat(productData.price) || 0;
-    
-    if (purchasePrice > 0 && price <= purchasePrice) {
+    try {
+      const purchasePrice = parseFloat(productData.purchasePrice) || 0;
+      const price = parseFloat(productData.price) || 0;
+      
+      if (purchasePrice > 0 && price <= purchasePrice) {
+        return {
+          isValid: false,
+          error: 'Selling price must be greater than purchase price'
+        };
+      }
+
+      // Additional validation for minimum profit margin
+      if (purchasePrice > 0) {
+        const margin = ((price - purchasePrice) / purchasePrice) * 100;
+        if (margin < 5) {
+          return {
+            isValid: false,
+            error: 'Profit margin should be at least 5% for sustainable business'
+          };
+        }
+      }
+      
+      return { isValid: true };
+    } catch (error) {
+      console.error('Error validating profit rules:', error);
       return {
         isValid: false,
-        error: 'Selling price must be greater than purchase price'
+        error: 'Unable to validate pricing rules'
       };
     }
-    
-    return { isValid: true };
   }
-}
+
+  // Get financial health indicator
+  getFinancialHealth(product) {
+    try {
+      if (!product) return 'unknown';
+      
+      const margin = parseFloat(product.profitMargin || 0);
+      
+      if (margin >= 25) return 'excellent';
+      if (margin >= 15) return 'good';
+      if (margin >= 5) return 'fair';
+      if (margin > 0) return 'poor';
+      return 'loss';
+    } catch (error) {
+      console.error('Error calculating financial health:', error);
+      return 'unknown';
+    }
+  }
 export const productService = new ProductService();
