@@ -1,7 +1,5 @@
-import React from "react";
-import Error from "@/components/ui/Error";
 import orderService from "@/services/api/orderService";
-import { productService } from "@/services/api/productService";
+import productService from "@/services/api/productService";
 
 // Mock expense data with proper Id structure
 const mockExpenses = [
@@ -181,6 +179,60 @@ class FinancialService {
     this.vendorPaymentIdCounter = Math.max(...mockVendorPayments.map(p => p.Id), 0) + 1;
     this.currentUserRole = 'customer';
     this.financialFields = ['totalRevenue', 'totalCost', 'totalProfit', 'profitMargin', 'roi'];
+    this.transactions = []; // Add transactions array for getAllTransactions
+  }
+
+  // Add getAllTransactions method to fix "getAllTransactions is not a function" error
+  async getAllTransactions() {
+    await this.delay();
+    try {
+      // Check financial access permission
+      if (!this.validateFinancialAccess()) {
+        throw new Error('Insufficient permissions. Financial data access requires admin or finance manager role.');
+      }
+      
+      // Combine all financial transactions from different sources
+      const allTransactions = [];
+      
+      // Add expense transactions
+      this.expenses.forEach(expense => {
+        allTransactions.push({
+          Id: `EXP_${expense.Id}`,
+          type: 'expense',
+          amount: expense.amount,
+          description: expense.description,
+          category: expense.category,
+          date: expense.date,
+          vendor: expense.vendor,
+          createdAt: expense.createdAt
+        });
+      });
+      
+      // Add vendor payment transactions
+      this.vendorPayments.forEach(payment => {
+        allTransactions.push({
+          Id: `VND_${payment.Id}`,
+          type: 'vendor_payment',
+          amount: payment.amount,
+          description: payment.description,
+          vendorId: payment.vendorId,
+          status: payment.status,
+          dueDate: payment.dueDate,
+          createdAt: payment.createdAt
+        });
+      });
+      
+      // Sort by date (newest first)
+      return allTransactions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    } catch (error) {
+      console.error('Error getting all transactions:', error);
+      throw new Error('Failed to get transactions: ' + error.message);
+    }
+  }
+
+  // Add getAll method for compatibility
+  async getAll() {
+    return this.getAllTransactions();
   }
 
   // RBAC middleware simulation - filters financial data based on user role
@@ -232,8 +284,8 @@ class FinancialService {
     return filtered;
   }
 
-  async getFinancialMetrics(days = 30, userRole = null) {
-if (userRole) {
+async getFinancialMetrics(days = 30, userRole = null) {
+    if (userRole) {
       const originalRole = this.currentUserRole;
       this.currentUserRole = userRole;
     }
@@ -241,18 +293,46 @@ if (userRole) {
     await this.delay();
     
     try {
-      const [products, orders] = await Promise.all([
-        productService.getAll(),
-        orderService.getAll()
-      ]);
+      // Enhanced error handling with safe defaults
+      let products = [];
+      let orders = [];
+      
+      try {
+        products = await productService.getAll();
+        if (!Array.isArray(products)) {
+          console.warn('Products service returned non-array:', products);
+          products = [];
+        }
+      } catch (productError) {
+        console.error('Error fetching products for financial metrics:', productError);
+        products = [];
+      }
+      
+      try {
+        orders = await orderService.getAll();
+        if (!Array.isArray(orders)) {
+          console.warn('Orders service returned non-array:', orders);
+          orders = [];
+        }
+      } catch (orderError) {
+        console.error('Error fetching orders for financial metrics:', orderError);
+        orders = [];
+      }
 
       const endDate = new Date();
       const startDate = new Date();
-      startDate.setDate(endDate.getDate() - days);
+      const validDays = parseInt(days) || 30;
+      startDate.setDate(endDate.getDate() - validDays);
 
       const filteredOrders = orders.filter(order => {
-        const orderDate = new Date(order.createdAt);
-        return orderDate >= startDate && orderDate <= endDate;
+        try {
+          if (!order || !order.createdAt) return false;
+          const orderDate = new Date(order.createdAt);
+          return orderDate >= startDate && orderDate <= endDate;
+        } catch (dateError) {
+          console.warn('Invalid order date in financial metrics:', order?.createdAt);
+          return false;
+        }
       });
 
       const metrics = this.calculateFinancialMetrics(products, filteredOrders);
@@ -260,86 +340,100 @@ if (userRole) {
       // Apply financial data filtering based on user role
       return this.filterFinancialData(metrics);
     } catch (error) {
-      throw new Error('Failed to calculate financial metrics: ' + error.message);
+      console.error('Error in getFinancialMetrics:', error);
+      throw new Error('Failed to calculate financial metrics: ' + (error?.message || 'Unknown error'));
     }
   }
 
-  calculateFinancialMetrics(products, orders) {
-    let totalRevenue = 0;
-    let totalCost = 0;
-    let totalProfit = 0;
-    let totalItems = 0;
+calculateFinancialMetrics(products, orders) {
+    try {
+      // Initialize with safe defaults
+      let totalRevenue = 0;
+      let totalCost = 0;
+      let totalProfit = 0;
+      let totalItems = 0;
 
-    const productMetrics = {};
-    const categoryMetrics = {};
+      const productMetrics = {};
+      const categoryMetrics = {};
 
-    orders.forEach(order => {
-      if (order.items) {
-        order.items.forEach(item => {
-          const product = products.find(p => p.id === item.productId);
-          if (product) {
-            const quantity = item.quantity || 0;
-            const sellingPrice = product.price || 0;
-            const purchasePrice = product.purchasePrice || 0;
-            
-            const itemRevenue = sellingPrice * quantity;
-            const itemCost = purchasePrice * quantity;
-            const itemProfit = itemRevenue - itemCost;
+      // Ensure products and orders are arrays
+      const safeProducts = Array.isArray(products) ? products : [];
+      const safeOrders = Array.isArray(orders) ? orders : [];
 
-            totalRevenue += itemRevenue;
-            totalCost += itemCost;
-            totalProfit += itemProfit;
-            totalItems += quantity;
+safeOrders.forEach(order => {
+        try {
+          const items = Array.isArray(order?.items) ? order.items : [];
+          items.forEach(item => {
+            try {
+              const product = safeProducts.find(p => p?.id === item?.productId);
+              if (product && item?.productId) {
+                const quantity = parseInt(item.quantity) || 0;
+                const sellingPrice = parseFloat(product.price) || 0;
+                const purchasePrice = parseFloat(product.purchasePrice) || 0;
+                
+                const itemRevenue = sellingPrice * quantity;
+                const itemCost = purchasePrice * quantity;
+                const itemProfit = itemRevenue - itemCost;
 
-            // Product-level metrics
-            if (!productMetrics[product.id]) {
-              productMetrics[product.id] = {
-                Id: product.id,
-                name: product.name,
-                category: product.category,
-                totalSold: 0,
-                revenue: 0,
-                cost: 0,
-                profit: 0,
-                profitMargin: 0
-              };
+                totalRevenue += itemRevenue;
+                totalCost += itemCost;
+                totalProfit += itemProfit;
+                totalItems += quantity;
+
+                // Product-level metrics
+                if (!productMetrics[product.id]) {
+                  productMetrics[product.id] = {
+                    Id: product.id,
+                    name: product.name,
+                    category: product.category,
+                    totalSold: 0,
+                    revenue: 0,
+                    cost: 0,
+                    profit: 0,
+                    profitMargin: 0
+                  };
+                }
+
+                productMetrics[product.id].totalSold += quantity;
+                productMetrics[product.id].revenue += itemRevenue;
+                productMetrics[product.id].cost += itemCost;
+                productMetrics[product.id].profit += itemProfit;
+                productMetrics[product.id].profitMargin = 
+                  productMetrics[product.id].revenue > 0 
+                    ? (productMetrics[product.id].profit / productMetrics[product.id].revenue) * 100 
+                    : 0;
+
+                // Category-level metrics
+                const category = product.category || 'Uncategorized';
+                if (!categoryMetrics[category]) {
+                  categoryMetrics[category] = {
+                    Id: category,
+                    name: category,
+                    revenue: 0,
+                    cost: 0,
+                    profit: 0,
+                    profitMargin: 0,
+                    productCount: new Set()
+                  };
+                }
+
+                categoryMetrics[category].revenue += itemRevenue;
+                categoryMetrics[category].cost += itemCost;
+                categoryMetrics[category].profit += itemProfit;
+                categoryMetrics[category].productCount.add(product.id);
+                categoryMetrics[category].profitMargin = 
+                  categoryMetrics[category].revenue > 0 
+                    ? (categoryMetrics[category].profit / categoryMetrics[category].revenue) * 100 
+                    : 0;
+              }
+            } catch (itemError) {
+              console.warn('Error processing item in financial metrics:', itemError);
             }
-
-            productMetrics[product.id].totalSold += quantity;
-            productMetrics[product.id].revenue += itemRevenue;
-            productMetrics[product.id].cost += itemCost;
-            productMetrics[product.id].profit += itemProfit;
-            productMetrics[product.id].profitMargin = 
-              productMetrics[product.id].revenue > 0 
-                ? (productMetrics[product.id].profit / productMetrics[product.id].revenue) * 100 
-                : 0;
-
-            // Category-level metrics
-            const category = product.category || 'Uncategorized';
-            if (!categoryMetrics[category]) {
-              categoryMetrics[category] = {
-                Id: category,
-                name: category,
-                revenue: 0,
-                cost: 0,
-                profit: 0,
-                profitMargin: 0,
-                productCount: new Set()
-              };
-            }
-
-            categoryMetrics[category].revenue += itemRevenue;
-            categoryMetrics[category].cost += itemCost;
-            categoryMetrics[category].profit += itemProfit;
-            categoryMetrics[category].productCount.add(product.id);
-            categoryMetrics[category].profitMargin = 
-              categoryMetrics[category].revenue > 0 
-                ? (categoryMetrics[category].profit / categoryMetrics[category].revenue) * 100 
-                : 0;
-          }
-        });
-      }
-    });
+          });
+        } catch (orderError) {
+          console.warn('Error processing order in financial metrics:', orderError);
+        }
+      });
 
     // Convert sets to counts for category metrics
     Object.values(categoryMetrics).forEach(category => {
@@ -364,6 +458,10 @@ if (userRole) {
       productMetrics: Object.values(productMetrics),
       categoryMetrics: Object.values(categoryMetrics)
     };
+} catch (error) {
+      console.error('Error in calculateFinancialMetrics:', error);
+      throw error;
+    }
   }
 
   async getProductProfitability(productId) {

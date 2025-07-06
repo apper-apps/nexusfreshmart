@@ -34,35 +34,46 @@ const AdminDashboard = () => {
 
 const loadDashboardData = async () => {
     setLoading(true);
+    setError(null); // Reset error state
+    
     try {
-      // Load products and check for low stock with error handling
+      // Enhanced error handling with comprehensive validation
       let products = [];
       let orders = [];
       
       try {
-        products = await productService.getAll();
-        if (!Array.isArray(products)) {
-          console.warn('Products data is not an array:', products);
-          products = [];
+        const productsResult = await productService.getAll();
+        products = Array.isArray(productsResult) ? productsResult : [];
+        if (!Array.isArray(productsResult)) {
+          console.warn('Products service returned non-array:', productsResult);
         }
       } catch (productError) {
         console.error('Error loading products:', productError);
         products = [];
+        // Don't throw error, continue with empty array
       }
       
       try {
-        orders = await orderService.getAll();
-        if (!Array.isArray(orders)) {
-          console.warn('Orders data is not an array:', orders);
-          orders = [];
+        const ordersResult = await orderService.getAll();
+        orders = Array.isArray(ordersResult) ? ordersResult : [];
+        if (!Array.isArray(ordersResult)) {
+          console.warn('Orders service returned non-array:', ordersResult);
         }
       } catch (orderError) {
         console.error('Error loading orders:', orderError);
         orders = [];
+        // Don't throw error, continue with empty array
       }
       
-      // Calculate low stock products (stock < 10)
-      const lowStock = products.filter(product => (product?.stock || 0) < 10);
+      // Calculate low stock products with enhanced validation
+      const lowStock = products.filter(product => {
+        try {
+          return product && typeof product === 'object' && (parseInt(product.stock) || 0) < 10;
+        } catch (filterError) {
+          console.warn('Error filtering product for low stock:', product);
+          return false;
+        }
+      });
       setLowStockProducts(lowStock || []);
 
       // Get today's orders
@@ -84,29 +95,42 @@ const loadDashboardData = async () => {
       }, 0);
       setTodayRevenue(todayRevenueAmount || 0);
 
-      // Get wallet data with safe defaults and error handling
+// Enhanced wallet data loading with comprehensive error handling
       let walletBalance = 0;
       let walletTransactionsData = [];
       try {
-        walletBalance = await paymentService.getWalletBalance();
-        walletTransactionsData = await paymentService.getWalletTransactions();
+        const balanceResult = await paymentService.getWalletBalance();
+        walletBalance = typeof balanceResult === 'number' ? balanceResult : 0;
+        
+        const transactionsResult = await paymentService.getWalletTransactions();
+        walletTransactionsData = Array.isArray(transactionsResult) ? transactionsResult : [];
       } catch (walletError) {
         console.error('Error loading wallet data:', walletError);
+        walletBalance = 0;
+        walletTransactionsData = [];
       }
-      setWalletTransactions(walletTransactionsData || []);
+      setWalletTransactions(walletTransactionsData);
 
-      // Get monthly revenue with safe defaults and error handling
+      // Enhanced revenue data loading with validation
       let monthlyRevenue = 0;
       let pendingVerifications = [];
       let revenueByMethodData = {};
       try {
-        monthlyRevenue = await orderService.getMonthlyRevenue();
-        pendingVerifications = await orderService.getPendingVerifications();
-        revenueByMethodData = await orderService.getRevenueByPaymentMethod();
+        const revenueResult = await orderService.getMonthlyRevenue();
+        monthlyRevenue = typeof revenueResult === 'number' ? revenueResult : 0;
+        
+        const verificationsResult = await orderService.getPendingVerifications();
+        pendingVerifications = Array.isArray(verificationsResult) ? verificationsResult : [];
+        
+        const revenueMethodResult = await orderService.getRevenueByPaymentMethod();
+        revenueByMethodData = revenueMethodResult && typeof revenueMethodResult === 'object' ? revenueMethodResult : {};
       } catch (revenueError) {
         console.error('Error loading revenue data:', revenueError);
+        monthlyRevenue = 0;
+        pendingVerifications = [];
+        revenueByMethodData = {};
       }
-      setRevenueByMethod(revenueByMethodData || {});
+      setRevenueByMethod(revenueByMethodData);
 
       // Calculate revenue breakdown with safe defaults
       const breakdown = Object.entries(revenueByMethodData || {}).map(([method, amount]) => ({
@@ -166,26 +190,36 @@ const loadDashboardData = async () => {
 const handleWalletAction = async (action, amount = 0) => {
     setWalletLoading(true);
     try {
+      // Validate input parameters
+      const validAmount = parseFloat(amount) || 0;
+      if (validAmount <= 0) {
+        throw new Error('Invalid amount. Please enter a positive number.');
+      }
+      
       let result;
       switch (action) {
         case 'deposit':
-          result = await paymentService.depositToWallet(amount);
-          toast.success(`Deposited Rs. ${amount.toLocaleString()} to wallet`);
+          result = await paymentService.depositToWallet(validAmount);
+          toast.success(`Deposited Rs. ${validAmount.toLocaleString()} to wallet`);
           break;
         case 'withdraw':
-          result = await paymentService.withdrawFromWallet(amount);
-          toast.success(`Withdrew Rs. ${amount.toLocaleString()} from wallet`);
+          result = await paymentService.withdrawFromWallet(validAmount);
+          toast.success(`Withdrew Rs. ${validAmount.toLocaleString()} from wallet`);
           break;
         case 'transfer':
-          result = await paymentService.transferFromWallet(amount);
-          toast.success(`Transferred Rs. ${amount.toLocaleString()} from wallet`);
+          result = await paymentService.transferFromWallet(validAmount);
+          toast.success(`Transferred Rs. ${validAmount.toLocaleString()} from wallet`);
           break;
         default:
-          break;
+          throw new Error('Invalid wallet action');
       }
-      loadDashboardData();
+      
+      // Reload dashboard data after successful operation
+      await loadDashboardData();
     } catch (error) {
-      toast.error(error.message || 'Wallet operation failed');
+      console.error('Wallet operation error:', error);
+      const errorMessage = error?.message || 'Wallet operation failed. Please try again.';
+      toast.error(errorMessage);
     } finally {
       setWalletLoading(false);
     }

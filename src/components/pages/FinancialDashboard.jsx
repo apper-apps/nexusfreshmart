@@ -51,56 +51,135 @@ const [selectedView, setSelectedView] = useState('overview');
   const [showBulkPaymentModal, setShowBulkPaymentModal] = useState(false);
   const [bulkProcessing, setBulkProcessing] = useState(false);
 
-  useEffect(() => {
-    loadFinancialData();
-    if (selectedView === 'expenses') {
-      loadExpenseData();
-    } else if (selectedView === 'vendors') {
-      loadVendorData();
-    } else if (selectedView === 'cashflow') {
-      loadCashFlowData();
-    }
-}, [dateRange, selectedView]);
+useEffect(() => {
+    const loadData = async () => {
+      try {
+        await loadFinancialData();
+        if (selectedView === 'expenses') {
+          await loadExpenseData();
+        } else if (selectedView === 'vendors') {
+          await loadVendorData();
+        } else if (selectedView === 'cashflow') {
+          await loadCashFlowData();
+        }
+      } catch (error) {
+        console.error('Error in useEffect:', error);
+        setError('Failed to load dashboard data');
+        setLoading(false);
+      }
+    };
+    
+    loadData();
+  }, [dateRange, selectedView]);
 
   const loadFinancialData = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const [products, orders, metrics] = await Promise.all([
-        productService.getAll(),
-        orderService.getAll(),
-        financialService.getFinancialMetrics(parseInt(dateRange))
-      ]);
+      // Enhanced error handling with individual service calls
+      let products = [];
+      let orders = [];
+      let metrics = {};
       
-      setData({ products, orders, financialMetrics: metrics });
+      try {
+        products = await productService.getAll() || [];
+        if (!Array.isArray(products)) {
+          console.warn('Products data is not an array:', products);
+          products = [];
+        }
+      } catch (productError) {
+        console.error('Error loading products:', productError);
+        products = [];
+      }
+      
+      try {
+        orders = await orderService.getAll() || [];
+        if (!Array.isArray(orders)) {
+          console.warn('Orders data is not an array:', orders);
+          orders = [];
+        }
+      } catch (orderError) {
+        console.error('Error loading orders:', orderError);
+        orders = [];
+      }
+      
+      try {
+        const parsedDateRange = parseInt(dateRange) || 30;
+        metrics = await financialService.getFinancialMetrics(parsedDateRange) || {};
+      } catch (metricsError) {
+        console.error('Error loading financial metrics:', metricsError);
+        metrics = {};
+      }
+      
+      setData({ 
+        products: products || [], 
+        orders: orders || [], 
+        financialMetrics: metrics || {} 
+      });
     } catch (err) {
-      setError(err.message);
+      console.error('Error in loadFinancialData:', err);
+      setError(err?.message || 'Failed to load financial data');
       toast.error('Failed to load financial data');
     } finally {
       setLoading(false);
     }
-};
+  };
 
-  const loadExpenseData = async () => {
+const loadExpenseData = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const [expenses, categories, analytics] = await Promise.all([
-        financialService.getExpenses(parseInt(dateRange)),
-        financialService.getExpenseCategories(),
-        financialService.getExpenseAnalytics(parseInt(dateRange))
-      ]);
+      // Enhanced error handling with individual service calls
+      let expenses = [];
+      let categories = [];
+      let analytics = {};
       
-      setExpenseData({ expenses, categories, analytics });
+      try {
+        const parsedDateRange = parseInt(dateRange) || 30;
+        expenses = await financialService.getExpenses(parsedDateRange) || [];
+        if (!Array.isArray(expenses)) {
+          console.warn('Expenses data is not an array:', expenses);
+          expenses = [];
+        }
+      } catch (expenseError) {
+        console.error('Error loading expenses:', expenseError);
+        expenses = [];
+      }
+      
+      try {
+        categories = await financialService.getExpenseCategories() || [];
+        if (!Array.isArray(categories)) {
+          console.warn('Categories data is not an array:', categories);
+          categories = [];
+        }
+      } catch (categoryError) {
+        console.error('Error loading expense categories:', categoryError);
+        categories = [];
+      }
+      
+      try {
+        const parsedDateRange = parseInt(dateRange) || 30;
+        analytics = await financialService.getExpenseAnalytics(parsedDateRange) || {};
+      } catch (analyticsError) {
+        console.error('Error loading expense analytics:', analyticsError);
+        analytics = {};
+      }
+      
+      setExpenseData({ 
+        expenses: expenses || [], 
+        categories: categories || [], 
+        analytics: analytics || {} 
+      });
     } catch (err) {
-      setError(err.message);
+      console.error('Error in loadExpenseData:', err);
+      setError(err?.message || 'Failed to load expense data');
       toast.error('Failed to load expense data');
     } finally {
       setLoading(false);
     }
-};
+  };
 
   const loadVendorData = async () => {
     try {
@@ -275,44 +354,75 @@ const [selectedView, setSelectedView] = useState('overview');
     );
   };
 
-  const calculateProfitMetrics = () => {
-    const days = parseInt(dateRange);
-    const endDate = new Date();
-    const startDate = subDays(endDate, days - 1);
-    
-    const filteredOrders = data.orders.filter(order => {
-      const orderDate = new Date(order.createdAt);
-      return orderDate >= startDate && orderDate <= endDate;
-    });
-
-    let totalRevenue = 0;
-    let totalCost = 0;
-    let totalProfit = 0;
-    
-    filteredOrders.forEach(order => {
-      order.items?.forEach(item => {
-        const product = data.products.find(p => p.id === item.productId);
-        if (product) {
-          const revenue = product.price * item.quantity;
-          const cost = (product.purchasePrice || 0) * item.quantity;
-          totalRevenue += revenue;
-          totalCost += cost;
-          totalProfit += (revenue - cost);
+const calculateProfitMetrics = () => {
+    try {
+      const days = parseInt(dateRange) || 30;
+      const endDate = new Date();
+      const startDate = subDays(endDate, days - 1);
+      
+      // Safe array access with error handling
+      const orders = data?.orders || [];
+      const products = data?.products || [];
+      
+      const filteredOrders = orders.filter(order => {
+        try {
+          if (!order || !order.createdAt) return false;
+          const orderDate = new Date(order.createdAt);
+          return orderDate >= startDate && orderDate <= endDate;
+        } catch (dateError) {
+          console.warn('Invalid order date:', order?.createdAt);
+          return false;
         }
       });
-    });
 
-    const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
-    const roi = totalCost > 0 ? (totalProfit / totalCost) * 100 : 0;
+      let totalRevenue = 0;
+      let totalCost = 0;
+      let totalProfit = 0;
+      
+      filteredOrders.forEach(order => {
+        try {
+          const items = order?.items || [];
+          items.forEach(item => {
+            try {
+              const product = products.find(p => p?.id === item?.productId);
+              if (product && item?.quantity) {
+                const revenue = (parseFloat(product.price) || 0) * (parseInt(item.quantity) || 0);
+                const cost = (parseFloat(product.purchasePrice) || 0) * (parseInt(item.quantity) || 0);
+                totalRevenue += revenue;
+                totalCost += cost;
+                totalProfit += (revenue - cost);
+              }
+            } catch (itemError) {
+              console.warn('Error processing order item:', itemError);
+            }
+          });
+        } catch (orderError) {
+          console.warn('Error processing order:', orderError);
+        }
+      });
 
-    return {
-      totalRevenue,
-      totalCost,
-      totalProfit,
-      profitMargin,
-      roi,
-      orderCount: filteredOrders.length
-    };
+      const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
+      const roi = totalCost > 0 ? (totalProfit / totalCost) * 100 : 0;
+
+      return {
+        totalRevenue: totalRevenue || 0,
+        totalCost: totalCost || 0,
+        totalProfit: totalProfit || 0,
+        profitMargin: profitMargin || 0,
+        roi: roi || 0,
+        orderCount: filteredOrders.length || 0
+      };
+    } catch (error) {
+      console.error('Error calculating profit metrics:', error);
+      return {
+        totalRevenue: 0,
+        totalCost: 0,
+        totalProfit: 0,
+        profitMargin: 0,
+        roi: 0,
+        orderCount: 0
+      };
+    }
   };
 
   const getTopProfitableProducts = () => {
