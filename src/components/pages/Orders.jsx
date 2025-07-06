@@ -114,7 +114,7 @@ const Orders = () => {
                     </div>
                   )}
                 
-                  <div className="text-right">
+<div className="text-right">
                     <p className="text-xl font-bold gradient-text">
                       Rs. {(order?.total || 0).toLocaleString()}
                     </p>

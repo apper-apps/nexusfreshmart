@@ -37,6 +37,9 @@ const newOrder = {
       // Preserve user-provided transaction ID over payment result transaction ID
       transactionId: orderData.transactionId || orderData.paymentResult?.transactionId || null,
       paymentStatus: orderData.paymentStatus || (orderData.paymentMethod === 'cash' ? 'pending' : 'completed'),
+      // Ensure both total and totalAmount fields are set for compatibility
+      total: orderData.total || orderData.totalAmount || 0,
+      totalAmount: orderData.totalAmount || orderData.total || 0,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -221,8 +224,7 @@ async getMonthlyRevenue() {
       const orderDate = new Date(order.createdAt);
       return orderDate.getMonth() === currentMonth && orderDate.getFullYear() === currentYear;
 });
-    
-    return monthlyOrders.reduce((sum, order) => sum + (order?.total || 0), 0);
+return monthlyOrders.reduce((sum, order) => sum + (order?.total || order?.totalAmount || 0), 0);
   }
   async getRevenueByPaymentMethod() {
     await this.delay();
@@ -230,7 +232,7 @@ async getMonthlyRevenue() {
     
 this.orders.forEach(order => {
       const method = order?.paymentMethod || 'unknown';
-      revenueByMethod[method] = (revenueByMethod[method] || 0) + (order?.total || 0);
+      revenueByMethod[method] = (revenueByMethod[method] || 0) + (order?.total || order?.totalAmount || 0);
     });
     
     return revenueByMethod;
@@ -239,11 +241,18 @@ this.orders.forEach(order => {
 async getPendingVerifications() {
     await this.delay();
     return this.orders
-      .filter(order => order.verificationStatus === 'pending' && order.paymentProof)
-.map(order => ({
+      .filter(order => {
+        // Include orders with payment proof requiring verification
+        const hasPaymentProof = order.paymentProof && order.paymentProof.fileName;
+        const isPendingVerification = order.verificationStatus === 'pending' || 
+                                    (!order.verificationStatus && hasPaymentProof &&
+                                     (order.paymentMethod === 'jazzcash' || order.paymentMethod === 'easypaisa' || order.paymentMethod === 'bank'));
+        return hasPaymentProof && isPendingVerification;
+      })
+      .map(order => ({
         Id: order?.id,
         orderId: order?.id,
-        amount: order?.total || 0,
+        amount: order?.total || order?.totalAmount || 0,
         paymentMethod: order?.paymentMethod || 'unknown',
         customerName: order?.deliveryAddress?.name || 'Unknown',
         paymentProof: `/api/uploads/${order?.paymentProof?.fileName || 'default.jpg'}`, // Simulate proof URL

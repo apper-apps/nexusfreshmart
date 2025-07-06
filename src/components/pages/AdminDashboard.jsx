@@ -167,9 +167,9 @@ const handleWalletAction = async (action, amount = 0) => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-6 rounded-xl">
 <div className="flex items-center justify-between">
-            <div>
+<div>
               <p className="text-green-100 text-sm">Wallet Balance</p>
-              <p className="text-2xl font-bold">${(stats?.walletBalance || 0).toLocaleString()}</p>
+              <p className="text-2xl font-bold">Rs. {(stats?.walletBalance || 0).toLocaleString()}</p>
             </div>
             <ApperIcon name="Wallet" size={32} className="text-green-100" />
           </div>
@@ -187,9 +187,9 @@ const handleWalletAction = async (action, amount = 0) => {
 
         <div className="bg-gradient-to-r from-purple-500 to-pink-600 text-white p-6 rounded-xl">
           <div className="flex items-center justify-between">
-            <div>
+<div>
               <p className="text-purple-100 text-sm">Monthly Revenue</p>
-              <p className="text-2xl font-bold">${(stats?.monthlyRevenue || 0).toLocaleString()}</p>
+              <p className="text-2xl font-bold">Rs. {(stats?.monthlyRevenue || 0).toLocaleString()}</p>
             </div>
             <ApperIcon name="TrendingUp" size={32} className="text-purple-100" />
           </div>
@@ -207,9 +207,9 @@ const handleWalletAction = async (action, amount = 0) => {
 
         <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-6 rounded-xl">
           <div className="flex items-center justify-between">
-            <div>
+<div>
               <p className="text-emerald-100 text-sm">Today's Revenue</p>
-              <p className="text-2xl font-bold">${(stats?.todayRevenue || 0).toLocaleString()}</p>
+              <p className="text-2xl font-bold">Rs. {(stats?.todayRevenue || 0).toLocaleString()}</p>
             </div>
             <ApperIcon name="DollarSign" size={32} className="text-emerald-100" />
           </div>
@@ -279,9 +279,9 @@ const handleWalletAction = async (action, amount = 0) => {
                       <p className="font-medium text-gray-900">Order #{order?.id || 'Unknown'}</p>
                       <p className="text-sm text-gray-600">{format(new Date(order?.createdAt || new Date()), 'MMM dd, yyyy')}</p>
                     </div>
-                  </div>
+</div>
                   <div className="text-right">
-                    <p className="font-bold text-green-600">${(order?.totalAmount || 0).toLocaleString()}</p>
+                    <p className="font-bold text-green-600">Rs. {(order?.total || 0).toLocaleString()}</p>
                     <p className="text-sm text-gray-600">{order?.status || 'Unknown'}</p>
                   </div>
                 </div>
