@@ -4,7 +4,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
-import { persistor, store } from "@/store";
+import { persistor, store } from "@/store/index";
 import Layout from "@/components/organisms/Layout";
 import Loading from "@/components/ui/Loading";
 import ProductDetail from "@/components/pages/ProductDetail";
@@ -21,7 +21,7 @@ const FinancialDashboard = React.lazy(() => import("@/components/pages/Financial
 const POS = React.lazy(() => import("@/components/pages/POS"));
 const PaymentManagement = React.lazy(() => import("@/components/pages/PaymentManagement"));
 const DeliveryTracking = React.lazy(() => import("@/components/pages/DeliveryTracking"));
-
+const AIGenerate = React.lazy(() => import("@/components/pages/AIGenerate"));
 // Medium priority pages - lazy loaded
 const Category = React.lazy(() => import("@/components/pages/Category"));
 const Orders = React.lazy(() => import("@/components/pages/Orders"));
@@ -149,7 +149,8 @@ return (
                   <Route path="admin/delivery-dashboard" element={<DeliveryTracking />} />
                   <Route path="admin/analytics" element={<Analytics />} />
                   <Route path="admin/financial-dashboard" element={<FinancialDashboard />} />
-                  <Route path="admin/payments" element={<PaymentManagement />} />
+<Route path="admin/payments" element={<PaymentManagement />} />
+                  <Route path="admin/ai-generate" element={<AIGenerate />} />
                 </Route>
               </Routes>
             </Suspense>
