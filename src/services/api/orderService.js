@@ -249,9 +249,10 @@ async getPendingVerifications() {
                                      (order.paymentMethod === 'jazzcash' || order.paymentMethod === 'easypaisa' || order.paymentMethod === 'bank'));
         return hasPaymentProof && isPendingVerification;
       })
-      .map(order => ({
+.map(order => ({
         Id: order?.id,
         orderId: order?.id,
+        transactionId: order?.transactionId || `TXN${order?.id}${Date.now().toString().slice(-4)}`,
         amount: order?.total || order?.totalAmount || 0,
         paymentMethod: order?.paymentMethod || 'unknown',
         customerName: order?.deliveryAddress?.name || 'Unknown',

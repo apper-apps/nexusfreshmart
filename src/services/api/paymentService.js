@@ -310,8 +310,10 @@ async getAvailablePaymentMethods() {
     return Math.max(amount * feePercent, minimumFee);
   }
 
-  generateTransactionId() {
-    return 'TXN' + Date.now() + Math.random().toString(36).substr(2, 5).toUpperCase();
+generateTransactionId() {
+    const timestamp = Date.now().toString();
+    const randomStr = Math.random().toString(36).substr(2, 5).toUpperCase();
+    return `TXN${timestamp}${randomStr}`;
   }
 
   generateAuthCode() {

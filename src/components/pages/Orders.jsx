@@ -79,15 +79,20 @@ const Orders = () => {
               <div className="flex items-center space-x-4 mb-4 lg:mb-0">
                 <div className="bg-gradient-to-r from-primary to-accent p-3 rounded-lg">
                   <ApperIcon name="Package" size={24} className="text-white" />
-                </div>
-                <div>
+<div>
                   <h3 className="text-lg font-semibold text-gray-900">
                     Order #{order.id}
                   </h3>
                   <p className="text-sm text-gray-600">
                     {format(new Date(order.createdAt), 'MMM dd, yyyy • hh:mm a')}
                   </p>
+                  {order.transactionId && (
+                    <p className="text-xs text-gray-500 font-mono">
+                      TXN: {order.transactionId}
+                    </p>
+                  )}
                 </div>
+              </div>
               </div>
 <div className="flex items-center space-x-4">
                   <OrderStatusBadge status={order.status} />

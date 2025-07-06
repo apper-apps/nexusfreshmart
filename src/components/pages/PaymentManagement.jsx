@@ -912,7 +912,7 @@ const getFilteredTransactions = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {pendingVerifications.map((verification) => (
+{pendingVerifications.map((verification) => (
                   <div key={verification.Id} className="card p-6 border-l-4 border-yellow-400">
                     <div className="flex items-start justify-between mb-4">
                       <div>
@@ -920,6 +920,11 @@ const getFilteredTransactions = () => {
                         <p className="text-sm text-gray-600">
                           Submitted {format(new Date(verification.submittedAt), 'MMM dd, yyyy hh:mm a')}
                         </p>
+                        {verification.transactionId && (
+                          <p className="text-xs text-gray-500 font-mono">
+                            TXN: {verification.transactionId}
+                          </p>
+                        )}
                       </div>
                       <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">
                         Pending
